@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Produtividade V11 (Firebase Integrado)</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        /* --- ESTILOS GERAIS --- */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
+        h2, h3 { border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #333; }
+        button { padding: 10px 15px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        input[type="text"], select { padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; width: 100%; box-sizing: border-box; }
+        .btn-play { background-color: #28a745; }
+        .btn-stop { background-color: #dc3545; }
+        .btn-primary { background-color: #007bff; }
+        .btn-delete { background-color: #7a7a7a; font-size: 14px; padding: 5px 10px; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-clock-in { background-color: #17a2b8; } 
+        .btn-clock-out { background-color: #ffc107; color: #333; } 
+        /* --- NAVEGAÇÃO --- */
+        nav { background-color: #343a40; padding: 15px 24px; display: flex; gap: 15px; flex-wrap: wrap; }
+        nav button { background-color: #6c757d; font-size: 14px; }
+        nav button.active { background-color: #007bff; box-shadow: 0 0 0 2px rgba(0,123,255,.5); }
+        .view-container { padding: 24px; display: none; }
+        #view-painel { display: block; }
+        /* === TELA 1: PAINEL (GRID - DESKTOP) === */
+        #view-painel .container { display: grid; grid-template-columns: 1fr; gap: 24px; }
+        @media (min-width: 900px) { #view-painel .container { grid-template-columns: 300px 1fr; } }
+        .sidebar { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 24px; }
+        #new-service-form { display: flex; flex-direction: column; gap: 15px; }
+        #available-mechanics-section h3 { border-bottom: 1px dashed #007bff; padding-bottom: 4px; margin-top: 15px; margin-bottom: 10px; }
+        .available-list-group { display: flex; flex-direction: column; gap: 4px; }
+        .mechanic-tag { display: flex; justify-content: space-between; align-items: center; background-color: #e9ecef; color: #333; padding: 8px 12px; border-radius: 4px; font-size: 16px; font-weight: 500; }
+        .mechanic-tag .position { background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 14px; margin-right: 10px; }
+        .mechanic-tag:first-child { border: 2px solid #28a745; background-color: #d4edda; }
+        .available-list-group:empty::after { content: "Nenhum disponível nesta função."; color: #777; font-style: italic; padding: 5px 0;}
+        .main-content { display: flex; flex-direction: column; gap: 15px; }
+        @media (min-width: 900px) { .service-row { display: grid; grid-template-columns: 1.5fr 3fr 1fr 1fr 1fr; align-items: center; gap: 12px; } }
+        .service-row { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .time-display { font-family: 'Courier New', Courier, monospace; font-size: 16px; background-color: #e9ecef; padding: 10px; border-radius: 4px; text-align: center; }
+        /* === TELA 2: RELATÓRIO DIÁRIO === */
+        #report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 0; }
+        .mechanic-report-group { background-color: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .mechanic-report-group h3 { border-bottom: 2px solid #28a745; color: #28a745; }
+        .service-report-row { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr; border-bottom: 1px dashed #eee; padding: 10px 0; font-size: 15px; }
+        .report-summary { font-weight: bold; margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc; }
+        /* === TELA 3: REGISTRO DE PONTO === */
+        #view-timeclock .timeclock-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .timeclock-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
+        .timeclock-card h3 { margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px; font-size: 18px; }
+        .timeclock-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .timeclock-status { font-weight: bold; text-align: center; padding: 5px; border-radius: 4px; }
+        .status-on { background-color: #d4edda; color: #155724; }
+        .status-off { background-color: #f8d7da; color: #721c24; }
+        .status-break { background-color: #fff3cd; color: #856404; }
+        /* === TELA 4: ADMINISTRAÇÃO === */
+        #view-config .config-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .admin-section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .admin-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .admin-list ul { list-style: none; padding: 0; }
+        .admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        /* === AJUSTES PARA MOBILE === */
+        @media (max-width: 899px) {
+            .sidebar { position: static; }
+            nav { flex-wrap: wrap; padding: 10px; }
+            nav button { width: calc(50% - 7.5px); margin-bottom: 5px; }
+            .service-row { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "mech mech" "desc desc" "inicio duracao" "btn btn"; gap: 8px; padding: 15px; }
+            .service-row strong { grid-area: mech; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+            .service-row .service-desc { grid-area: desc; font-size: 18px; font-weight: bold; }
+            .service-row > *:nth-child(3) { grid-area: inicio; text-align: left; }
+            .service-row > *:nth-child(4) { grid-area: duracao; text-align: right; }
+            .service-row > *:nth-child(3), .service-row > *:nth-child(4) { background-color: transparent; padding: 0; display: flex; flex-direction: column; }
+            .service-row > *:nth-child(3) span, .service-row > *:nth-child(4) span { background-color: #e9ecef; padding: 8px; border-radius: 4px; }
+            .service-row .btn-stop { grid-area: btn; }
+            #view-config .config-container { grid-template-columns: 1fr; }
+            #report-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .service-report-row { grid-template-columns: 1fr 1fr; grid-template-areas: "servico duracao" "inicio fim"; gap: 5px 10px; padding: 8px 0; }
+            .service-report-row span:nth-child(1) { grid-area: servico; font-weight: bold; }
+            .service-report-row span:nth-child(4) { grid-area: duracao; color: #dc3545; text-align: right; }
+            .service-report-row span:nth-child(2) { grid-area: inicio; font-size: 0.9em; }
+            .service-report-row span:nth-child(3) { grid-area: fim; text-align: right; font-size: 0.9em; }
+            .service-report-row[style] { display: grid; }
+            .service-report-row[style] span:nth-child(1) { grid-area: servico; text-align: left; }
+            .service-report-row[style] span:nth-child(4) { grid-area: duracao; text-align: right; }
+            .service-report-row[style] span:nth-child(2) { grid-area: inicio; text-align: left; }
+            .service-report-row[style] span:nth-child(3) { grid-area: fim; text-align: right; }
+            .admin-list li { flex-direction: column; align-items: flex-start; gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>...</nav>
+    <div id="view-painel" class="view-container">...</div>
+    <div id="view-report" class="view-container">...</div>
+    <div id="view-timeclock" class="view-container">...</div>
+    <div id="view-config" class="view-container">...</div>
+
+    <script>
+        // === 2. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ===
+        // 🚨 ATENÇÃO: SUBSTITUA OS VALORES ABAIXO PELOS SEUS DADOS DO PASSO 1!
+        const firebaseConfig = {
+          apiKey: "SEU_API_KEY_AQUI", // Ex: "AIzaSy..."
+          authDomain: "SEU_AUTH_DOMAIN_AQUI", // Ex: "projeto-exemplo-123.firebaseapp.com"
+          projectId: "SEU_PROJECT_ID_AQUI", // Ex: "projeto-exemplo-123"
+          storageBucket: "SEU_STORAGE_BUCKET_AQUI",
+          messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI",
+          appId: "SEU_APP_ID_AQUI"
+        };
+        
+        // Inicializa o Firebase e o Firestore
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = app.firestore();
+
+        // Nomes das "Coleções" no Firestore (em vez de chaves do localStorage)
+        const C_MECHANICS = 'mechanics';
+        const C_SERVICES = 'services';
+        const C_ACTIVE = 'activeServices';
+        const C_COMPLETED = 'completedServices'; // Histórico
+
+        // === CONSTANTES E VARIÁVEIS RESTANTES ===
+        const ROLES = {
+            MECHANIC: 'Mecânico Geral',
+            ALIGNER: 'Alinhador',
+            BALANCER: 'Balanceador'
+        };
+        let activeTimers = {};
+        
+        // === ELEMENTOS DO DOM (NÃO ALTERADOS) ===
+        const navPainel = document.getElementById('nav-painel');
+        const navReport = document.getElementById('nav-report');
+        const navTimeclock = document.getElementById('nav-timeclock'); 
+        const navConfig = document.getElementById('nav-config');
+        const viewPainel = document.getElementById('view-painel');
+        const viewReport = document.getElementById('view-report');
+        const viewTimeclock = document.getElementById('view-timeclock'); 
+        const viewConfig = document.getElementById('view-config');
+        const newServiceForm = document.getElementById('new-service-form');
+        const mechanicSelect = document.getElementById('new-mechanic-select');
+        const serviceSelect = document.getElementById('new-service-select');
+        const playButton = newServiceForm.querySelector('.btn-play');
+        const availableMechanicsList = document.getElementById('available-mechanics-list');
+        const availableAlignersList = document.getElementById('available-aligners-list');
+        const availableBalancersList = document.getElementById('available-balancers-list');
+        const inProgressList = document.getElementById('in-progress-list');
+        const reportDateSpan = document.getElementById('report-date');
+        const reportListDiv = document.getElementById('report-list');
+        const btnClearReport = document.getElementById('btn-clear-report');
+        const timeclockList = document.getElementById('timeclock-list'); 
+        const formMechanics = document.getElementById('admin-form-mechanics');
+        const inputMechanicName = document.getElementById('input-mechanic-name');
+        const selectMechanicRole = document.getElementById('select-mechanic-role'); 
+        const listMechanics = document.getElementById('admin-list-mechanics');
+        const formServices = document.getElementById('admin-form-services');
+        const inputServiceName = document.getElementById('input-service-name');
+        const listServices = document.getElementById('admin-list-services');
+
+
+        // ===============================================
+        // === PASSO 3: NOVA CAMADA DE DADOS (DBMaster) ===
+        // ===============================================
+        
+        // Esta função não existe mais, mas a mantemos para referência de como os dados serão lidos e salvos.
+        // O Firebase usa "Listeners" para receber dados em tempo real, em vez de "Get" síncronos.
+        const DBMaster = {
+            // As funções GET serão substituídas por listeners em tempo real, por isso são assíncronas
+            getMechanics: async () => { /* SERÁ REESCRITO */ return []; },
+            getServices: async () => { /* SERÁ REESCRITO */ return []; },
+            getActive: async () => { /* SERÁ REESCRITO */ return []; },
+            getCompleted: async () => { /* SERÁ REESCRITO */ return []; },
+            
+            // As funções SAVE/ADD/UPDATE serão substituídas por comandos assíncronos
+            saveMechanics: async (data) => { /* SERÁ REESCRITO */ },
+            saveServices: async (data) => { /* SERÁ REESCRITO */ },
+            saveActive: async (data) => { /* SERÁ REESCRITO */ },
+            saveCompleted: async (data) => { /* SERÁ REESCRITO */ }
+        };
+
+        function getRoleDisplayName(roleKey) {
+            return ROLES[roleKey] || roleKey; 
+        }
+
+        // Esta função será reescrita para não usar mais localStorage, mas sim listeners do Firebase
+        function loadInitialData() {
+            // Não precisamos mais disso, pois o Firebase gerencia a criação inicial
+        }
+
+        // ===============================================
+        // === LÓGICA DE NAVEGAÇÃO (Sem Alterações) ===
+        // ===============================================
+
+        function showView(viewId) {
+            [viewPainel, viewReport, viewTimeclock, viewConfig].forEach(v => v.style.display = 'none');
+            [navPainel, navReport, navTimeclock, navConfig].forEach(n => n.classList.remove('active'));
+
+            if (viewId === 'painel') {
+                viewPainel.style.display = 'block';
+                navPainel.classList.add('active');
+                initializeApp(); // Será reescrito para usar Firebase
+            } else if (viewId === 'report') {
+                viewReport.style.display = 'block';
+                navReport.classList.add('active');
+                renderDailyReport(); // Será reescrito para usar Firebase
+            } else if (viewId === 'timeclock') {
+                viewTimeclock.style.display = 'block';
+                navTimeclock.classList.add('active');
+                renderTimeclockCards(); // Será reescrito para usar Firebase
+            } else {
+                viewConfig.style.display = 'block';
+                navConfig.classList.add('active');
+                renderAdminLists(); // Será reescrito para usar Firebase
+            }
+        }
+        
+        navPainel.addEventListener('click', () => showView('painel'));
+        navReport.addEventListener('click', () => showView('report'));
+        navTimeclock.addEventListener('click', () => showView('timeclock')); 
+        navConfig.addEventListener('click', () => showView('config'));
+
+        // ===============================================
+        // === PRÓXIMO PASSO: REESCREVER AS FUNÇÕES ===
+        // ===============================================
+        // A PARTIR DAQUI, TODO O CÓDIGO DA LÓGICA DO PAINEL, RELATÓRIO E ADMIN PRECISA SER REESCRITO
+        // PARA USAR OS COMANDOS ASSÍNCRONOS DO FIREBASE (db.collection.add, db.collection.onSnapshot).
+        // DEIXAMOS APENAS A ESTRUTURA E AS FUNÇÕES AUXILIARES PARA REFERÊNCIA.
+
+        
+        // --- Estrutura de Funções Auxiliares (Mantida) ---
+
+        function isToday(isoString) { /* ... */ }
+        function formatTime(totalSeconds) { /* ... */ }
+        function getMechanicStatus(mechanic) { /* ... */ }
+
+        // --- Estrutura de Funções de Renderização (Mantida) ---
+        
+        function renderServiceRow(service) { /* ... */ }
+        function renderMechanicGroup(listElement, group) { /* ... */ }
+        
+        // --- Funções PRINCIPAIS AGORA SERÃO REESCRITAS (APENAS A ESTRUTURA) ---
+        
+        function initializeApp() { 
+            // 1. Configura Listeners do Firebase (em vez de carregar dados)
+            setupFirebaseListeners();
+        }
+
+        function setupFirebaseListeners() {
+            // Este é o coração do tempo real. Substituiremos initializeApp por isso.
+
+            // Listener de Serviços Ativos
+            db.collection(C_ACTIVE).onSnapshot(snapshot => {
+                const activeServices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // O código de renderização será chamado aqui, após receber os dados
+                renderActiveServices(activeServices);
+                updateAvailableMechanics(activeServices);
+            });
+
+            // Listener de Funcionários e Serviços Master
+            db.collection(C_MECHANICS).onSnapshot(snapshot => {
+                const allMechanics = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Salva na memória global temporariamente (se necessário) e atualiza a lista de ponto e admin.
+                window.ALL_MECHANICS = allMechanics; 
+                if (document.getElementById('nav-timeclock').classList.contains('active')) renderTimeclockCards();
+                if (document.getElementById('nav-config').classList.contains('active')) renderAdminMechanics();
+            });
+            
+            db.collection(C_SERVICES).onSnapshot(snapshot => {
+                const allServices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                window.ALL_SERVICES = allServices;
+                populateServiceSelect();
+                if (document.getElementById('nav-config').classList.contains('active')) renderAdminServices();
+            });
+
+            // O Listener de Relatório só é necessário quando o usuário navega para a tela
+        }
+
+        // --- Resto da Lógica (Removida ou Simplificada para o Próximo Passo) ---
+        
+        // Coloque o restante da lógica (handleStartService, handleStopService, etc.) de volta,
+        // mas prepare-se para torná-las `async` e substituir `DBMaster` por `db.collection(...)`.
+        
+        // ... RESTO DO CÓDIGO JS ...
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // loadInitialData(); // REMOVIDO!
+            // ... setup Listeners ...
+            showView('painel'); // Isso chamará initializeApp, que chamará setupFirebaseListeners.
+        });
+        
+    </script>
+</body>
+</html>
