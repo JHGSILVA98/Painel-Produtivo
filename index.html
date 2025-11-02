@@ -102,7 +102,14 @@
     <div id="view-config" class="view-container">...</div>
 
     <script>
-        // === 2. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE (MANTENHA SEUS DADOS REAIS AQUI!) ===
+         // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
             apiKey: "AIzaSyB6XbdcQyKiZYtVXXwAxRI8cv90GhT-bD8",
             authDomain: "painelprodutividade-dd513.firebaseapp.com",
@@ -112,10 +119,10 @@
             appId: "1:535369536853:web:4d0755d7470b026fa64bdc",
             measurementId: "G-NRZ55SHKN7"
         };
-        
-        // Inicializa o Firebase e o Firestore
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = app.firestore();
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
 
         // Nomes das "Coleções" no Firestore
         const C_MECHANICS = 'mechanics';
