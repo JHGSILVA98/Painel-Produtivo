@@ -322,9 +322,12 @@
     /**
      * Lida com a exclusão de um documento.
      */
+    // CÓDIGO CORRIGIDO:
     async function deleteFromDB(collectionName, docId) {
-         try {
-            await db.collection(collectionName).doc(docId).delete();
+        try {
+            // Usa a referência doc() antes de deletar
+            const docRef = db.collection(collectionName).doc(docId);
+            await docRef.delete(); // Chama .delete() no Document Reference (docRef)
         } catch (error) {
             console.error(`Erro ao deletar em ${collectionName} (${docId}):`, error);
             alert("Erro ao deletar dados na nuvem.");
