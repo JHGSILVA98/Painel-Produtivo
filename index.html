@@ -104,6 +104,85 @@
         <button id="nav-config" onclick="showView('config')">Administração</button>
     </nav>
 
+    <div id="view-painel" class="view-container">
+    <div class="container">
+        <div class="sidebar">
+            <h3>Iniciar Novo Serviço</h3>
+            <form id="new-service-form">
+                <select id="mechanic-select" required>
+                    <option value="">-- Selecione um Funcionário --</option>
+                </select>
+                <select id="service-select" required>
+                    <option value="">-- Selecione um Serviço --</option>
+                </select>
+                <button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
+            </form>
+
+            <div id="available-mechanics-section">
+                <h3>Mecânicos Disponíveis</h3>
+                <div id="mechanic-list-general" class="available-list-group"></div>
+                <h3>Alinhadores Disponíveis</h3>
+                <div id="mechanic-list-aligner" class="available-list-group"></div>
+                <h3>Balanceadores Disponíveis</h3>
+                <div id="mechanic-list-balancer" class="available-list-group"></div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <h2>Serviços em Andamento</h2>
+            <div id="in-progress-list">
+                </div>
+        </div>
+    </div>
+</div>
+
+<div id="view-report" class="view-container">
+    <div id="report-header">
+        <h2>Relatório Diário: <span id="report-date"></span></h2>
+        <button id="btn-clear-report" class="btn-delete">Limpar Histórico Completo</button>
+    </div>
+    <div id="report-list">
+        </div>
+</div>
+
+<div id="view-timeclock" class="view-container">
+    <h2>Registro de Ponto</h2>
+    <div id="timeclock-list" class="timeclock-list">
+        </div>
+</div>
+
+<div id="view-config" class="view-container">
+    <h2>Administração</h2>
+    <div class="config-container">
+        <div class="admin-section">
+            <h3>Gerenciar Funcionários</h3>
+            <form id="new-mechanic-form" class="admin-form">
+                <input type="text" id="input-mechanic-name" placeholder="Nome do Funcionário" required>
+                <select id="select-mechanic-role" required>
+                    <option value="MECHANIC">Mecânico Geral</option>
+                    <option value="ALIGNER">Alinhador</option>
+                    <option value="BALANCER">Balanceador</option>
+                </select>
+                <button type="submit" class="btn-primary">Adicionar Funcionário</button>
+            </form>
+            <div class="admin-list" id="admin-mechanics-list">
+                <ul></ul>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <h3>Gerenciar Serviços</h3>
+            <form id="new-service-form" class="admin-form">
+                <input type="text" id="input-service-name" placeholder="Nome do Serviço (Ex: Troca de Pneu)" required>
+                <button type="submit" class="btn-primary">Adicionar Serviço</button>
+            </form>
+            <div class="admin-list" id="admin-services-list">
+                <ul></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
     <script>
     // ******************************************************
     // *** 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
