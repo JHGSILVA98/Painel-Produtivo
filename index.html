@@ -736,7 +736,7 @@
         document.getElementById('nav-config').addEventListener('click', () => showView('config'));
         
         // Setup Listeners de Formulário
-        document.getElementById('new-service-form-panel').addEventListener('submit', handleStartService); // ID corrigido
+        document.getElementById('new-service-form').addEventListener('submit', handleStartService); // ID corrigido
         mechanicSelect.addEventListener('change', validateForm);
         serviceSelect.addEventListener('change', validateForm);
         formMechanics.addEventListener('submit', handleAddMechanic);
