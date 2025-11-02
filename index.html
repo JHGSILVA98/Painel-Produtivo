@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Produtividade V11 (Firebase Integrado)</title>
-    
+
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
+    
     
     <style>
         /* --- ESTILOS GERAIS --- */
@@ -102,665 +104,647 @@
     <div id="view-config" class="view-container">...</div>
 
     <script>
-         // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
+    // ******************************************************
+    // *** 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
+    // ******************************************************
+    
+    // Seu web app's Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyB6XbdcQyKiZYtVXXwAxRI8cv90GhT-bD8",
+        authDomain: "painelprodutividade-dd513.firebaseapp.com",
+        projectId: "painelprodutividade-dd513",
+        storageBucket: "painelprodutividade-dd513.firebasestorage.app",
+        messagingSenderId: "535369536853",
+        appId: "1:535369536853:web:4d0755d7470b026fa64bdc",
+        measurementId: "G-NRZ55SHKN7"
+    };
 
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-            apiKey: "AIzaSyB6XbdcQyKiZYtVXXwAxRI8cv90GhT-bD8",
-            authDomain: "painelprodutividade-dd513.firebaseapp.com",
-            projectId: "painelprodutividade-dd513",
-            storageBucket: "painelprodutividade-dd513.firebasestorage.app",
-            messagingSenderId: "535369536853",
-            appId: "1:535369536853:web:4d0755d7470b026fa64bdc",
-            measurementId: "G-NRZ55SHKN7"
-        };
+    // Inicializa o Firebase (v9.6.1 de Compatibilidade)
+    const app = firebase.initializeApp(firebaseConfig);
+    
+    // VARIÁVEL ESSENCIAL: Inicializa o Firestore e define a variável 'db'
+    // Esta linha é crucial, pois define a variável que o seu código usa: db.collection(...)
+    const db = firebase.firestore(); 
+    
+    // Inicializa o Analytics
+    // Nota: O código de Analytics é opcional e pode ser removido se não estiver sendo usado.
+    const analytics = firebase.analytics(); 
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
+    // Nomes das "Coleções" no Firestore
+    const C_MECHANICS = 'mechanics';
+    const C_SERVICES = 'services';
+    const C_ACTIVE = 'activeServices';
+    const C_COMPLETED = 'completedServices'; 
 
-        // Nomes das "Coleções" no Firestore
-        const C_MECHANICS = 'mechanics';
-        const C_SERVICES = 'services';
-        const C_ACTIVE = 'activeServices';
-        const C_COMPLETED = 'completedServices'; 
+    // === ESTADO DA APLICAÇÃO (Dados em memória para uso no frontend) ===
+    let activeTimers = {};
+    let ALL_MECHANICS = [];
+    let ALL_SERVICES = [];
 
-        // === ESTADO DA APLICAÇÃO (Dados em memória para uso no frontend) ===
-        let activeTimers = {};
-        let ALL_MECHANICS = [];
-        let ALL_SERVICES = [];
+    // === CONSTANTES E ELEMENTOS DO DOM (MANTIDOS) ===
+    const ROLES = {
+        MECHANIC: 'Mecânico Geral',
+        ALIGNER: 'Alinhador',
+        BALANCER: 'Balanceador'
+    };
+    
+    // Elementos DOM (Certifique-se de que estas variáveis estão definidas acima da função initializeApp)
+    const viewPainel = document.getElementById('view-painel');
+    const viewReport = document.getElementById('view-report');
+    const viewTimeclock = document.getElementById('view-timeclock');
+    const viewConfig = document.getElementById('view-config');
+    const navPainel = document.getElementById('nav-painel'); // Certifique-se de que os botões de navegação têm IDs
+    const navReport = document.getElementById('nav-report');
+    const navTimeclock = document.getElementById('nav-timeclock');
+    const navConfig = document.getElementById('nav-config');
+    
+    const mechanicSelect = document.getElementById('mechanic-select');
+    const serviceSelect = document.getElementById('service-select');
+    const playButton = document.getElementById('play-button');
+    const inProgressList = document.getElementById('in-progress-list');
+    const availableMechanicsList = document.getElementById('mechanic-list-general');
+    const availableAlignersList = document.getElementById('mechanic-list-aligner');
+    const availableBalancersList = document.getElementById('mechanic-list-balancer');
+    const reportDateSpan = document.getElementById('report-date');
+    const reportListDiv = document.getElementById('report-list');
+    const btnClearReport = document.getElementById('btn-clear-report');
+    const timeclockList = document.getElementById('timeclock-list');
+    const formMechanics = document.getElementById('new-mechanic-form');
+    const formServices = document.getElementById('new-service-form');
+    const inputMechanicName = document.getElementById('input-mechanic-name');
+    const selectMechanicRole = document.getElementById('select-mechanic-role');
+    const inputServiceName = document.getElementById('input-service-name');
+    const adminMechanicsList = document.getElementById('admin-mechanics-list');
+    const adminServicesList = document.getElementById('admin-services-list');
 
+    // ===============================================
+    // === FUNÇÕES DE UTILIDADE E AUXILIARES ===
+    // ===============================================
 
-        // === CONSTANTES E ELEMENTOS DO DOM (MANTIDOS) ===
-        const ROLES = {
-            MECHANIC: 'Mecânico Geral',
-            ALIGNER: 'Alinhador',
-            BALANCER: 'Balanceador'
-        };
+    function getRoleDisplayName(roleKey) {
+        return ROLES[roleKey] || roleKey; 
+    }
+
+    function isToday(timestamp) {
+        const date = new Date(timestamp);
+        const today = new Date();
+        return date.getDate() === today.getDate() &&
+               date.getMonth() === today.getMonth() &&
+               date.getFullYear() === today.getFullYear();
+    }
+
+    function formatTime(totalSeconds) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return [hours, minutes, seconds].map(unit => String(unit).padStart(2, '0')).join(':');
+    }
+
+    function getMechanicStatus(mechanic) {
+        if (mechanic.isAvailable === true) {
+            return { text: "DISPONÍVEL", class: "status-on" };
+        }
+        if (mechanic.isAvailable === false && mechanic.queueTime) {
+            return { text: "FORA / PAUSA", class: "status-break" };
+        }
+        return { text: "FORA DE EXPEDIENTE", class: "status-off" };
+    }
+
+    // ===============================================
+    // === FUNÇÕES DE CONECTIVIDADE (FIREBASE) ===
+    // ===============================================
+    
+    /**
+     * Lida com a criação de um novo documento no Firestore.
+     */
+    async function addToDB(collectionName, data) {
+        try {
+            // Usa a sintaxe v8/compatível: db.collection
+            await db.collection(collectionName).add(data);
+        } catch (error) {
+            console.error(`Erro ao adicionar em ${collectionName}:`, error);
+            alert("Erro ao salvar dados na nuvem.");
+        }
+    }
+    
+    /**
+     * Lida com a atualização de um documento existente.
+     */
+    async function updateInDB(collectionName, docId, data) {
+        try {
+            await db.collection(collectionName).doc(docId).update(data);
+        } catch (error) {
+            console.error(`Erro ao atualizar em ${collectionName} (${docId}):`, error);
+            alert("Erro ao atualizar dados na nuvem.");
+        }
+    }
+    
+    /**
+     * Lida com a exclusão de um documento.
+     */
+    async function deleteFromDB(collectionName, docId) {
+         try {
+            await db.collection(collectionName).doc(docId).delete();
+        } catch (error) {
+            console.error(`Erro ao deletar em ${collectionName} (${docId}):`, error);
+            alert("Erro ao deletar dados na nuvem.");
+        }
+    }
+    
+    // ===============================================
+    // === LÓGICA DE NAVEGAÇÃO E LISTENERS ===
+    // ===============================================
+
+    function showView(viewId) {
+        // ... (Seu código de navegação) ...
+        [viewPainel, viewReport, viewTimeclock, viewConfig].forEach(v => v.style.display = 'none');
+        [navPainel, navReport, navTimeclock, navConfig].forEach(n => n.classList.remove('active'));
+
+        if (viewId === 'painel') {
+            viewPainel.style.display = 'block';
+            navPainel.classList.add('active');
+        } else if (viewId === 'report') {
+            viewReport.style.display = 'block';
+            navReport.classList.add('active');
+            renderDailyReport(); // Consulta de uso único
+        } else if (viewId === 'timeclock') {
+            viewTimeclock.style.display = 'block';
+            navTimeclock.classList.add('active');
+            renderTimeclockCards(); 
+        } else {
+            viewConfig.style.display = 'block';
+            navConfig.classList.add('active');
+            renderAdminLists(); 
+        }
+    }
+    
+    function setupFirebaseListeners() {
+        // 1. LISTENERS MASTER (Funcionários e Serviços)
+        // Usa a sintaxe compatível: db.collection().onSnapshot()
+        db.collection(C_MECHANICS).orderBy('name').onSnapshot(snapshot => {
+            ALL_MECHANICS = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+            // Atualiza a visualização do Painel, Ponto e Admin
+            updateAvailableMechanics(window.ACTIVE_SERVICES || []);
+            if (document.getElementById('nav-timeclock').classList.contains('active')) renderTimeclockCards();
+            if (document.getElementById('nav-config').classList.contains('active')) renderAdminMechanics();
+        });
         
-        // ... (elementos DOM não precisam ser repetidos, pois já estão acima) ...
-
-
-        // ===============================================
-        // === FUNÇÕES DE UTILIDADE E AUXILIARES ===
-        // ===============================================
-
-        function getRoleDisplayName(roleKey) {
-            return ROLES[roleKey] || roleKey; 
-        }
-
-        function isToday(timestamp) {
-            const date = new Date(timestamp);
-            const today = new Date();
-            return date.getDate() === today.getDate() &&
-                   date.getMonth() === today.getMonth() &&
-                   date.getFullYear() === today.getFullYear();
-        }
-
-        function formatTime(totalSeconds) {
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            return [hours, minutes, seconds].map(unit => String(unit).padStart(2, '0')).join(':');
-        }
-
-        function getMechanicStatus(mechanic) {
-            if (mechanic.isAvailable === true) {
-                return { text: "DISPONÍVEL", class: "status-on" };
-            }
-            if (mechanic.isAvailable === false && mechanic.queueTime) {
-                return { text: "FORA / PAUSA", class: "status-break" };
-            }
-            return { text: "FORA DE EXPEDIENTE", class: "status-off" };
-        }
-
-
-        // ===============================================
-        // === FUNÇÕES DE CONECTIVIDADE (FIREBASE) ===
-        // ===============================================
+        db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
+            ALL_SERVICES = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+            populateServiceSelect();
+            if (document.getElementById('nav-config').classList.contains('active')) renderAdminServices();
+        });
         
-        /**
-         * Lida com a criação de um novo documento no Firestore.
-         * @param {string} collectionName - Nome da coleção (C_MECHANICS, C_SERVICES, etc.)
-         * @param {object} data - Dados a serem salvos.
-         */
-        async function addToDB(collectionName, data) {
-            try {
-                // Adiciona um novo documento, o Firebase gera o ID automaticamente.
-                await db.collection(collectionName).add(data);
-            } catch (error) {
-                console.error(`Erro ao adicionar em ${collectionName}:`, error);
-                alert("Erro ao salvar dados na nuvem.");
-            }
-        }
-        
-        /**
-         * Lida com a atualização de um documento existente.
-         * @param {string} collectionName - Nome da coleção.
-         * @param {string} docId - ID do documento a ser atualizado (o ID do Firebase).
-         * @param {object} data - Objeto com os campos a serem atualizados.
-         */
-        async function updateInDB(collectionName, docId, data) {
-            try {
-                await db.collection(collectionName).doc(docId).update(data);
-            } catch (error) {
-                console.error(`Erro ao atualizar em ${collectionName} (${docId}):`, error);
-                alert("Erro ao atualizar dados na nuvem.");
-            }
-        }
-        
-        /**
-         * Lida com a exclusão de um documento.
-         */
-        async function deleteFromDB(collectionName, docId) {
-             try {
-                await db.collection(collectionName).doc(docId).delete();
-            } catch (error) {
-                console.error(`Erro ao deletar em ${collectionName} (${docId}):`, error);
-                alert("Erro ao deletar dados na nuvem.");
-            }
-        }
-        
-        // ===============================================
-        // === LÓGICA DE NAVEGAÇÃO E LISTENERS ===
-        // ===============================================
-
-        function showView(viewId) {
-            [viewPainel, viewReport, viewTimeclock, viewConfig].forEach(v => v.style.display = 'none');
-            [navPainel, navReport, navTimeclock, navConfig].forEach(n => n.classList.remove('active'));
-
-            if (viewId === 'painel') {
-                viewPainel.style.display = 'block';
-                navPainel.classList.add('active');
-            } else if (viewId === 'report') {
-                viewReport.style.display = 'block';
-                navReport.classList.add('active');
-                renderDailyReport(); // Consulta de uso único
-            } else if (viewId === 'timeclock') {
-                viewTimeclock.style.display = 'block';
-                navTimeclock.classList.add('active');
-                renderTimeclockCards(); 
-            } else {
-                viewConfig.style.display = 'block';
-                navConfig.classList.add('active');
-                renderAdminLists(); 
-            }
-        }
-        
-        function setupFirebaseListeners() {
-            // 1. LISTENERS MASTER (Funcionários e Serviços)
-            db.collection(C_MECHANICS).orderBy('name').onSnapshot(snapshot => {
-                ALL_MECHANICS = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-                // Atualiza a visualização do Painel, Ponto e Admin
-                updateAvailableMechanics(window.ACTIVE_SERVICES || []);
-                if (document.getElementById('nav-timeclock').classList.contains('active')) renderTimeclockCards();
-                if (document.getElementById('nav-config').classList.contains('active')) renderAdminMechanics();
-            });
+        // 2. LISTENER DE SERVIÇOS ATIVOS (Tempo Real)
+        db.collection(C_ACTIVE).onSnapshot(snapshot => {
+            const activeServices = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+            window.ACTIVE_SERVICES = activeServices; // Salva na memória global para uso imediato
             
-            db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
-                ALL_SERVICES = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-                populateServiceSelect();
-                if (document.getElementById('nav-config').classList.contains('active')) renderAdminServices();
-            });
-            
-            // 2. LISTENER DE SERVIÇOS ATIVOS (Tempo Real)
-            db.collection(C_ACTIVE).onSnapshot(snapshot => {
-                const activeServices = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-                window.ACTIVE_SERVICES = activeServices; // Salva na memória global para uso imediato
-                
-                renderActiveServices(activeServices);
-                updateAvailableMechanics(activeServices);
-            });
-        }
-        
-        // Inicialização da Aplicação
-        function initializeApp() {
-            // A inicialização agora só precisa garantir que os listeners estão prontos.
-            setupFirebaseListeners();
-        }
+            renderActiveServices(activeServices);
+            updateAvailableMechanics(activeServices);
+        });
+    }
+    
+    // Inicialização da Aplicação
+    function initializeApp() {
+        // A inicialização agora só precisa garantir que os listeners estão prontos.
+        setupFirebaseListeners();
+    }
+    
+    // ===============================================
+    // === RESTANTE DA LÓGICA DO PAINEL, RELATÓRIO, PONTO E ADMIN (COLE AQUI) ===
+    // ===============================================
 
-        // ===============================================
-        // === TELA 1: LÓGICA DO PAINEL ===
-        // ===============================================
-        
-        function populateServiceSelect() {
-            serviceSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
-            ALL_SERVICES.forEach(s => {
-                serviceSelect.innerHTML += `<option value="${s.fbId}" data-name="${s.name}">${s.name}</option>`;
-            });
-        }
+    // [COLE AQUI: Todo o restante do seu JavaScript, das funções 'populateServiceSelect' até 'handleDeleteService' e 'document.addEventListener']
+    
+    function populateServiceSelect() {
+        serviceSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
+        ALL_SERVICES.forEach(s => {
+            serviceSelect.innerHTML += `<option value="${s.fbId}" data-name="${s.name}">${s.name}</option>`;
+        });
+    }
 
-        function renderMechanicGroup(listElement, group) {
-            listElement.innerHTML = '';
-            group.forEach((m, index) => {
-                listElement.innerHTML += `
-                    <div class="mechanic-tag">
-                        <div>
-                            <span class="position">${index + 1}</span>
-                            ${m.name}
-                        </div>
+    function renderMechanicGroup(listElement, group) {
+        listElement.innerHTML = '';
+        group.forEach((m, index) => {
+            listElement.innerHTML += `
+                <div class="mechanic-tag">
+                    <div>
+                        <span class="position">${index + 1}</span>
+                        ${m.name}
                     </div>
-                `;
-            });
-             if (group.length === 0) {
-                 listElement.innerHTML = '<div style="font-style: italic; color: #777; padding: 5px 0;">Nenhum disponível nesta função.</div>';
-            }
+                </div>
+            `;
+        });
+         if (group.length === 0) {
+             listElement.innerHTML = '<div style="font-style: italic; color: #777; padding: 5px 0;">Nenhum disponível nesta função.</div>';
         }
+    }
 
-        function updateAvailableMechanics(activeServices) {
-            const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
-            
-            let availableMechanics = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
-
-            const mechanicsGroup = availableMechanics.filter(m => m.role === 'MECHANIC');
-            const alignersGroup = availableMechanics.filter(m => m.role === 'ALIGNER');
-            const balancersGroup = availableMechanics.filter(m => m.role === 'BALANCER');
-            
-            const rodizioSort = (a, b) => {
-                return (a.queueTime || 0) - (b.queueTime || 0); 
-            };
-
-            mechanicsGroup.sort(rodizioSort);
-            alignersGroup.sort(rodizioSort);
-            balancersGroup.sort(rodizioSort);
-            
-            // Atualiza o <select>
-            mechanicSelect.innerHTML = '<option value="">-- Selecione um Funcionário --</option>';
-            
-            [...mechanicsGroup, ...alignersGroup, ...balancersGroup].forEach(m => {
-                const roleName = getRoleDisplayName(m.role);
-                mechanicSelect.innerHTML += `<option value="${m.fbId}" data-name="${m.name}">${m.name} (${roleName})</option>`;
-            });
-
-            // Atualiza as listas visuais
-            renderMechanicGroup(availableMechanicsList, mechanicsGroup);
-            renderMechanicGroup(availableAlignersList, alignersGroup);
-            renderMechanicGroup(availableBalancersList, balancersGroup);
-
-            validateForm();
-        }
-
-        function validateForm() {
-            const isMechanicSelected = mechanicSelect.value !== "";
-            const isServiceSelected = serviceSelect.value !== "";
-            playButton.disabled = !isMechanicSelected || !isServiceSelected;
-        }
-
-        function renderActiveServices(activeServices) {
-            // Limpa timers antigos
-            Object.values(activeTimers).forEach(clearInterval);
-            activeTimers = {};
-            inProgressList.innerHTML = '';
-
-            // Renderiza novos
-            activeServices.forEach(service => {
-                const row = document.createElement('div');
-                row.className = 'service-row';
-                row.setAttribute('data-fbid', service.fbId); // Usa fbId para referência
-                
-                const startTime = new Date(service.startTime);
-                const roleName = getRoleDisplayName(service.mechanicRole);
-                
-                row.innerHTML = `
-                    <strong>${service.mechanicName} <small>(${roleName})</small></strong>
-                    <span class="service-desc">${service.serviceDesc}</span>
-                    <div class="time-display">Início: <span class="start-time">${startTime.toLocaleTimeString('pt-BR')}</span></div>
-                    <div class="time-display">Duração: <span class="duration">00:00:00</span></div>
-                    <button class="btn-stop">■ Finalizar</button>
-                `;
-                inProgressList.appendChild(row);
-
-                const durationDisplay = row.querySelector('.duration');
-                function updateTimer() {
-                    const now = new Date();
-                    const secondsElapsed = Math.floor((now - startTime) / 1000);
-                    durationDisplay.textContent = formatTime(secondsElapsed);
-                }
-                
-                updateTimer();
-                activeTimers[service.fbId] = setInterval(updateTimer, 1000);
-
-                row.querySelector('.btn-stop').addEventListener('click', () => handleStopService(service.fbId, service.mechanicId));
-            });
-        }
+    function updateAvailableMechanics(activeServices) {
+        const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
         
-        async function handleStartService(event) {
-            event.preventDefault();
+        let availableMechanics = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
 
-            const mechanicFbId = mechanicSelect.value;
-            const mechanicOption = mechanicSelect.options[mechanicSelect.selectedIndex];
-            const mechanicName = mechanicOption.dataset.name;
-            
-            const serviceFbId = serviceSelect.value;
-            const serviceOption = serviceSelect.options[serviceSelect.selectedIndex];
-            const serviceDesc = serviceOption.dataset.name;
-
-            if (!mechanicFbId || !serviceFbId) {
-                alert("Por favor, selecione um funcionário e um serviço.");
-                return;
-            }
-            
-            const mechanic = ALL_MECHANICS.find(m => m.fbId === mechanicFbId);
-            
-            const newService = {
-                mechanicId: mechanicFbId, // ID do Firebase do funcionário
-                mechanicName: mechanicName,
-                mechanicRole: mechanic ? mechanic.role : 'UNKNOWN',
-                serviceId: serviceFbId, // ID do Firebase do serviço
-                serviceDesc: serviceDesc,
-                startTime: new Date().toISOString()
-            };
-
-            // Salva no Firestore (automaticamente notifica todos os usuários)
-            await addToDB(C_ACTIVE, newService);
-
-            serviceSelect.value = '';
-            mechanicSelect.value = '';
-            validateForm();
-        }
-
-        async function handleStopService(serviceFbId, mechanicFbId) {
-            if (!confirm("Confirmar a finalização deste serviço?")) return;
-            
-            // 1. Encontra o serviço ativo para coletar os dados
-            const serviceToStop = window.ACTIVE_SERVICES.find(s => s.fbId === serviceFbId);
-            
-            if (serviceToStop) {
-                const now = Date.now();
-                const startTimeStamp = new Date(serviceToStop.startTime).getTime();
-                const endTimeISO = new Date(now).toISOString();
-
-                // 2. REGISTRA O SERVIÇO NO HISTÓRICO (C_COMPLETED)
-                const completedService = {
-                    ...serviceToStop,
-                    fbId: undefined, // Remove o ID do serviço ativo
-                    endTime: endTimeISO,
-                    durationSeconds: Math.floor((now - startTimeStamp) / 1000),
-                    completedAt: now // Para consultas de relatório
-                };
-                await addToDB(C_COMPLETED, completedService);
-
-                // 3. ATUALIZA O queueTime do funcionário (vai para o fim da fila)
-                // O updateInDB não espera a resposta de sucesso para ser mais rápido
-                await updateInDB(C_MECHANICS, mechanicFbId, { queueTime: now });
-                
-                // 4. Remove o serviço da lista ativa (automaticamente notifica os outros clientes)
-                await deleteFromDB(C_ACTIVE, serviceFbId);
-            }
-        }
-
-        // ===============================================
-        // === TELA 2: LÓGICA DO RELATÓRIO DIÁRIO ===
-        // ===============================================
+        const mechanicsGroup = availableMechanics.filter(m => m.role === 'MECHANIC');
+        const alignersGroup = availableMechanics.filter(m => m.role === 'ALIGNER');
+        const balancersGroup = availableMechanics.filter(m => m.role === 'BALANCER');
         
-        async function renderDailyReport() {
-            const today = new Date().toLocaleDateString('pt-BR');
-            reportDateSpan.textContent = today;
-            reportListDiv.innerHTML = '<div>Carregando relatório...</div>';
-            
-            try {
-                // Consulta o Firebase
-                const snapshot = await db.collection(C_COMPLETED)
-                                         .orderBy('completedAt', 'desc')
-                                         .get();
-                                         
-                const completedServices = snapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter(s => s.completedAt && isToday(s.completedAt));
+        const rodizioSort = (a, b) => {
+            return (a.queueTime || 0) - (b.queueTime || 0); 
+        };
 
-                if (completedServices.length === 0) {
-                    reportListDiv.innerHTML = '<div style="margin-top: 20px; font-style: italic; color: #777;">Nenhum serviço finalizado hoje.</div>';
-                    return;
-                }
-
-                const reportByMechanic = completedServices.reduce((acc, service) => {
-                    const name = `${service.mechanicName} (${getRoleDisplayName(service.mechanicRole)})`;
-                    if (!acc[name]) {
-                        acc[name] = { totalDuration: 0, services: [] };
-                    }
-                    acc[name].services.push(service);
-                    acc[name].totalDuration += service.durationSeconds;
-                    return acc;
-                }, {});
-
-                const sortedMechanicNames = Object.keys(reportByMechanic).sort();
-                reportListDiv.innerHTML = '';
-
-                sortedMechanicNames.forEach(name => {
-                    // ... (Criação do HTML do relatório como antes)
-                    const data = reportByMechanic[name];
-                    const groupDiv = document.createElement('div');
-                    groupDiv.className = 'mechanic-report-group';
-                    
-                    let html = `<h3>Funcionário: ${name}</h3>`;
-                    html += '<div class="service-report-row" style="font-weight: bold; border-bottom: 1px solid #ccc; padding-top: 0;"><span>Serviço</span><span>Início</span><span>Fim</span><span>Duração</span></div>';
-                    
-                    data.services.forEach(s => {
-                        const startTime = new Date(s.startTime).toLocaleTimeString('pt-BR');
-                        const endTime = new Date(s.endTime).toLocaleTimeString('pt-BR');
-                        html += `
-                            <div class="service-report-row">
-                                <span>${s.serviceDesc}</span>
-                                <span>${startTime}</span>
-                                <span>${endTime}</span>
-                                <span>${formatTime(s.durationSeconds)}</span>
-                            </div>
-                        `;
-                    });
-
-                    html += `<div class="report-summary">Total de Serviços: ${data.services.length} | Produtividade Total: ${formatTime(data.totalDuration)}</div>`;
-                    
-                    groupDiv.innerHTML = html;
-                    reportListDiv.appendChild(groupDiv);
-                });
-
-            } catch (error) {
-                console.error("Erro ao gerar relatório:", error);
-                reportListDiv.innerHTML = '<div style="color: red;">Erro ao carregar o relatório. Verifique a conexão com o Firebase.</div>';
-            }
-        }
+        mechanicsGroup.sort(rodizioSort);
+        alignersGroup.sort(rodizioSort);
+        balancersGroup.sort(rodizioSort);
         
-        btnClearReport.addEventListener('click', async () => {
-            if (confirm("ATENÇÃO: Você tem certeza que deseja limpar o histórico COMPLETO de serviços finalizados? Esta ação é irreversível.")) {
-                reportListDiv.innerHTML = '<div>Limpando histórico...</div>';
-                try {
-                    const snapshot = await db.collection(C_COMPLETED).get();
-                    const batch = db.batch();
-                    snapshot.docs.forEach((doc) => {
-                        batch.delete(doc.ref);
-                    });
-                    await batch.commit();
-                    alert("Histórico de serviços limpo com sucesso.");
-                    renderDailyReport();
-                } catch (error) {
-                    console.error("Erro ao limpar histórico:", error);
-                    alert("Erro ao limpar o histórico. Tente novamente.");
-                    renderDailyReport();
-                }
-            }
+        // Atualiza o <select>
+        mechanicSelect.innerHTML = '<option value="">-- Selecione um Funcionário --</option>';
+        
+        [...mechanicsGroup, ...alignersGroup, ...balancersGroup].forEach(m => {
+            const roleName = getRoleDisplayName(m.role);
+            mechanicSelect.innerHTML += `<option value="${m.fbId}" data-name="${m.name}">${m.name} (${roleName})</option>`;
         });
 
+        // Atualiza as listas visuais
+        renderMechanicGroup(availableMechanicsList, mechanicsGroup);
+        renderMechanicGroup(availableAlignersList, alignersGroup);
+        renderMechanicGroup(availableBalancersList, balancersGroup);
 
-        // ===============================================
-        // === TELA 3: LÓGICA DO REGISTRO DE PONTO ===
-        // ===============================================
+        validateForm();
+    }
 
-        function renderTimeclockCards() {
-            // ALL_MECHANICS já está carregado pelo listener
-            const allMechanics = [...ALL_MECHANICS].sort((a, b) => a.name.localeCompare(b.name));
-            timeclockList.innerHTML = '';
+    function validateForm() {
+        const isMechanicSelected = mechanicSelect.value !== "";
+        const isServiceSelected = serviceSelect.value !== "";
+        playButton.disabled = !isMechanicSelected || !isServiceSelected;
+    }
 
-            if (allMechanics.length === 0) {
-                 timeclockList.innerHTML = '<p>Nenhum funcionário cadastrado. Cadastre em Administração.</p>';
-                 return;
+    function renderActiveServices(activeServices) {
+        // Limpa timers antigos
+        Object.values(activeTimers).forEach(clearInterval);
+        activeTimers = {};
+        inProgressList.innerHTML = '';
+
+        // Renderiza novos
+        activeServices.forEach(service => {
+            const row = document.createElement('div');
+            row.className = 'service-row';
+            row.setAttribute('data-fbid', service.fbId); // Usa fbId para referência
+            
+            const startTime = new Date(service.startTime);
+            const roleName = getRoleDisplayName(service.mechanicRole);
+            
+            row.innerHTML = `
+                <strong>${service.mechanicName} <small>(${roleName})</small></strong>
+                <span class="service-desc">${service.serviceDesc}</span>
+                <div class="time-display">Início: <span class="start-time">${startTime.toLocaleTimeString('pt-BR')}</span></div>
+                <div class="time-display">Duração: <span class="duration">00:00:00</span></div>
+                <button class="btn-stop">■ Finalizar</button>
+            `;
+            inProgressList.appendChild(row);
+
+            const durationDisplay = row.querySelector('.duration');
+            function updateTimer() {
+                const now = new Date();
+                const secondsElapsed = Math.floor((now - startTime) / 1000);
+                durationDisplay.textContent = formatTime(secondsElapsed);
             }
+            
+            updateTimer();
+            activeTimers[service.fbId] = setInterval(updateTimer, 1000);
 
-            allMechanics.forEach(m => {
-                const status = getMechanicStatus(m);
-                const roleName = getRoleDisplayName(m.role);
-                const queueTimeDisplay = m.queueTime ? new Date(m.queueTime).toLocaleTimeString('pt-BR') : 'N/A';
-                
-                const card = document.createElement('div');
-                card.className = 'timeclock-card';
-                card.dataset.id = m.fbId; // Usa fbId
-                
-                // Verifica se está ativo para desabilitar o botão de Saída/Pausa
-                const isBusy = window.ACTIVE_SERVICES && window.ACTIVE_SERVICES.some(s => s.mechanicId === m.fbId);
+            row.querySelector('.btn-stop').addEventListener('click', () => handleStopService(service.fbId, service.mechanicId));
+        });
+    }
+    
+    async function handleStartService(event) {
+        event.preventDefault();
 
-                card.innerHTML = `
-                    <h3>${m.name} <small>(${roleName})</small></h3>
-                    <div class="timeclock-status ${status.class}">${status.text}</div>
-                    <small>Na fila desde: ${queueTimeDisplay}</small>
-                    <div class="timeclock-buttons">
-                        <button class="btn-clock-in" data-action="chegada" ${m.isAvailable === true ? 'disabled' : ''}>Chegada / Retorno</button>
-                        <button class="btn-clock-out" data-action="saida" ${m.isAvailable === false || isBusy ? 'disabled' : ''}>Pausa / Saída</button>
-                    </div>
-                    ${isBusy ? '<small style="color: red; font-weight: bold;">(Em serviço ativo)</small>' : ''}
-                `;
+        const mechanicFbId = mechanicSelect.value;
+        const mechanicOption = mechanicSelect.options[mechanicSelect.selectedIndex];
+        const mechanicName = mechanicOption.dataset.name;
+        
+        const serviceFbId = serviceSelect.value;
+        const serviceOption = serviceSelect.options[serviceSelect.selectedIndex];
+        const serviceDesc = serviceOption.dataset.name;
 
-                timeclockList.appendChild(card);
-            });
-
-            timeclockList.querySelectorAll('button').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const id = e.target.closest('.timeclock-card').dataset.id;
-                    const action = e.target.dataset.action;
-                    handleTimeclockAction(id, action);
-                });
-            });
+        if (!mechanicFbId || !serviceFbId) {
+            alert("Por favor, selecione um funcionário e um serviço.");
+            return;
         }
+        
+        const mechanic = ALL_MECHANICS.find(m => m.fbId === mechanicFbId);
+        
+        const newService = {
+            mechanicId: mechanicFbId, // ID do Firebase do funcionário
+            mechanicName: mechanicName,
+            mechanicRole: mechanic ? mechanic.role : 'UNKNOWN',
+            serviceId: serviceFbId, // ID do Firebase do serviço
+            serviceDesc: serviceDesc,
+            startTime: new Date().toISOString()
+        };
 
-        async function handleTimeclockAction(mechanicFbId, action) {
-            const mechanic = ALL_MECHANICS.find(m => m.fbId === mechanicFbId);
-            if (!mechanic) return;
+        // Salva no Firestore (automaticamente notifica todos os usuários)
+        await addToDB(C_ACTIVE, newService);
 
+        serviceSelect.value = '';
+        mechanicSelect.value = '';
+        validateForm();
+    }
+
+    async function handleStopService(serviceFbId, mechanicFbId) {
+        if (!confirm("Confirmar a finalização deste serviço?")) return;
+        
+        // 1. Encontra o serviço ativo para coletar os dados
+        const serviceToStop = window.ACTIVE_SERVICES.find(s => s.fbId === serviceFbId);
+        
+        if (serviceToStop) {
             const now = Date.now();
-            let updateData = {};
+            const startTimeStamp = new Date(serviceToStop.startTime).getTime();
+            const endTimeISO = new Date(now).toISOString();
 
-            if (action === 'chegada') {
-                updateData = { isAvailable: true, queueTime: now };
-            } else if (action === 'saida') {
-                const isBusy = window.ACTIVE_SERVICES.some(s => s.mechanicId === mechanicFbId);
-                if (isBusy) {
-                    alert(`Erro: ${mechanic.name} está em um serviço ativo e não pode sair/pausar.`);
-                    return;
-                }
-                updateData = { isAvailable: false, queueTime: now };
-            }
-
-            // Atualiza o documento no Firebase
-            await updateInDB(C_MECHANICS, mechanicFbId, updateData);
-            
-            // A renderização é feita automaticamente pelo Listener
-        }
-
-
-        // ===============================================
-        // === TELA 4: LÓGICA DA ADMINISTRAÇÃO ===
-        // ===============================================
-
-        function renderAdminLists() {
-            renderAdminMechanics(); // Chamado pelo listener
-            renderAdminServices();  // Chamado pelo listener
-        }
-
-        // --- Gerenciamento de Funcionários ---
-        function renderAdminMechanics() {
-            const mechs = [...ALL_MECHANICS].sort((a, b) => a.name.localeCompare(b.name));
-            listMechanics.innerHTML = '<ul></ul>';
-            const ul = listMechanics.querySelector('ul');
-            if (mechs.length === 0) {
-                ul.innerHTML = "<li>Nenhum funcionário cadastrado.</li>";
-                return;
-            }
-            mechs.forEach(m => {
-                const roleName = getRoleDisplayName(m.role);
-                const statusText = m.isAvailable ? 'Disponível' : 'Indisponível';
-                const queueTimeDisplay = m.queueTime ? new Date(m.queueTime).toLocaleTimeString('pt-BR') : 'N/A';
-
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span>
-                        ${m.name} 
-                        <span style="color: #007bff; font-weight: bold;">(${roleName})</span> 
-                        <small>| Status: ${statusText} | Fila: ${queueTimeDisplay}</small>
-                    </span>
-                    <button class="btn-delete" data-fbid="${m.fbId}">Excluir</button>
-                `;
-                ul.appendChild(li);
-            });
-            
-            ul.querySelectorAll('.btn-delete').forEach(btn => {
-                btn.addEventListener('click', (e) => handleDeleteMechanic(e.target.dataset.fbid));
-            });
-        }
-
-        async function handleAddMechanic(event) {
-            event.preventDefault();
-            const name = inputMechanicName.value.trim();
-            const role = selectMechanicRole.value;
-            if (!name || !role) {
-                alert("Por favor, preencha o nome e selecione a função.");
-                return;
-            }
-
-            if (ALL_MECHANICS.some(m => m.name.toLowerCase() === name.toLowerCase())) {
-                alert("Este funcionário já existe.");
-                return;
-            }
-
-            // Dados para o Firebase
-            const newMechanic = { 
-                name: name, 
-                role: role,
-                isAvailable: false, 
-                queueTime: 0 
+            // 2. REGISTRA O SERVIÇO NO HISTÓRICO (C_COMPLETED)
+            const completedService = {
+                ...serviceToStop,
+                fbId: undefined, // Remove o ID do serviço ativo
+                endTime: endTimeISO,
+                durationSeconds: Math.floor((now - startTimeStamp) / 1000),
+                completedAt: now // Para consultas de relatório
             };
-            await addToDB(C_MECHANICS, newMechanic);
-            
-            inputMechanicName.value = '';
-            selectMechanicRole.value = '';
-        }
+            await addToDB(C_COMPLETED, completedService);
 
-        async function handleDeleteMechanic(fbId) {
-            if (window.ACTIVE_SERVICES.some(s => s.mechanicId === fbId)) {
-                alert("Erro: Este funcionário está em um serviço ativo e não pode ser excluído agora.");
+            // 3. ATUALIZA O queueTime do funcionário (vai para o fim da fila)
+            // O updateInDB não espera a resposta de sucesso para ser mais rápido
+            await updateInDB(C_MECHANICS, mechanicFbId, { queueTime: now });
+            
+            // 4. Remove o serviço da lista ativa (automaticamente notifica os outros clientes)
+            await deleteFromDB(C_ACTIVE, serviceFbId);
+        }
+    }
+
+    // ===============================================
+    // === TELA 2: LÓGICA DO RELATÓRIO DIÁRIO ===
+    // ===============================================
+    
+    async function renderDailyReport() {
+        const today = new Date().toLocaleDateString('pt-BR');
+        reportDateSpan.textContent = today;
+        reportListDiv.innerHTML = '<div>Carregando relatório...</div>';
+        
+        try {
+            // Consulta o Firebase
+            const snapshot = await db.collection(C_COMPLETED)
+                                     .orderBy('completedAt', 'desc')
+                                     .get();
+                                     
+            const completedServices = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(s => s.completedAt && isToday(s.completedAt));
+
+            if (completedServices.length === 0) {
+                reportListDiv.innerHTML = '<div style="margin-top: 20px; font-style: italic; color: #777;">Nenhum serviço finalizado hoje.</div>';
                 return;
             }
-            if (!confirm("Tem certeza que deseja excluir este funcionário?")) return;
+
+            const reportByMechanic = completedServices.reduce((acc, service) => {
+                const name = `${service.mechanicName} (${getRoleDisplayName(service.mechanicRole)})`;
+                if (!acc[name]) {
+                    acc[name] = { totalDuration: 0, services: [] };
+                }
+                acc[name].services.push(service);
+                acc[name].totalDuration += service.durationSeconds;
+                return acc;
+            }, {});
+
+            const sortedMechanicNames = Object.keys(reportByMechanic).sort();
+            reportListDiv.innerHTML = '';
+
+            sortedMechanicNames.forEach(name => {
+                // ... (Criação do HTML do relatório como antes)
+                const data = reportByMechanic[name];
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'mechanic-report-group';
+                
+                let html = `<h3>Funcionário: ${name}</h3>`;
+                html += '<div class="service-report-row" style="font-weight: bold; border-bottom: 1px solid #ccc; padding-top: 0;"><span>Serviço</span><span>Início</span><span>Fim</span><span>Duração</span></div>';
+                
+                data.services.forEach(s => {
+                    const startTime = new Date(s.startTime).toLocaleTimeString('pt-BR');
+                    const endTime = new Date(s.endTime).toLocaleTimeString('pt-BR');
+                    html += `
+                        <div class="service-report-row">
+                            <span>${s.serviceDesc}</span>
+                            <span>${startTime}</span>
+                            <span>${endTime}</span>
+                            <span>${formatTime(s.durationSeconds)}</span>
+                        </div>
+                    `;
+                });
+
+                html += `<div class="report-summary">Total de Serviços: ${data.services.length} | Produtividade Total: ${formatTime(data.totalDuration)}</div>`;
+                
+                groupDiv.innerHTML = html;
+                reportListDiv.appendChild(groupDiv);
+            });
+
+        } catch (error) {
+            console.error("Erro ao gerar relatório:", error);
+            reportListDiv.innerHTML = '<div style="color: red;">Erro ao carregar o relatório. Verifique a conexão com o Firebase.</div>';
+        }
+    }
+    
+    btnClearReport.addEventListener('click', async () => {
+        if (confirm("ATENÇÃO: Você tem certeza que deseja limpar o histórico COMPLETO de serviços finalizados? Esta ação é irreversível.")) {
+            reportListDiv.innerHTML = '<div>Limpando histórico...</div>';
+            try {
+                const snapshot = await db.collection(C_COMPLETED).get();
+                const batch = db.batch();
+                snapshot.docs.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+                alert("Histórico de serviços limpo com sucesso.");
+                renderDailyReport();
+            } catch (error) {
+                console.error("Erro ao limpar histórico:", error);
+                alert("Erro ao limpar o histórico. Tente novamente.");
+                renderDailyReport();
+            }
+        }
+    });
+
+
+    // ===============================================
+    // === TELA 3: LÓGICA DO REGISTRO DE PONTO ===
+    // ===============================================
+
+    function renderTimeclockCards() {
+        // ALL_MECHANICS já está carregado pelo listener
+        const allMechanics = [...ALL_MECHANICS].sort((a, b) => a.name.localeCompare(b.name));
+        timeclockList.innerHTML = '';
+
+        if (allMechanics.length === 0) {
+             timeclockList.innerHTML = '<p>Nenhum funcionário cadastrado. Cadastre em Administração.</p>';
+             return;
+        }
+
+        allMechanics.forEach(m => {
+            const status = getMechanicStatus(m);
+            const roleName = getRoleDisplayName(m.role);
+            const queueTimeDisplay = m.queueTime ? new Date(m.queueTime).toLocaleTimeString('pt-BR') : 'N/A';
             
-            await deleteFromDB(C_MECHANICS, fbId);
+            const card = document.createElement('div');
+            card.className = 'timeclock-card';
+            card.dataset.id = m.fbId; // Usa fbId
+            
+            // Verifica se está ativo para desabilitar o botão de Saída/Pausa
+            const isBusy = window.ACTIVE_SERVICES && window.ACTIVE_SERVICES.some(s => s.mechanicId === m.fbId);
+
+            card.innerHTML = `
+                <h3>${m.name} <small>(${roleName})</small></h3>
+                <div class="timeclock-status ${status.class}">${status.text}</div>
+                <small>Na fila desde: ${queueTimeDisplay}</small>
+                <div class="timeclock-buttons">
+                    <button class="btn-clock-in" data-action="chegada" ${m.isAvailable === true ? 'disabled' : ''}>Chegada / Retorno</button>
+                    <button class="btn-clock-out" data-action="saida" ${m.isAvailable === false || isBusy ? 'disabled' : ''}>Pausa / Saída</button>
+                </div>
+            `;
+            timeclockList.appendChild(card);
+            
+            // Adiciona listeners aos botões dentro do card
+            card.querySelector('.btn-clock-in').addEventListener('click', () => handleTimeclock(m.fbId, true));
+            card.querySelector('.btn-clock-out').addEventListener('click', () => handleTimeclock(m.fbId, false));
+        });
+    }
+
+    async function handleTimeclock(mechanicFbId, isClockIn) {
+        const updateData = {};
+        
+        if (isClockIn) {
+            updateData.isAvailable = true;
+            updateData.queueTime = Date.now(); // Entrou, vai para o fim da fila
+        } else {
+            updateData.isAvailable = false;
+            // Não zera queueTime, apenas marca como indisponível
         }
         
-        // --- Gerenciamento de Serviços ---
-        function renderAdminServices() {
-            const services = [...ALL_SERVICES].sort((a, b) => a.name.localeCompare(b.name));
-            listServices.innerHTML = '<ul></ul>';
-            const ul = listServices.querySelector('ul');
-            if (services.length === 0) {
-                ul.innerHTML = "<li>Nenhum serviço cadastrado.</li>";
-                return;
-            }
-            services.forEach(s => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span>${s.name}</span>
-                    <button class="btn-delete" data-fbid="${s.fbId}">Excluir</button>
-                `;
-                ul.appendChild(li);
-            });
-            
-            ul.querySelectorAll('.btn-delete').forEach(btn => {
-                btn.addEventListener('click', (e) => handleDeleteService(e.target.dataset.fbid));
-            });
+        await updateInDB(C_MECHANICS, mechanicFbId, updateData);
+    }
+    
+    // ===============================================
+    // === TELA 4: LÓGICA DE ADMINISTRAÇÃO ===
+    // ===============================================
+
+    function renderAdminLists() {
+        renderAdminMechanics();
+        renderAdminServices();
+    }
+    
+    function renderAdminMechanics() {
+        const ul = adminMechanicsList.querySelector('ul');
+        ul.innerHTML = '';
+        ALL_MECHANICS.forEach(m => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span>${m.name} (${getRoleDisplayName(m.role)})</span>
+                <button class="btn-delete" data-fbid="${m.fbId}">Excluir</button>
+            `;
+            ul.appendChild(li);
+        });
+        ul.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', (e) => handleDeleteMechanic(e.target.dataset.fbid));
+        });
+    }
+    
+    async function handleAddMechanic(event) {
+        event.preventDefault();
+        const name = inputMechanicName.value.trim();
+        const role = selectMechanicRole.value;
+        
+        if (!name || !role) return;
+        
+        // Verifica se o funcionário já existe
+        if (ALL_MECHANICS.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+            alert("Este funcionário já existe.");
+            return;
         }
         
-        async function handleAddService(event) {
-            event.preventDefault();
-            const name = inputServiceName.value.trim();
-            if (!name) return;
-
-            if (ALL_SERVICES.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-                alert("Este serviço já existe.");
-                return;
-            }
-            
-            await addToDB(C_SERVICES, { name: name });
-            
-            inputServiceName.value = '';
-        }
-
-        async function handleDeleteService(fbId) {
-            // Em uma versão real, você checaria se o serviço está em uso antes de deletar
-            if (!confirm("Tem certeza que deseja excluir este serviço?")) return;
-            await deleteFromDB(C_SERVICES, fbId);
-        }
-
-        // ===============================================
-        // === INICIALIZAÇÃO DA APLICAÇÃO ===
-        // ===============================================
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // Setup Listeners de Formulário
-            newServiceForm.addEventListener('submit', handleStartService);
-            mechanicSelect.addEventListener('change', validateForm);
-            serviceSelect.addEventListener('change', validateForm);
-            
-            formMechanics.addEventListener('submit', handleAddMechanic);
-            formServices.addEventListener('submit', handleAddService);
-            
-            // Listeners de exclusão (delegados no renderAdminLists)
-            
-            // Inicia a aplicação e configura os listeners do Firebase
-            initializeApp();
+        // Cria novo funcionário com isAvailable=false (Saída) e queueTime inicial.
+        await addToDB(C_MECHANICS, { 
+            name: name, 
+            role: role, 
+            isAvailable: false, 
+            queueTime: Date.now() 
         });
         
-    </script>
+        inputMechanicName.value = '';
+        selectMechanicRole.value = 'MECHANIC';
+    }
+
+    async function handleDeleteMechanic(fbId) {
+        // Em uma versão real, você checaria se o mecânico está em serviço antes de deletar
+        if (!confirm("Tem certeza que deseja excluir este funcionário?")) return;
+        await deleteFromDB(C_MECHANICS, fbId);
+    }
+
+    function renderAdminServices() {
+        const ul = adminServicesList.querySelector('ul');
+        ul.innerHTML = '';
+        ALL_SERVICES.forEach(s => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span>${s.name}</span>
+                <button class="btn-delete" data-fbid="${s.fbId}">Excluir</button>
+            `;
+            ul.appendChild(li);
+        });
+        ul.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', (e) => handleDeleteService(e.target.dataset.fbid));
+        });
+    }
+
+    async function handleAddService(event) {
+        event.preventDefault();
+        const name = inputServiceName.value.trim();
+        if (!name) return;
+        
+        if (ALL_SERVICES.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+            alert("Este serviço já existe.");
+            return;
+        }
+        
+        await addToDB(C_SERVICES, { name: name });
+        inputServiceName.value = '';
+    }
+
+    async function handleDeleteService(fbId) {
+        // Em uma versão real, você checaria se o serviço está em uso antes de deletar
+        if (!confirm("Tem certeza que deseja excluir este serviço?")) return;
+        await deleteFromDB(C_SERVICES, fbId);
+    }
+    
+    // ===============================================
+    // === INICIALIZAÇÃO DA APLICAÇÃO ===
+    // ===============================================
+    document.addEventListener('DOMContentLoaded', () => {
+        // Setup Listeners de Navegação
+        document.getElementById('nav-painel').addEventListener('click', () => showView('painel'));
+        document.getElementById('nav-report').addEventListener('click', () => showView('report'));
+        document.getElementById('nav-timeclock').addEventListener('click', () => showView('timeclock'));
+        document.getElementById('nav-config').addEventListener('click', () => showView('config'));
+        
+        // Setup Listeners de Formulário
+        document.getElementById('new-service-form-panel').addEventListener('submit', handleStartService); // ID corrigido
+        mechanicSelect.addEventListener('change', validateForm);
+        serviceSelect.addEventListener('change', validateForm);
+        formMechanics.addEventListener('submit', handleAddMechanic);
+        formServices.addEventListener('submit', handleAddService);
+        
+        // Inicia a aplicação e configura os listeners do Firebase
+        initializeApp();
+    });
+</script>
 
 </body>
 </html>
