@@ -541,34 +541,27 @@
     }
 
     async function handleStopService(serviceFbId, mechanicFbId) {
-        if (!confirm("Confirmar a finalização deste serviço?")) return;
-        
-        // 1. Encontra o serviço ativo para coletar os dados
-        const serviceToStop = window.ACTIVE_SERVICES.find(s => s.fbId === serviceFbId);
-        
-        if (serviceToStop) {
-            const now = Date.now();
-            const startTimeStamp = new Date(serviceToStop.startTime).getTime();
-            const endTimeISO = new Date(now).toISOString();
+    if (!confirm("Confirmar a finalização deste serviço?")) return;
+    const serviceToStop = window.ACTIVE_SERVICES.find(s => s.fbId === serviceFbId);
+    if (serviceToStop) {
+        const now = Date.now();
+        const startTimeStamp = new Date(serviceToStop.startTime).getTime();
+        const endTimeISO = new Date(now).toISOString();
 
-            // 2. REGISTRA O SERVIÇO NO HISTÓRICO (C_COMPLETED)
-            const completedService = {
-                ...serviceToStop,
-                fbId: undefined, // Remove o ID do serviço ativo
-                endTime: endTimeISO,
-                durationSeconds: Math.floor((now - startTimeStamp) / 1000),
-                completedAt: now // Para consultas de relatório
-            };
-            await addToDB(C_COMPLETED, completedService);
+        // 2. REGISTRA O SERVIÇO NO HISTÓRICO (C_COMPLETED)
+        const completedService = {
+            ...serviceToStop,
+            endTime: endTimeISO,
+            durationSeconds: Math.floor((now - startTimeStamp) / 1000),
+            completedAt: now
+        };
+        // A CORREÇÃO: Remove a propriedade fbId inteiramente antes de salvar
+        delete completedService.fbId; // <--- ADICIONE ESTA LINHA!
 
-            // 3. ATUALIZA O queueTime do funcionário (vai para o fim da fila)
-            // O updateInDB não espera a resposta de sucesso para ser mais rápido
-            await updateInDB(C_MECHANICS, mechanicFbId, { queueTime: now });
-            
-            // 4. Remove o serviço da lista ativa (automaticamente notifica os outros clientes)
-            await deleteFromDB(C_ACTIVE, serviceFbId);
-        }
+        await addToDB(C_COMPLETED, completedService);
+        // ... (restante do código)
     }
+}
 
     // ===============================================
     // === TELA 2: LÓGICA DO RELATÓRIO DIÁRIO ===
