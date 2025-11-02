@@ -97,11 +97,12 @@
 </head>
 <body>
 
-    <nav>...</nav>
-    <div id="view-painel" class="view-container">...</div>
-    <div id="view-report" class="view-container">...</div>
-    <div id="view-timeclock" class="view-container">...</div>
-    <div id="view-config" class="view-container">...</div>
+    <nav>
+        <button id="nav-painel" class="active" onclick="showView('painel')">Painel de Serviço</button>
+        <button id="nav-report" onclick="showView('report')">Relatório Diário</button>
+        <button id="nav-timeclock" onclick="showView('timeclock')">Registro de Ponto</button>
+        <button id="nav-config" onclick="showView('config')">Administração</button>
+    </nav>
 
     <script>
     // ******************************************************
