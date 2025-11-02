@@ -297,10 +297,14 @@
     /**
      * Lida com a criação de um novo documento no Firestore.
      */
+   // CÓDIGO CORRIGIDO:
     async function addToDB(collectionName, data) {
         try {
-            // Usa a sintaxe v8/compatível: db.collection
-            await db.collection(collectionName).add(data);
+            // 1. Obtém a referência da coleção (collectionRef)
+            const collectionRef = db.collection(collectionName);
+            
+            // 2. Adiciona os dados à coleção
+            await collectionRef.add(data);
         } catch (error) {
             console.error(`Erro ao adicionar em ${collectionName}:`, error);
             alert("Erro ao salvar dados na nuvem.");
