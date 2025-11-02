@@ -552,7 +552,6 @@
     async function handleStopService(serviceFbId, mechanicFbId) {
     if (!confirm("Confirmar a finalização deste serviço?")) return;
     
-    // 1. Encontra o serviço ativo para coletar os dados
     const serviceToStop = window.ACTIVE_SERVICES.find(s => s.fbId === serviceFbId);
     
     if (serviceToStop) {
@@ -560,25 +559,33 @@
         const startTimeStamp = new Date(serviceToStop.startTime).getTime();
         const endTimeISO = new Date(now).toISOString();
 
-        // 2. REGISTRA O SERVIÇO NO HISTÓRICO (C_COMPLETED)
-        const completedService = {
-            ...serviceToStop,
-            endTime: endTimeISO,
-            durationSeconds: Math.floor((now - startTimeStamp) / 1000),
-            completedAt: now // Para consultas de relatório
-        };
-        
-        // CORREÇÃO FINAL: Remove a propriedade fbId (que era o ID do serviço ativo) 
-        // para evitar o erro 'Unsupported field value: undefined' ao salvar o novo documento.
-        delete completedService.fbId; 
-        
-        await addToDB(C_COMPLETED, completedService);
+        // Novo bloco try/catch para debug
+        try {
+            // 2. REGISTRA O SERVIÇO NO HISTÓRICO (C_COMPLETED)
+            const completedService = {
+                ...serviceToStop,
+                endTime: endTimeISO,
+                durationSeconds: Math.floor((now - startTimeStamp) / 1000),
+                completedAt: now
+            };
+            delete completedService.fbId; 
+            await addToDB(C_COMPLETED, completedService);
 
-        // 3. ATUALIZA O queueTime do funcionário (vai para o fim da fila)
-        await updateInDB(C_MECHANICS, mechanicFbId, { queueTime: now });
-        
-        // 4. Remove o serviço da lista ativa
-        await deleteFromDB(C_ACTIVE, serviceFbId);
+            // 3. ATUALIZA O queueTime do funcionário (vai para o fim da fila)
+            await updateInDB(C_MECHANICS, mechanicFbId, { 
+                queueTime: now,
+                isAvailable: true // Garante que ele está marcado como disponível
+            });
+            
+            // 4. Remove o serviço da lista ativa
+            await deleteFromDB(C_ACTIVE, serviceFbId);
+            
+            console.log(`Serviço ${serviceFbId} finalizado com sucesso.`);
+
+        } catch (error) {
+            console.error("ERRO CRÍTICO AO FINALIZAR SERVIÇO:", error);
+            alert("Falha ao finalizar o serviço. Verifique o console.");
+        }
     }
     }
 
