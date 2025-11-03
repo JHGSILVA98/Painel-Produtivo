@@ -233,14 +233,7 @@
 </div>
 
     <script>
-        // Adicione a inicialização da autenticação:
-
-        // Esta linha é crucial, pois define a variável que o seu código usa: db.collection(...)
-        const db = firebase.firestore();
-        // NOVO: Inicializa o AUTH
-        const auth = firebase.auth(); 
-        // Inicializa o Analytics
-        const analytics = firebase.analytics();
+        
     // ******************************************************
     // *** 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
     // ******************************************************
@@ -258,6 +251,15 @@
 
     // Inicializa o Firebase (v9.6.1 de Compatibilidade)
     const app = firebase.initializeApp(firebaseConfig);
+
+    // Adicione a inicialização da autenticação:
+
+        // Esta linha é crucial, pois define a variável que o seu código usa: db.collection(...)
+        const db = firebase.firestore();
+        // NOVO: Inicializa o AUTH
+        const auth = firebase.auth(); 
+        // Inicializa o Analytics
+        const analytics = firebase.analytics();
     
    
 
