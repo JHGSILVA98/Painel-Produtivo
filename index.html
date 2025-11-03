@@ -7,208 +7,351 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
     
     
     <style>
         /* --- ESTILOS GERAIS --- */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
-        h2, h3 { border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #333; }
-        button { padding: 10px 15px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
-        button:disabled { background-color: #6c757d; cursor: not-allowed; }
-        input[type="text"], select { padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; width: 100%; box-sizing: border-box; }
-        .btn-play { background-color: #28a745; }
-        .btn-stop { background-color: #dc3545; }
-        .btn-primary { background-color: #007bff; }
-        .btn-delete { background-color: #7a7a7a; font-size: 14px; padding: 5px 10px; }
-        .btn-secondary { background-color: #6c757d; }
-        .btn-clock-in { background-color: #17a2b8; } 
-        .btn-clock-out { background-color: #ffc107; color: #333; } 
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #f0f2f5; margin: 0; padding: 0; }
+        h2, h3 { border-bottom: 2px solid #007bff;
+        padding-bottom: 8px; color: #333; }
+        button { padding: 10px 15px; border: none;
+        border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px;
+        }
+        button:disabled { background-color: #6c757d; cursor: not-allowed;
+        }
+        input[type="text"], select { padding: 12px; border: 1px solid #ccc; border-radius: 4px;
+        font-size: 16px; width: 100%; box-sizing: border-box; }
+        /* NOVO: Estilo para input de login/senha */
+        input[type="email"], input[type="password"] { padding: 12px; border: 1px solid #ccc; border-radius: 4px;
+        font-size: 16px; width: 100%; box-sizing: border-box; }
+
+        .btn-play { background-color: #28a745;
+        }
+        .btn-stop { background-color: #dc3545;
+        }
+        .btn-primary { background-color: #007bff;
+        }
+        .btn-delete { background-color: #7a7a7a; font-size: 14px; padding: 5px 10px;
+        }
+        .btn-secondary { background-color: #6c757d;
+        }
+        .btn-clock-in { background-color: #17a2b8;
+        } 
+        .btn-clock-out { background-color: #ffc107; color: #333;
+        } 
         /* --- NAVEGAÇÃO --- */
-        nav { background-color: #343a40; padding: 15px 24px; display: flex; gap: 15px; flex-wrap: wrap; }
-        nav button { background-color: #6c757d; font-size: 14px; }
-        nav button.active { background-color: #007bff; box-shadow: 0 0 0 2px rgba(0,123,255,.5); }
-        .view-container { padding: 24px; display: none; }
-        #view-painel { display: block; }
+        nav { background-color: #343a40;
+        padding: 15px 24px; display: flex; gap: 15px; flex-wrap: wrap; }
+        nav button { background-color: #6c757d;
+        font-size: 14px; }
+        nav button.active { background-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0,123,255,.5); }
+        /* NOVO: Estilo do botão de Logout */
+        #nav-logout {
+            margin-left: auto; /* Empurra para a direita */
+            background-color: #f2f2f2;
+            color: #333;
+        }
+
+        .view-container { padding: 24px; display: none;
+        }
+        #view-painel { display: block;
+        }
+        /* === TELA DE LOGIN (NOVO) === */
+        #login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f2f5;
+        }
+        #login-box {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            width: 350px;
+            max-width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        #login-box h2 {
+            text-align: center;
+            color: #343a40;
+            border-bottom: 2px solid #343a40;
+            margin-bottom: 15px;
+        }
+        /* Fim estilos de Login */
+
         /* === TELA 1: PAINEL (GRID - DESKTOP) === */
-        #view-painel .container { display: grid; grid-template-columns: 1fr; gap: 24px; }
-        @media (min-width: 900px) { #view-painel .container { grid-template-columns: 300px 1fr; } }
-        .sidebar { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 24px; }
-        #new-service-form { display: flex; flex-direction: column; gap: 15px; }
-        #available-mechanics-section h3 { border-bottom: 1px dashed #007bff; padding-bottom: 4px; margin-top: 15px; margin-bottom: 10px; }
-        .available-list-group { display: flex; flex-direction: column; gap: 4px; }
-        .mechanic-tag { display: flex; justify-content: space-between; align-items: center; background-color: #e9ecef; color: #333; padding: 8px 12px; border-radius: 4px; font-size: 16px; font-weight: 500; }
-        .mechanic-tag .position { background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 14px; margin-right: 10px; }
-        .mechanic-tag:first-child { border: 2px solid #28a745; background-color: #d4edda; }
-        .available-list-group:empty::after { content: "Nenhum disponível nesta função."; color: #777; font-style: italic; padding: 5px 0;}
-        .main-content { display: flex; flex-direction: column; gap: 15px; }
-        @media (min-width: 900px) { .service-row { display: grid; grid-template-columns: 1.5fr 3fr 1fr 1fr 1fr; align-items: center; gap: 12px; } }
-        .service-row { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .time-display { font-family: 'Courier New', Courier, monospace; font-size: 16px; background-color: #e9ecef; padding: 10px; border-radius: 4px; text-align: center; }
+        #view-painel .container { display: grid;
+        grid-template-columns: 1fr; gap: 24px; }
+        @media (min-width: 900px) { #view-painel .container { grid-template-columns: 300px 1fr;
+        } }
+        .sidebar { background: #fff; padding: 20px; border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 24px; }
+        #new-service-form { display: flex;
+        flex-direction: column; gap: 15px; }
+        #available-mechanics-section h3 { border-bottom: 1px dashed #007bff;
+        padding-bottom: 4px; margin-top: 15px; margin-bottom: 10px; }
+        .available-list-group { display: flex; flex-direction: column;
+        gap: 4px; }
+        .mechanic-tag { display: flex; justify-content: space-between; align-items: center; background-color: #e9ecef;
+        color: #333; padding: 8px 12px; border-radius: 4px; font-size: 16px; font-weight: 500;
+        }
+        .mechanic-tag .position { background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px;
+        font-weight: bold; font-size: 14px; margin-right: 10px; }
+        .mechanic-tag:first-child { border: 2px solid #28a745;
+        background-color: #d4edda; }
+        .available-list-group:empty::after { content: "Nenhum disponível nesta função."; color: #777;
+        font-style: italic; padding: 5px 0;}
+        .main-content { display: flex; flex-direction: column; gap: 15px;
+        }
+        @media (min-width: 900px) { .service-row { display: grid;
+        grid-template-columns: 1.5fr 3fr 1fr 1fr 1fr; align-items: center; gap: 12px;
+        } }
+        .service-row { background-color: #ffffff; padding: 20px; border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .time-display { font-family: 'Courier New', Courier, monospace;
+        font-size: 16px; background-color: #e9ecef; padding: 10px; border-radius: 4px; text-align: center;
+        }
         /* === TELA 2: RELATÓRIO DIÁRIO === */
-        #report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 0; }
-        .mechanic-report-group { background-color: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .mechanic-report-group h3 { border-bottom: 2px solid #28a745; color: #28a745; }
-        .service-report-row { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr; border-bottom: 1px dashed #eee; padding: 10px 0; font-size: 15px; }
-        .report-summary { font-weight: bold; margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc; }
+        #report-header { display: flex;
+        justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 0; }
+        .mechanic-report-group { background-color: #fff;
+        padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .mechanic-report-group h3 { border-bottom: 2px solid #28a745; color: #28a745;
+        }
+        .service-report-row { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr;
+        border-bottom: 1px dashed #eee; padding: 10px 0; font-size: 15px; }
+        .report-summary { font-weight: bold;
+        margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc; }
         /* === TELA 3: REGISTRO DE PONTO === */
-        #view-timeclock .timeclock-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        .timeclock-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
-        .timeclock-card h3 { margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px; font-size: 18px; }
-        .timeclock-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .timeclock-status { font-weight: bold; text-align: center; padding: 5px; border-radius: 4px; }
-        .status-on { background-color: #d4edda; color: #155724; }
-        .status-off { background-color: #f8d7da; color: #721c24; }
-        .status-break { background-color: #fff3cd; color: #856404; }
+        #view-timeclock .timeclock-list { display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .timeclock-card { background: #fff; padding: 20px;
+        border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px;
+        }
+        .timeclock-card h3 { margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px;
+        font-size: 18px; }
+        .timeclock-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        margin-top: 10px; }
+        .timeclock-status { font-weight: bold; text-align: center; padding: 5px; border-radius: 4px;
+        }
+        .status-on { background-color: #d4edda; color: #155724;
+        }
+        .status-off { background-color: #f8d7da; color: #721c24;
+        }
+        .status-break { background-color: #fff3cd; color: #856404;
+        }
         /* === TELA 4: ADMINISTRAÇÃO === */
-        #view-config .config-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .admin-section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .admin-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        .admin-list ul { list-style: none; padding: 0; }
-        .admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        #view-config .config-container { display: grid;
+        grid-template-columns: 1fr 1fr; gap: 24px; }
+        .admin-section { background: #fff; padding: 20px;
+        border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .admin-form { display: flex;
+        flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .admin-list ul { list-style: none;
+        padding: 0; }
+        .admin-list li { display: flex; justify-content: space-between; align-items: center;
+        padding: 10px; border-bottom: 1px solid #eee; }
         /* === AJUSTES PARA MOBILE === */
         @media (max-width: 899px) {
-            .sidebar { position: static; }
-            nav { flex-wrap: wrap; padding: 10px; }
-            nav button { width: calc(50% - 7.5px); margin-bottom: 5px; }
-            .service-row { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "mech mech" "desc desc" "inicio duracao" "btn btn"; gap: 8px; padding: 15px; }
-            .service-row strong { grid-area: mech; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-            .service-row .service-desc { grid-area: desc; font-size: 18px; font-weight: bold; }
-            .service-row > *:nth-child(3) { grid-area: inicio; text-align: left; }
-            .service-row > *:nth-child(4) { grid-area: duracao; text-align: right; }
-            .service-row > *:nth-child(3), .service-row > *:nth-child(4) { background-color: transparent; padding: 0; display: flex; flex-direction: column; }
-            .service-row > *:nth-child(3) span, .service-row > *:nth-child(4) span { background-color: #e9ecef; padding: 8px; border-radius: 4px; }
-            .service-row .btn-stop { grid-area: btn; }
-            #view-config .config-container { grid-template-columns: 1fr; }
-            #report-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .service-report-row { grid-template-columns: 1fr 1fr; grid-template-areas: "servico duracao" "inicio fim"; gap: 5px 10px; padding: 8px 0; }
-            .service-report-row span:nth-child(1) { grid-area: servico; font-weight: bold; }
-            .service-report-row span:nth-child(4) { grid-area: duracao; color: #dc3545; text-align: right; }
-            .service-report-row span:nth-child(2) { grid-area: inicio; font-size: 0.9em; }
-            .service-report-row span:nth-child(3) { grid-area: fim; text-align: right; font-size: 0.9em; }
-            .service-report-row[style] { display: grid; }
-            .service-report-row[style] span:nth-child(1) { grid-area: servico; text-align: left; }
-            .service-report-row[style] span:nth-child(4) { grid-area: duracao; text-align: right; }
-            .service-report-row[style] span:nth-child(2) { grid-area: inicio; text-align: left; }
-            .service-report-row[style] span:nth-child(3) { grid-area: fim; text-align: right; }
-            .admin-list li { flex-direction: column; align-items: flex-start; gap: 5px; }
+            .sidebar { position: static;
+        }
+            nav { flex-wrap: wrap; padding: 10px;
+        }
+            nav button { width: calc(50% - 7.5px);
+        margin-bottom: 5px; }
+            .service-row { display: grid;
+        grid-template-columns: 1fr 1fr; grid-template-areas: "mech mech" "desc desc" "inicio duracao" "btn btn"; gap: 8px; padding: 15px;
+        }
+            .service-row strong { grid-area: mech;
+        border-bottom: 1px solid #eee; padding-bottom: 5px; }
+            .service-row .service-desc { grid-area: desc;
+        font-size: 18px; font-weight: bold; }
+            .service-row > *:nth-child(3) { grid-area: inicio;
+        text-align: left; }
+            .service-row > *:nth-child(4) { grid-area: duracao;
+        text-align: right; }
+            .service-row > *:nth-child(3), .service-row > *:nth-child(4) { background-color: transparent;
+        padding: 0; display: flex; flex-direction: column; }
+            .service-row > *:nth-child(3) span, .service-row > *:nth-child(4) span { background-color: #e9ecef;
+        padding: 8px; border-radius: 4px; }
+            .service-row .btn-stop { grid-area: btn;
+        }
+            #view-config .config-container { grid-template-columns: 1fr;
+        }
+            #report-header { flex-direction: column; align-items: flex-start; gap: 10px;
+        }
+            .service-report-row { grid-template-columns: 1fr 1fr;
+        grid-template-areas: "servico duracao" "inicio fim"; gap: 5px 10px; padding: 8px 0;
+        }
+            .service-report-row span:nth-child(1) { grid-area: servico; font-weight: bold;
+        }
+            .service-report-row span:nth-child(4) { grid-area: duracao; color: #dc3545;
+        text-align: right; }
+            .service-report-row span:nth-child(2) { grid-area: inicio;
+        font-size: 0.9em; }
+            .service-report-row span:nth-child(3) { grid-area: fim;
+        text-align: right; font-size: 0.9em; }
+            .service-report-row[style] { display: grid;
+        }
+            .service-report-row[style] span:nth-child(1) { grid-area: servico; text-align: left;
+        }
+            .service-report-row[style] span:nth-child(4) { grid-area: duracao; text-align: right;
+        }
+            .service-report-row[style] span:nth-child(2) { grid-area: inicio; text-align: left;
+        }
+            .service-report-row[style] span:nth-child(3) { grid-area: fim; text-align: right;
+        }
+            .admin-list li { flex-direction: column; align-items: flex-start;
+        gap: 5px; }
         }
 
         .logo-container {
-    text-align: center; /* Centraliza a imagem dentro do contêiner */
-    padding: 6px 0;    /* Espaçamento acima e abaixo da logo */
-    background-color: #ffffff; /* Fundo branco ou da cor que preferir para destacar */
-    border-bottom: 1px solid #ddd; /* Linha sutil para separar da navegação */
-    }
+        text-align: center;
+        padding: 6px 0;
+        background-color: #ffffff;
+        border-bottom: 1px solid #ddd;
+        }
 
-    .app-logo {
-    max-width: 100px; /* Define um tamanho máximo para a logo (ajuste conforme necessário) */
-    height: auto;     /* Mantém a proporção da imagem */
-    display: block;   /* Garante que o text-align funcione */
-    margin: 0 auto;   /* Centraliza a imagem se ela não preencher o container (embora text-align já resolva) */
-    }
+        .app-logo {
+        max-width: 100px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        }
 
     </style>
 </head>
 <body>
 
-
-    <nav>
-        <button id="nav-painel" class="active" onclick="showView('painel')">Painel de Serviço</button>
-        <button id="nav-report" onclick="showView('report')">Relatório Diário</button>
-        <button id="nav-timeclock" onclick="showView('timeclock')">Registro de Ponto</button>
-        <button id="nav-config" onclick="showView('config')">Administração</button>
-    </nav>
-
-    <div class="logo-container">
-        <img src="https://caa-al.org.br/img/convenios/446_logo.jpg?w=250&fit=crop&ud=1760605299" alt="https://clinicaruniao.com.br/wp-content/uploads/2024/07/clinicar_logo-removebg-preview.png" class="app-logo">
+    <div id="login-container">
+        <div id="login-box">
+            <h2>Acesso Restrito</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Senha" required>
+                <button type="submit" class="btn-primary">Acessar Painel</button>
+                <p id="login-error" style="color: red; text-align: center; display: none; margin-top: 10px;">Email ou senha inválidos.</p>
+            </form>
+            </div>
     </div>
 
-    <div id="view-painel" class="view-container">
-    <div class="container">
-        <div class="sidebar">
-            <h3>Iniciar Novo Serviço</h3>
-            <form id="new-service-form">
-                <select id="mechanic-select" required>
-                    <option value="">-- Selecione um Funcionário --</option>
-                </select>
-                <select id="service-select" required>
-                    <option value="">-- Selecione um Serviço --</option>
-                </select>
-                <button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
-            </form>
 
-            <div id="available-mechanics-section">
-                <h3>Mecânicos Disponíveis</h3>
-                <div id="mechanic-list-general" class="available-list-group"></div>
-                <h3>Alinhadores Disponíveis</h3>
-                <div id="mechanic-list-aligner" class="available-list-group"></div>
-                <h3>Balanceadores Disponíveis</h3>
-                <div id="mechanic-list-balancer" class="available-list-group"></div>
+    <div id="app-content" style="display: none;">
+        
+        <nav>
+            <button id="nav-painel" class="active" onclick="showView('painel')">Painel de Serviço</button>
+            <button id="nav-report" onclick="showView('report')">Relatório Diário</button>
+            <button id="nav-timeclock" onclick="showView('timeclock')">Registro de Ponto</button>
+            <button id="nav-config" onclick="showView('config')">Administração</button>
+            <button id="nav-logout">Sair (Logout)</button>
+        </nav>
+
+        <div class="logo-container">
+            <img src="https://caa-al.org.br/img/convenios/446_logo.jpg?w=250&fit=crop&ud=1760605299" alt="https://clinicaruniao.com.br/wp-content/uploads/2024/07/clinicar_logo-removebg-preview.png" class="app-logo">
+        </div>
+
+        
+        <div id="view-painel" class="view-container" style="display: block;">
+            <div class="container">
+                <div class="sidebar">
+                    <h3>Iniciar Novo Serviço</h3>
+                    <form id="new-service-form">
+                        <select id="mechanic-select" required>
+                            <option value="">-- Selecione um Funcionário --</option>
+                    
+                </select>
+                        <select id="service-select" required>
+                            <option value="">-- Selecione um Serviço --</option>
+                        </select>
+                        <button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
+                    </form>
+
+            
+                    <div id="available-mechanics-section">
+                        <h3>Mecânicos Disponíveis</h3>
+                        <div id="mechanic-list-general" class="available-list-group"></div>
+                        <h3>Alinhadores Disponíveis</h3>
+                        <div id="mechanic-list-aligner" class="available-list-group"></div>
+                        <h3>Balanceadores Disponíveis</h3>
+            
+                    <div id="mechanic-list-balancer" class="available-list-group"></div>
+                    </div>
+                </div>
+
+                <div class="main-content">
+                    <h2>Serviços em Andamento</h2>
+                    <div id="in-progress-list">
+                        </div>
+                </div>
             </div>
         </div>
 
-        <div class="main-content">
-            <h2>Serviços em Andamento</h2>
-            <div id="in-progress-list">
+        <div id="view-report" class="view-container">
+        
+            <div id="report-header">
+                <h2>Relatório Diário: <span id="report-date"></span></h2>
+                <button id="btn-clear-report" class="btn-delete">Limpar Histórico Completo</button>
+            </div>
+            <div id="report-list">
                 </div>
         </div>
-    </div>
-</div>
 
-<div id="view-report" class="view-container">
-    <div id="report-header">
-        <h2>Relatório Diário: <span id="report-date"></span></h2>
-        <button id="btn-clear-report" class="btn-delete">Limpar Histórico Completo</button>
-    </div>
-    <div id="report-list">
+        <div id="view-timeclock" class="view-container">
+            <h2>Registro de Ponto</h2>
+            <div id="timeclock-list" class="timeclock-list">
+                </div>
         </div>
-</div>
 
-<div id="view-timeclock" class="view-container">
-    <h2>Registro de Ponto</h2>
-    <div id="timeclock-list" class="timeclock-list">
-        </div>
-</div>
+        <div id="view-config" class="view-container">
+            <h2>Administração</h2>
+            <div class="config-container">
+                <div class="admin-section">
+                    <h3>Gerenciar Funcionários</h3>
+        
+                    <form id="new-mechanic-form" class="admin-form">
+                        <input type="text" id="input-mechanic-name" placeholder="Nome do Funcionário" required>
+                        <select id="select-mechanic-role" required>
+                            <option value="MECHANIC">Mecânico Geral</option>
+                            <option value="ALIGNER">Alinhador</option>
+            
+                            <option value="BALANCER">Balanceador</option>
+                        </select>
+                        <button type="submit" class="btn-primary">Adicionar Funcionário</button>
+                    </form>
+                    <div class="admin-list" id="admin-mechanics-list">
+                        <ul></ul>
+            
+                </div>
+                </div>
 
-<div id="view-config" class="view-container">
-    <h2>Administração</h2>
-    <div class="config-container">
-        <div class="admin-section">
-            <h3>Gerenciar Funcionários</h3>
-            <form id="new-mechanic-form" class="admin-form">
-                <input type="text" id="input-mechanic-name" placeholder="Nome do Funcionário" required>
-                <select id="select-mechanic-role" required>
-                    <option value="MECHANIC">Mecânico Geral</option>
-                    <option value="ALIGNER">Alinhador</option>
-                    <option value="BALANCER">Balanceador</option>
-                </select>
-                <button type="submit" class="btn-primary">Adicionar Funcionário</button>
-            </form>
-            <div class="admin-list" id="admin-mechanics-list">
-                <ul></ul>
+                <div class="admin-section">
+                    <h3>Gerenciar Serviços</h3>
+                    <form id="new-service-config-form" class="admin-form">
+                        <input type="text" id="input-service-name" placeholder="Nome do Serviço (Ex: Troca de Pneu)" required>
+                        <button type="submit" class="btn-primary">Adicionar Serviço</button>
+            
+                </form>
+                    <div class="admin-list" id="admin-services-list">
+                        <ul></ul>
+                    </div>
+                </div>
             </div>
         </div>
-
-        <div class="admin-section">
-            <h3>Gerenciar Serviços</h3>
-            <form id="new-service-config-form" class="admin-form">
-                <input type="text" id="input-service-name" placeholder="Nome do Serviço (Ex: Troca de Pneu)" required>
-                <button type="submit" class="btn-primary">Adicionar Serviço</button>
-            </form>
-            <div class="admin-list" id="admin-services-list">
-                <ul></ul>
-            </div>
-        </div>
-    </div>
-</div>
-
-    <script>
+    </div> <script>
     // ******************************************************
     // *** 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
     // ******************************************************
     
-    // Seu web app's Firebase configuration
+    // Seu web app's Firebase 
     const firebaseConfig = {
         apiKey: "AIzaSyB6XbdcQyKiZYtVXXwAxRI8cv90GhT-bD8",
         authDomain: "painelprodutividade-dd513.firebaseapp.com",
@@ -218,45 +361,49 @@
         appId: "1:535369536853:web:4d0755d7470b026fa64bdc",
         measurementId: "G-NRZ55SHKN7"
     };
-
     // Inicializa o Firebase (v9.6.1 de Compatibilidade)
     const app = firebase.initializeApp(firebaseConfig);
-    
     // VARIÁVEL ESSENCIAL: Inicializa o Firestore e define a variável 'db'
-    // Esta linha é crucial, pois define a variável que o seu código usa: db.collection(...)
-    const db = firebase.firestore(); 
-    
+    const db = firebase.firestore();
+    // NOVO: Inicializa o AUTH
+    const auth = firebase.auth();
     // Inicializa o Analytics
-    // Nota: O código de Analytics é opcional e pode ser removido se não estiver sendo usado.
     const analytics = firebase.analytics(); 
 
     // Nomes das "Coleções" no Firestore
     const C_MECHANICS = 'mechanics';
     const C_SERVICES = 'services';
     const C_ACTIVE = 'activeServices';
-    const C_COMPLETED = 'completedServices'; 
-
+    const C_COMPLETED = 'completedServices';
     // === ESTADO DA APLICAÇÃO (Dados em memória para uso no frontend) ===
     let activeTimers = {};
     let ALL_MECHANICS = [];
     let ALL_SERVICES = [];
 
-    // === CONSTANTES E ELEMENTOS DO DOM (MANTIDOS) ===
+    // === CONSTANTES E ELEMENTOS DO DOM ===
     const ROLES = {
         MECHANIC: 'Mecânico Geral',
         ALIGNER: 'Alinhador',
         BALANCER: 'Balanceador'
     };
     
-    // Elementos DOM (Certifique-se de que estas variáveis estão definidas acima da função initializeApp)
+    // Elementos DOM PRINCIPAIS
+    const appContent = document.getElementById('app-content'); // NOVO
+    const loginContainer = document.getElementById('login-container'); // NOVO
+    const loginForm = document.getElementById('login-form'); // NOVO
+    const loginEmail = document.getElementById('login-email'); // NOVO
+    const loginPassword = document.getElementById('login-password'); // NOVO
+    const loginError = document.getElementById('login-error'); // NOVO
+
     const viewPainel = document.getElementById('view-painel');
     const viewReport = document.getElementById('view-report');
     const viewTimeclock = document.getElementById('view-timeclock');
     const viewConfig = document.getElementById('view-config');
-    const navPainel = document.getElementById('nav-painel'); // Certifique-se de que os botões de navegação têm IDs
+    const navPainel = document.getElementById('nav-painel');
     const navReport = document.getElementById('nav-report');
     const navTimeclock = document.getElementById('nav-timeclock');
     const navConfig = document.getElementById('nav-config');
+    const navLogout = document.getElementById('nav-logout'); // NOVO
     
     const mechanicSelect = document.getElementById('mechanic-select');
     const serviceSelect = document.getElementById('service-select');
@@ -276,18 +423,18 @@
     const inputServiceName = document.getElementById('input-service-name');
     const adminMechanicsList = document.getElementById('admin-mechanics-list');
     const adminServicesList = document.getElementById('admin-services-list');
-
     // ===============================================
     // === FUNÇÕES DE UTILIDADE E AUXILIARES ===
     // ===============================================
 
     function getRoleDisplayName(roleKey) {
-        return ROLES[roleKey] || roleKey; 
+        return ROLES[roleKey] ||
+    roleKey; 
     }
 
     function isToday(timestamp) {
         const date = new Date(timestamp);
-        const today = new Date();
+    const today = new Date();
         return date.getDate() === today.getDate() &&
                date.getMonth() === today.getMonth() &&
                date.getFullYear() === today.getFullYear();
@@ -295,75 +442,52 @@
 
     function formatTime(totalSeconds) {
         const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
-        return [hours, minutes, seconds].map(unit => String(unit).padStart(2, '0')).join(':');
+    return [hours, minutes, seconds].map(unit => String(unit).padStart(2, '0')).join(':');
     }
 
     function getMechanicStatus(mechanic) {
         if (mechanic.isAvailable === true) {
             return { text: "DISPONÍVEL", class: "status-on" };
-        }
+    }
         if (mechanic.isAvailable === false && mechanic.queueTime) {
             return { text: "FORA / PAUSA", class: "status-break" };
-        }
+    }
         return { text: "FORA DE EXPEDIENTE", class: "status-off" };
     }
 
     // ===============================================
     // === FUNÇÕES DE CONECTIVIDADE (FIREBASE) ===
     // ===============================================
-    
-    /**
-     * Lida com a criação de um novo documento no Firestore.
-     */
-   // CÓDIGO CORRIGIDO:
-    // ===============================================
-// === FUNÇÕES DE CONECTIVIDADE (FIREBASE) ===
-// ===============================================
 
-/**
- * Lida com a criação de um novo documento no Firestore.
- */
     async function addToDB(collectionName, data) {
         try {
-            // CORREÇÃO: Usa a referência explícita da coleção para o SDK de compatibilidade
             const collectionRef = db.collection(collectionName);
-            await collectionRef.add(data);
+    await collectionRef.add(data);
         } catch (error) {
-            // CÓDIGO COMPLETO SEM {...}
             console.error(`Erro ao adicionar em ${collectionName}:`, error);
-            alert("Erro ao salvar dados na nuvem.");
+    alert("Erro ao salvar dados na nuvem.");
         }
     }
 
-    /**
-     * Lida com a atualização de um documento existente.
-     */
     async function updateInDB(collectionName, docId, data) {
         try {
-            // CORREÇÃO: Usa a referência explícita do documento para o SDK de compatibilidade
             const docRef = db.collection(collectionName).doc(docId);
-            await docRef.update(data);
+    await docRef.update(data);
         } catch (error) {
-            // CÓDIGO COMPLETO SEM {...}
             console.error(`Erro ao atualizar em ${collectionName} (${docId}):`, error);
-            alert("Erro ao atualizar dados na nuvem.");
+    alert("Erro ao atualizar dados na nuvem.");
         }
     }
 
-    /**
-     * Lida com a exclusão de um documento.
-     */
     async function deleteFromDB(collectionName, docId) {
         try {
-            // CORREÇÃO: Usa a referência explícita do documento para o SDK de compatibilidade
             const docRef = db.collection(collectionName).doc(docId);
-            await docRef.delete();
+    await docRef.delete();
         } catch (error) {
-            // CÓDIGO COMPLETO SEM {...}
             console.error(`Erro ao deletar em ${collectionName} (${docId}):`, error);
-            alert("Erro ao deletar dados na nuvem.");
+    alert("Erro ao deletar dados na nuvem.");
         }
     }
     
@@ -374,101 +498,153 @@
     function showView(viewId) {
         // ... (Seu código de navegação) ...
         [viewPainel, viewReport, viewTimeclock, viewConfig].forEach(v => v.style.display = 'none');
-        [navPainel, navReport, navTimeclock, navConfig].forEach(n => n.classList.remove('active'));
+    [navPainel, navReport, navTimeclock, navConfig].forEach(n => n.classList.remove('active'));
 
         if (viewId === 'painel') {
             viewPainel.style.display = 'block';
-            navPainel.classList.add('active');
+    navPainel.classList.add('active');
         } else if (viewId === 'report') {
             viewReport.style.display = 'block';
-            navReport.classList.add('active');
+    navReport.classList.add('active');
             renderDailyReport(); // Consulta de uso único
         } else if (viewId === 'timeclock') {
             viewTimeclock.style.display = 'block';
-            navTimeclock.classList.add('active');
+    navTimeclock.classList.add('active');
             renderTimeclockCards(); 
         } else {
             viewConfig.style.display = 'block';
             navConfig.classList.add('active');
-            renderAdminLists(); 
+    renderAdminLists(); 
         }
+    }
+
+    // NOVO: Função para mostrar o conteúdo principal
+    function showAppContent() {
+        loginContainer.style.display = 'none';
+        appContent.style.display = 'block';
+        showView('painel'); // Garante que a primeira vista é o painel
+    }
+
+    // NOVO: Função para mostrar a tela de login
+    function showLoginScreen() {
+        loginContainer.style.display = 'flex';
+        appContent.style.display = 'none';
     }
     
     function setupFirebaseListeners() {
         // 1. LISTENERS MASTER (Funcionários e Serviços)
-        // Usa a sintaxe compatível: db.collection().onSnapshot()
+        // Só são ativados APÓS o login ser confirmado no initializeApp
         db.collection(C_MECHANICS).orderBy('name').onSnapshot(snapshot => {
             ALL_MECHANICS = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
             // Atualiza a visualização do Painel, Ponto e Admin
-            updateAvailableMechanics(window.ACTIVE_SERVICES || []);
+        
+    updateAvailableMechanics(window.ACTIVE_SERVICES || []);
             if (document.getElementById('nav-timeclock').classList.contains('active')) renderTimeclockCards();
             if (document.getElementById('nav-config').classList.contains('active')) renderAdminMechanics();
         });
-        
-        db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
+    db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
             ALL_SERVICES = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
             populateServiceSelect();
             if (document.getElementById('nav-config').classList.contains('active')) renderAdminServices();
         });
-        
-        // 2. LISTENER DE SERVIÇOS ATIVOS (Tempo Real)
+    // 2. LISTENER DE SERVIÇOS ATIVOS (Tempo Real)
         db.collection(C_ACTIVE).onSnapshot(snapshot => {
             const activeServices = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
             window.ACTIVE_SERVICES = activeServices; // Salva na memória global para uso imediato
             
             renderActiveServices(activeServices);
             updateAvailableMechanics(activeServices);
-        });
+    
+    });
+    }
+
+    // NOVO: Função para lidar com o login
+    async function handleLogin(event) {
+        event.preventDefault();
+        const email = loginEmail.value.trim();
+        const password = loginPassword.value.trim();
+        loginError.style.display = 'none';
+
+        if (!email || !password) return;
+
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            // O onAuthStateChanged (abaixo) vai lidar com o sucesso.
+        } catch (error) {
+            console.error("Erro de Login:", error);
+            loginError.textContent = "Email ou senha inválidos.";
+            loginError.style.display = 'block';
+        }
+    }
+
+    // NOVO: Função para lidar com o logout
+    async function handleLogout() {
+        if (confirm("Deseja realmente sair da aplicação?")) {
+            try {
+                await auth.signOut();
+                // O onAuthStateChanged (abaixo) vai lidar com o redirecionamento.
+            } catch (error) {
+                console.error("Erro ao fazer logout:", error);
+                alert("Falha ao sair. Tente novamente.");
+            }
+        }
     }
     
     // Inicialização da Aplicação
     function initializeApp() {
-        // A inicialização agora só precisa garantir que os listeners estão prontos.
-        setupFirebaseListeners();
+        // O core da inicialização agora monitora a autenticação primeiro.
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // Usuário logado
+                showAppContent();
+                // SÓ INICIA OS LISTENERS DE DADOS APÓS O LOGIN
+                setupFirebaseListeners();
+            } else {
+                // Usuário deslogado
+                showLoginScreen();
+            }
+        });
     }
     
     // ===============================================
-    // === RESTANTE DA LÓGICA DO PAINEL, RELATÓRIO, PONTO E ADMIN (COLE AQUI) ===
+    // === RESTANTE DA LÓGICA (MANTIDA) ===
     // ===============================================
 
-    // [COLE AQUI: Todo o restante do seu JavaScript, das funções 'populateServiceSelect' até 'handleDeleteService' e 'document.addEventListener']
-    
     function populateServiceSelect() {
         serviceSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
-        ALL_SERVICES.forEach(s => {
+    ALL_SERVICES.forEach(s => {
             serviceSelect.innerHTML += `<option value="${s.fbId}" data-name="${s.name}">${s.name}</option>`;
         });
     }
 
     function renderMechanicGroup(listElement, group) {
         listElement.innerHTML = '';
-        group.forEach((m, index) => {
+    group.forEach((m, index) => {
             listElement.innerHTML += `
                 <div class="mechanic-tag">
                     <div>
                         <span class="position">${index + 1}</span>
-                        ${m.name}
+                   
+    ${m.name}
                     </div>
                 </div>
             `;
         });
-         if (group.length === 0) {
+    if (group.length === 0) {
              listElement.innerHTML = '<div style="font-style: italic; color: #777; padding: 5px 0;">Nenhum disponível nesta função.</div>';
-        }
+    }
     }
 
     function updateAvailableMechanics(activeServices) {
         const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
-        
-        let availableMechanics = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
+    let availableMechanics = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
 
         const mechanicsGroup = availableMechanics.filter(m => m.role === 'MECHANIC');
-        const alignersGroup = availableMechanics.filter(m => m.role === 'ALIGNER');
+    const alignersGroup = availableMechanics.filter(m => m.role === 'ALIGNER');
         const balancersGroup = availableMechanics.filter(m => m.role === 'BALANCER');
-        
-        const rodizioSort = (a, b) => {
-            return (a.queueTime || 0) - (b.queueTime || 0); 
-        };
+    const rodizioSort = (a, b) => {
+            return (a.queueTime || 0) - (b.queueTime || 0);
+    };
 
         mechanicsGroup.sort(rodizioSort);
         alignersGroup.sort(rodizioSort);
@@ -476,13 +652,11 @@
         
         // Atualiza o <select>
         mechanicSelect.innerHTML = '<option value="">-- Selecione um Funcionário --</option>';
-        
-        [...mechanicsGroup, ...alignersGroup, ...balancersGroup].forEach(m => {
+    [...mechanicsGroup, ...alignersGroup, ...balancersGroup].forEach(m => {
             const roleName = getRoleDisplayName(m.role);
             mechanicSelect.innerHTML += `<option value="${m.fbId}" data-name="${m.name}">${m.name} (${roleName})</option>`;
         });
-
-        // Atualiza as listas visuais
+    // Atualiza as listas visuais
         renderMechanicGroup(availableMechanicsList, mechanicsGroup);
         renderMechanicGroup(availableAlignersList, alignersGroup);
         renderMechanicGroup(availableBalancersList, balancersGroup);
@@ -492,14 +666,14 @@
 
     function validateForm() {
         const isMechanicSelected = mechanicSelect.value !== "";
-        const isServiceSelected = serviceSelect.value !== "";
+    const isServiceSelected = serviceSelect.value !== "";
         playButton.disabled = !isMechanicSelected || !isServiceSelected;
     }
 
     function renderActiveServices(activeServices) {
         // Limpa timers antigos
         Object.values(activeTimers).forEach(clearInterval);
-        activeTimers = {};
+    activeTimers = {};
         inProgressList.innerHTML = '';
 
         // Renderiza novos
@@ -509,26 +683,28 @@
             row.setAttribute('data-fbid', service.fbId); // Usa fbId para referência
             
             const startTime = new Date(service.startTime);
-            const roleName = getRoleDisplayName(service.mechanicRole);
+       
+    const roleName = getRoleDisplayName(service.mechanicRole);
             
             row.innerHTML = `
                 <strong>${service.mechanicName} <small>(${roleName})</small></strong>
                 <span class="service-desc">${service.serviceDesc}</span>
                 <div class="time-display">Início: <span class="start-time">${startTime.toLocaleTimeString('pt-BR')}</span></div>
-                <div class="time-display">Duração: <span class="duration">00:00:00</span></div>
+             
+    <div class="time-display">Duração: <span class="duration">00:00:00</span></div>
                 <button class="btn-stop">■ Finalizar</button>
             `;
             inProgressList.appendChild(row);
 
             const durationDisplay = row.querySelector('.duration');
-            function updateTimer() {
+    function updateTimer() {
                 const now = new Date();
-                const secondsElapsed = Math.floor((now - startTime) / 1000);
+    const secondsElapsed = Math.floor((now - startTime) / 1000);
                 durationDisplay.textContent = formatTime(secondsElapsed);
-            }
+    }
             
             updateTimer();
-            activeTimers[service.fbId] = setInterval(updateTimer, 1000);
+    activeTimers[service.fbId] = setInterval(updateTimer, 1000);
 
             row.querySelector('.btn-stop').addEventListener('click', () => handleStopService(service.fbId, service.mechanicId));
         });
@@ -536,59 +712,54 @@
     
     async function handleStartService(event) {
         event.preventDefault();
-
-        const mechanicFbId = mechanicSelect.value;
+    const mechanicFbId = mechanicSelect.value;
         const mechanicOption = mechanicSelect.options[mechanicSelect.selectedIndex];
         const mechanicName = mechanicOption.dataset.name;
         
         const serviceFbId = serviceSelect.value;
         const serviceOption = serviceSelect.options[serviceSelect.selectedIndex];
-        const serviceDesc = serviceOption.dataset.name;
+    const serviceDesc = serviceOption.dataset.name;
 
         if (!mechanicFbId || !serviceFbId) {
             alert("Por favor, selecione um funcionário e um serviço.");
-            return;
+    return;
         }
         
         const mechanic = ALL_MECHANICS.find(m => m.fbId === mechanicFbId);
-        
-        const newService = {
+    const newService = {
             mechanicId: mechanicFbId, // ID do Firebase do funcionário
             mechanicName: mechanicName,
-            mechanicRole: mechanic ? mechanic.role : 'UNKNOWN',
+            mechanicRole: mechanic ?
+    mechanic.role : 'UNKNOWN',
             serviceId: serviceFbId, // ID do Firebase do serviço
             serviceDesc: serviceDesc,
             startTime: new Date().toISOString()
         };
-
-        // Salva no Firestore (automaticamente notifica todos os usuários)
+    // Salva no Firestore (automaticamente notifica todos os usuários)
         await addToDB(C_ACTIVE, newService);
-
-        serviceSelect.value = '';
+    serviceSelect.value = '';
         mechanicSelect.value = '';
         validateForm();
     }
 
     async function handleStopService(serviceFbId, mechanicFbId) {
     if (!confirm("Confirmar a finalização deste serviço?")) return;
-    
     const serviceToStop = window.ACTIVE_SERVICES.find(s => s.fbId === serviceFbId);
     
     if (serviceToStop) {
         const now = Date.now();
-        const startTimeStamp = new Date(serviceToStop.startTime).getTime();
+    const startTimeStamp = new Date(serviceToStop.startTime).getTime();
         const endTimeISO = new Date(now).toISOString();
-
-        // Novo bloco try/catch para debug
         try {
             // 2. REGISTRA O SERVIÇO NO HISTÓRICO (C_COMPLETED)
             const completedService = {
                 ...serviceToStop,
                 endTime: endTimeISO,
-                durationSeconds: Math.floor((now - startTimeStamp) / 1000),
+                durationSeconds: Math.floor((now - 
+    startTimeStamp) / 1000),
                 completedAt: now
             };
-            delete completedService.fbId; 
+    delete completedService.fbId; 
             await addToDB(C_COMPLETED, completedService);
 
             // 3. ATUALIZA O queueTime do funcionário (vai para o fim da fila)
@@ -596,15 +767,13 @@
                 queueTime: now,
                 isAvailable: true // Garante que ele está marcado como disponível
             });
-            
-            // 4. Remove o serviço da lista ativa
+    // 4. Remove o serviço da lista ativa
             await deleteFromDB(C_ACTIVE, serviceFbId);
-            
-            console.log(`Serviço ${serviceFbId} finalizado com sucesso.`);
+    console.log(`Serviço ${serviceFbId} finalizado com sucesso.`);
 
         } catch (error) {
             console.error("ERRO CRÍTICO AO FINALIZAR SERVIÇO:", error);
-            alert("Falha ao finalizar o serviço. Verifique o console.");
+    alert("Falha ao finalizar o serviço. Verifique o console.");
         }
     }
     }
@@ -615,35 +784,34 @@
     
     async function renderDailyReport() {
         const today = new Date().toLocaleDateString('pt-BR');
-        reportDateSpan.textContent = today;
+    reportDateSpan.textContent = today;
         reportListDiv.innerHTML = '<div>Carregando relatório...</div>';
         
         try {
             // Consulta o Firebase
             const snapshot = await db.collection(C_COMPLETED)
                                      .orderBy('completedAt', 'desc')
-                                     .get();
-                                     
-            const completedServices = snapshot.docs
+                       
+    .get();
+    const completedServices = snapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() }))
                 .filter(s => s.completedAt && isToday(s.completedAt));
-
-            if (completedServices.length === 0) {
+    if (completedServices.length === 0) {
                 reportListDiv.innerHTML = '<div style="margin-top: 20px; font-style: italic; color: #777;">Nenhum serviço finalizado hoje.</div>';
-                return;
+    return;
             }
 
             const reportByMechanic = completedServices.reduce((acc, service) => {
                 const name = `${service.mechanicName} (${getRoleDisplayName(service.mechanicRole)})`;
                 if (!acc[name]) {
                     acc[name] = { totalDuration: 0, services: [] };
-                }
+                
+    }
                 acc[name].services.push(service);
                 acc[name].totalDuration += service.durationSeconds;
                 return acc;
             }, {});
-
-            const sortedMechanicNames = Object.keys(reportByMechanic).sort();
+    const sortedMechanicNames = Object.keys(reportByMechanic).sort();
             reportListDiv.innerHTML = '';
 
             sortedMechanicNames.forEach(name => {
@@ -651,33 +819,35 @@
                 const data = reportByMechanic[name];
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'mechanic-report-group';
-                
-                let html = `<h3>Funcionário: ${name}</h3>`;
+           
+    let html = `<h3>Funcionário: ${name}</h3>`;
                 html += '<div class="service-report-row" style="font-weight: bold; border-bottom: 1px solid #ccc; padding-top: 0;"><span>Serviço</span><span>Início</span><span>Fim</span><span>Duração</span></div>';
                 
                 data.services.forEach(s => {
-                    const startTime = new Date(s.startTime).toLocaleTimeString('pt-BR');
+              
+    const startTime = new Date(s.startTime).toLocaleTimeString('pt-BR');
                     const endTime = new Date(s.endTime).toLocaleTimeString('pt-BR');
                     html += `
                         <div class="service-report-row">
-                            <span>${s.serviceDesc}</span>
+                   
+    <span>${s.serviceDesc}</span>
                             <span>${startTime}</span>
                             <span>${endTime}</span>
                             <span>${formatTime(s.durationSeconds)}</span>
-                        </div>
+       
+    </div>
                     `;
-                });
+    });
 
                 html += `<div class="report-summary">Total de Serviços: ${data.services.length} | Produtividade Total: ${formatTime(data.totalDuration)}</div>`;
                 
                 groupDiv.innerHTML = html;
                 reportListDiv.appendChild(groupDiv);
             });
-
-        } catch (error) {
+    } catch (error) {
             console.error("Erro ao gerar relatório:", error);
-            reportListDiv.innerHTML = '<div style="color: red;">Erro ao carregar o relatório. Verifique a conexão com o Firebase.</div>';
-        }
+    reportListDiv.innerHTML = '<div style="color: red;">Erro ao carregar o relatório. Verifique a conexão com o Firebase.</div>';
+    }
     }
     
     btnClearReport.addEventListener('click', async () => {
@@ -685,7 +855,8 @@
             reportListDiv.innerHTML = '<div>Limpando histórico...</div>';
             try {
                 const snapshot = await db.collection(C_COMPLETED).get();
-                const batch = db.batch();
+          
+    const batch = db.batch();
                 snapshot.docs.forEach((doc) => {
                     batch.delete(doc.ref);
                 });
@@ -696,11 +867,10 @@
                 console.error("Erro ao limpar histórico:", error);
                 alert("Erro ao limpar o histórico. Tente novamente.");
                 renderDailyReport();
-            }
+          
+    }
         }
     });
-
-
     // ===============================================
     // === TELA 3: LÓGICA DO REGISTRO DE PONTO ===
     // ===============================================
@@ -708,10 +878,11 @@
     function renderTimeclockCards() {
         // ALL_MECHANICS já está carregado pelo listener
         const allMechanics = [...ALL_MECHANICS].sort((a, b) => a.name.localeCompare(b.name));
-        timeclockList.innerHTML = '';
+    timeclockList.innerHTML = '';
 
         if (allMechanics.length === 0) {
-             timeclockList.innerHTML = '<p>Nenhum funcionário cadastrado. Cadastre em Administração.</p>';
+             timeclockList.innerHTML = 'Nenhum funcionário cadastrado';
+    <p>Cadastre em Administração.</p>
              return;
         }
 
@@ -721,38 +892,42 @@
             const queueTimeDisplay = m.queueTime ? new Date(m.queueTime).toLocaleTimeString('pt-BR') : 'N/A';
             
             const card = document.createElement('div');
-            card.className = 'timeclock-card';
+         
+    card.className = 'timeclock-card';
             card.dataset.id = m.fbId; // Usa fbId
             
             // Verifica se está ativo para desabilitar o botão de Saída/Pausa
             const isBusy = window.ACTIVE_SERVICES && window.ACTIVE_SERVICES.some(s => s.mechanicId === m.fbId);
 
             card.innerHTML = `
-                <h3>${m.name} <small>(${roleName})</small></h3>
+         
+    <h3>${m.name} <small>(${roleName})</small></h3>
                 <div class="timeclock-status ${status.class}">${status.text}</div>
                 <small>Na fila desde: ${queueTimeDisplay}</small>
                 <div class="timeclock-buttons">
-                    <button class="btn-clock-in" data-action="chegada" ${m.isAvailable === true ? 'disabled' : ''}>Chegada / Retorno</button>
-                    <button class="btn-clock-out" data-action="saida" ${m.isAvailable === false || isBusy ? 'disabled' : ''}>Pausa / Saída</button>
+                    <button class="btn-clock-in" data-action="chegada" ${m.isAvailable === true ?
+    'disabled' : ''}>Chegada / Retorno</button>
+                    <button class="btn-clock-out" data-action="saida" ${m.isAvailable === false ||
+    isBusy ? 'disabled' : ''}>Pausa / Saída</button>
                 </div>
             `;
-            timeclockList.appendChild(card);
+    timeclockList.appendChild(card);
             
             // Adiciona listeners aos botões dentro do card
             card.querySelector('.btn-clock-in').addEventListener('click', () => handleTimeclock(m.fbId, true));
-            card.querySelector('.btn-clock-out').addEventListener('click', () => handleTimeclock(m.fbId, false));
+    card.querySelector('.btn-clock-out').addEventListener('click', () => handleTimeclock(m.fbId, false));
         });
     }
 
     async function handleTimeclock(mechanicFbId, isClockIn) {
         const updateData = {};
-        
-        if (isClockIn) {
+    if (isClockIn) {
             updateData.isAvailable = true;
-            updateData.queueTime = Date.now(); // Entrou, vai para o fim da fila
+            updateData.queueTime = Date.now();
+    // Entrou, vai para o fim da fila
         } else {
             updateData.isAvailable = false;
-            // Não zera queueTime, apenas marca como indisponível
+    // Não zera queueTime, apenas marca como indisponível
         }
         
         await updateInDB(C_MECHANICS, mechanicFbId, updateData);
@@ -764,12 +939,12 @@
 
     function renderAdminLists() {
         renderAdminMechanics();
-        renderAdminServices();
+    renderAdminServices();
     }
     
     function renderAdminMechanics() {
         const ul = adminMechanicsList.querySelector('ul');
-        ul.innerHTML = '';
+    ul.innerHTML = '';
         ALL_MECHANICS.forEach(m => {
             const li = document.createElement('li');
             li.innerHTML = `
@@ -777,7 +952,8 @@
                 <button class="btn-delete" data-fbid="${m.fbId}">Excluir</button>
             `;
             ul.appendChild(li);
-        });
+       
+    });
         ul.querySelectorAll('.btn-delete').forEach(btn => {
             btn.addEventListener('click', (e) => handleDeleteMechanic(e.target.dataset.fbid));
         });
@@ -785,38 +961,36 @@
     
     async function handleAddMechanic(event) {
         event.preventDefault();
-        const name = inputMechanicName.value.trim();
+    const name = inputMechanicName.value.trim();
         const role = selectMechanicRole.value;
         
         if (!name || !role) return;
-        
-        // Verifica se o funcionário já existe
+    // Verifica se o funcionário já existe
         if (ALL_MECHANICS.some(m => m.name.toLowerCase() === name.toLowerCase())) {
             alert("Este funcionário já existe.");
-            return;
+    return;
         }
         
         // Cria novo funcionário com isAvailable=false (Saída) e queueTime inicial.
-        await addToDB(C_MECHANICS, { 
+    await addToDB(C_MECHANICS, { 
             name: name, 
             role: role, 
             isAvailable: false, 
             queueTime: Date.now() 
         });
-        
-        inputMechanicName.value = '';
+    inputMechanicName.value = '';
         selectMechanicRole.value = 'MECHANIC';
     }
 
     async function handleDeleteMechanic(fbId) {
         // Em uma versão real, você checaria se o mecânico está em serviço antes de deletar
         if (!confirm("Tem certeza que deseja excluir este funcionário?")) return;
-        await deleteFromDB(C_MECHANICS, fbId);
+    await deleteFromDB(C_MECHANICS, fbId);
     }
 
     function renderAdminServices() {
         const ul = adminServicesList.querySelector('ul');
-        ul.innerHTML = '';
+    ul.innerHTML = '';
         ALL_SERVICES.forEach(s => {
             const li = document.createElement('li');
             li.innerHTML = `
@@ -824,7 +998,8 @@
                 <button class="btn-delete" data-fbid="${s.fbId}">Excluir</button>
             `;
             ul.appendChild(li);
-        });
+        
+    });
         ul.querySelectorAll('.btn-delete').forEach(btn => {
             btn.addEventListener('click', (e) => handleDeleteService(e.target.dataset.fbid));
         });
@@ -833,41 +1008,47 @@
     async function handleAddService(event) {
         event.preventDefault();
         const name = inputServiceName.value.trim();
-        if (!name) return;
+    if (!name) return;
         
         if (ALL_SERVICES.some(s => s.name.toLowerCase() === name.toLowerCase())) {
             alert("Este serviço já existe.");
-            return;
+    return;
         }
         
         await addToDB(C_SERVICES, { name: name });
-        inputServiceName.value = '';
+    inputServiceName.value = '';
     }
 
     async function handleDeleteService(fbId) {
         // Em uma versão real, você checaria se o serviço está em uso antes de deletar
         if (!confirm("Tem certeza que deseja excluir este serviço?")) return;
-        await deleteFromDB(C_SERVICES, fbId);
+    await deleteFromDB(C_SERVICES, fbId);
     }
     
     // ===============================================
     // === INICIALIZAÇÃO DA APLICAÇÃO ===
     // ===============================================
     document.addEventListener('DOMContentLoaded', () => {
+        // NOVO: Listener do formulário de Login
+        loginForm.addEventListener('submit', handleLogin);
+        // NOVO: Listener do botão de Logout
+        navLogout.addEventListener('click', handleLogout);
+        
         // Setup Listeners de Navegação
         document.getElementById('nav-painel').addEventListener('click', () => showView('painel'));
         document.getElementById('nav-report').addEventListener('click', () => showView('report'));
         document.getElementById('nav-timeclock').addEventListener('click', () => showView('timeclock'));
         document.getElementById('nav-config').addEventListener('click', () => showView('config'));
         
-        // Setup Listeners de Formulário
+   
+    // Setup Listeners de Formulário
         document.getElementById('new-service-form').addEventListener('submit', handleStartService); // ID corrigido
         mechanicSelect.addEventListener('change', validateForm);
         serviceSelect.addEventListener('change', validateForm);
         formMechanics.addEventListener('submit', handleAddMechanic);
-        formServices.addEventListener('submit', handleAddService);
+    formServices.addEventListener('submit', handleAddService);
         
-        // Inicia a aplicação e configura os listeners do Firebase
+        // Inicia a aplicação e configura os listeners do Firebase (inclui o monitoramento de Auth)
         initializeApp();
     });
 </script>
