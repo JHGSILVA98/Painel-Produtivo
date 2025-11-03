@@ -12,6 +12,7 @@
     
     
     <style>
+        /* [ ... ESTILOS OMITIDOS PARA BREVIDADE ... ] */
         /* --- ESTILOS GERAIS --- */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         background-color: #f0f2f5; margin: 0; padding: 0; }
@@ -522,6 +523,7 @@
     function showAppContent() {
         loginContainer.style.display = 'none';
         appContent.style.display = 'block';
+        console.log("SUCESSO: Conteúdo principal da aplicação carregado."); // DEBUG
         showView('painel'); // Garante que a primeira vista é o painel
     }
 
@@ -529,20 +531,29 @@
     function showLoginScreen() {
         loginContainer.style.display = 'flex';
         appContent.style.display = 'none';
+        console.log("DEBUG: Exibindo tela de login."); // DEBUG
     }
     
     function setupFirebaseListeners() {
+        console.log("DEBUG: Iniciando listeners do Firestore (depende das Regras de Segurança)."); // DEBUG
         // 1. LISTENERS MASTER (Funcionários e Serviços)
         // Só são ativados APÓS o login ser confirmado no initializeApp
         db.collection(C_MECHANICS).orderBy('name').onSnapshot(snapshot => {
             ALL_MECHANICS = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+            console.log("DEBUG: Lista de Mecânicos atualizada."); // DEBUG
             // Atualiza a visualização do Painel, Ponto e Admin
         
     updateAvailableMechanics(window.ACTIVE_SERVICES || []);
             if (document.getElementById('nav-timeclock').classList.contains('active')) renderTimeclockCards();
             if (document.getElementById('nav-config').classList.contains('active')) renderAdminMechanics();
+        }, error => {
+            // Este bloco captura erros do listener (geralmente por Regras de Segurança)
+            console.error("ERRO CRÍTICO NO LISTENER DE MECÂNICOS (Regras de Segurança):", error.message);
+            alert("Erro de conexão com o banco de dados. Verifique as Regras de Segurança do Firestore!");
+            auth.signOut(); // Força o logout, pois o app não funcionará sem dados.
         });
-    db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
+
+        db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
             ALL_SERVICES = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
             populateServiceSelect();
             if (document.getElementById('nav-config').classList.contains('active')) renderAdminServices();
@@ -568,11 +579,17 @@
         if (!email || !password) return;
 
         try {
-            await auth.signInWithEmailAndPassword(email, password);
+            console.log("DEBUG: Tentando login com:", email); // DEBUG
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            console.log("SUCESSO NO AUTHENTICATION: Usuário logado com UID:", userCredential.user.uid); // DEBUG
             // O onAuthStateChanged (abaixo) vai lidar com o sucesso.
         } catch (error) {
-            console.error("Erro de Login:", error);
-            loginError.textContent = "Email ou senha inválidos.";
+            console.error("ERRO DE LOGIN:", error); // DEBUG
+            if (error.code === 'auth/operation-not-allowed') {
+                 loginError.textContent = "Erro: O método de login por Email/Senha não está habilitado no seu console do Firebase.";
+            } else {
+                 loginError.textContent = "Falha no login: " + (error.message || "Verifique o console para mais detalhes.");
+            }
             loginError.style.display = 'block';
         }
     }
@@ -592,23 +609,23 @@
     
     // Inicialização da Aplicação
     function initializeApp() {
-        // O core da inicialização agora monitora a autenticação primeiro.
+        console.log("DEBUG: Iniciando o monitoramento de estado de autenticação (onAuthStateChanged)."); // DEBUG
         auth.onAuthStateChanged(user => {
             if (user) {
                 // Usuário logado
+                console.log("DEBUG: onAuthStateChanged detectou usuário logado. Chamando showAppContent.");
                 showAppContent();
                 // SÓ INICIA OS LISTENERS DE DADOS APÓS O LOGIN
                 setupFirebaseListeners();
             } else {
                 // Usuário deslogado
+                console.log("DEBUG: onAuthStateChanged detectou usuário DESLOGADO.");
                 showLoginScreen();
             }
         });
     }
     
-    // ===============================================
-    // === RESTANTE DA LÓGICA (MANTIDA) ===
-    // ===============================================
+    // [ ... RESTANTE DO CÓDIGO (Lógica de Painel, Relatório, etc.) MANTIDO IGUAL ... ]
 
     function populateServiceSelect() {
         serviceSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
@@ -882,7 +899,7 @@
 
         if (allMechanics.length === 0) {
              timeclockList.innerHTML = 'Nenhum funcionário cadastrado';
-    <p>Cadastre em Administração.</p>
+            <p>Cadastre em Administração.</p>
              return;
         }
 
