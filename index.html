@@ -7,10 +7,27 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
     
     
     <style>
+        /* NOVO ESTILO: TELA DE LOGIN */
+        #login-screen {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        #login-screen input {
+            margin-bottom: 15px;
+        }
+        #app-content { 
+            display: none; /* Esconde o painel por padrão */
+        }
         /* --- ESTILOS GERAIS --- */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
         h2, h3 { border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #333; }
@@ -113,12 +130,24 @@
 <body>
 
 
-    <nav>
-        <button id="nav-painel" class="active" onclick="showView('painel')">Painel de Serviço</button>
-        <button id="nav-report" onclick="showView('report')">Relatório Diário</button>
-        <button id="nav-timeclock" onclick="showView('timeclock')">Registro de Ponto</button>
-        <button id="nav-config" onclick="showView('config')">Administração</button>
-    </nav>
+    <div id="login-screen" style="display: block;">
+        <h2>Acesso ao Painel</h2>
+        <form id="login-form">
+            <input type="text" id="login-email" placeholder="E-mail" required>
+            <input type="password" id="login-password" placeholder="Senha" required>
+            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Entrar</button>
+            <p id="login-error" style="color: red; margin-top: 10px; display: none;"></p>
+        </form>
+    </div>
+
+    <div id="app-content">
+        <nav>
+            <button id="nav-painel" class="active" onclick="showView('painel')">Painel de Serviço</button>
+            <button id="nav-report" onclick="showView('report')">Relatório Diário</button>
+            <button id="nav-timeclock" onclick="showView('timeclock')">Registro de Ponto</button>
+            <button id="nav-config" onclick="showView('config')">Administração</button>
+            <button class="btn-secondary" onclick="handleLogout()" style="margin-left: auto;">Sair</button>
+        </nav>
 
     <div class="logo-container">
         <img src="https://caa-al.org.br/img/convenios/446_logo.jpg?w=250&fit=crop&ud=1760605299" alt="https://clinicaruniao.com.br/wp-content/uploads/2024/07/clinicar_logo-removebg-preview.png" class="app-logo">
@@ -204,6 +233,14 @@
 </div>
 
     <script>
+        // Adicione a inicialização da autenticação:
+
+        // Esta linha é crucial, pois define a variável que o seu código usa: db.collection(...)
+        const db = firebase.firestore();
+        // NOVO: Inicializa o AUTH
+        const auth = firebase.auth(); 
+        // Inicializa o Analytics
+        const analytics = firebase.analytics();
     // ******************************************************
     // *** 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
     // ******************************************************
@@ -222,13 +259,17 @@
     // Inicializa o Firebase (v9.6.1 de Compatibilidade)
     const app = firebase.initializeApp(firebaseConfig);
     
-    // VARIÁVEL ESSENCIAL: Inicializa o Firestore e define a variável 'db'
-    // Esta linha é crucial, pois define a variável que o seu código usa: db.collection(...)
-    const db = firebase.firestore(); 
+   
+
+    // NOVOS ELEMENTOS DOM PARA LOGIN
+    const loginScreen = document.getElementById('login-screen');
+    const appContent = document.getElementById('app-content');
+    const loginForm = document.getElementById('login-form');
+    const loginEmail = document.getElementById('login-email');
+    const loginPassword = document.getElementById('login-password');
+    const loginError = document.getElementById('login-error');
+
     
-    // Inicializa o Analytics
-    // Nota: O código de Analytics é opcional e pode ser removido se não estiver sendo usado.
-    const analytics = firebase.analytics(); 
 
     // Nomes das "Coleções" no Firestore
     const C_MECHANICS = 'mechanics';
@@ -421,10 +462,62 @@
         });
     }
     
-    // Inicialização da Aplicação
+            function showAppContent() {
+            loginScreen.style.display = 'none';
+            appContent.style.display = 'block';
+            // Opcional: Garante que estamos na view correta
+            showView('painel'); 
+        }
+
+        function showLoginScreen() {
+            loginScreen.style.display = 'block';
+            appContent.style.display = 'none';
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            loginError.style.display = 'none'; // Limpa erros antigos
+            const email = loginEmail.value;
+            const password = loginPassword.value;
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                // O onAuthStateChanged (na initializeApp) lida com o redirecionamento.
+                loginEmail.value = '';
+                loginPassword.value = '';
+            } catch (error) {
+                console.error("Erro no login:", error);
+                let errorMessage = "Erro ao fazer login. Verifique o e-mail/senha.";
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = "Usuário não encontrado.";
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = "Senha incorreta.";
+                }
+                loginError.textContent = errorMessage;
+                loginError.style.display = 'block';
+            }
+        }
+
+        function handleLogout() {
+            if (confirm("Deseja realmente sair da aplicação?")) {
+                auth.signOut();
+                // O onAuthStateChanged lida com o retorno à tela de login.
+            }
+        }
+
+        // Inicialização da Aplicação
     function initializeApp() {
-        // A inicialização agora só precisa garantir que os listeners estão prontos.
-        setupFirebaseListeners();
+        // ESSENCIAL: Monitora o estado de autenticação (logado ou deslogado)
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // USUÁRIO LOGADO: Mostra o painel, esconde o login
+                showAppContent();
+                setupFirebaseListeners(); // Inicia a conexão com o Firestore
+            } else {
+                // USUÁRIO DESLOGADO: Esconde o painel, mostra o login
+                showLoginScreen();
+            }
+        });
     }
     
     // ===============================================
@@ -743,6 +836,12 @@
             card.querySelector('.btn-clock-out').addEventListener('click', () => handleTimeclock(m.fbId, false));
         });
     }
+
+            // Setup Listeners de Formulário
+        document.getElementById('new-service-form').addEventListener('submit', handleStartService);
+        // NOVO: Listener de Login
+        loginForm.addEventListener('submit', handleLogin);
+        // ... (o restante dos listeners)
 
     async function handleTimeclock(mechanicFbId, isClockIn) {
         const updateData = {};
