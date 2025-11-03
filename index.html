@@ -23,7 +23,9 @@
             text-align: center;
         }
         #login-screen input {
-            margin-bottom: 15px;
+        width: 100%; /* ADICIONE ISTO para forçar a largura total */
+        margin-bottom: 15px;
+        box-sizing: border-box; /* Isto é importante para que o padding não estoure a largura de 100% */
         }
         #app-content { 
             display: none; /* Esconde o painel por padrão */
