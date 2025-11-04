@@ -742,55 +742,79 @@
 
     function renderTrackingView() {
     // 1. Renderizar Serviços em Andamento (com Placa e Modelo)
-    trackingInProgressList.innerHTML = ALL_IN_PROGRESS.map(service => {
-        const mechanic = ALL_MECHANICS.find(m => m.fbId === service.mechanicId) || { name: 'Desconhecido' };
-        const serviceType = ALL_SERVICES.find(s => s.fbId === service.serviceId) || { name: 'Desconhecido' };
-        
-        return `
+    // CORREÇÃO: Usando window.ACTIVE_SERVICES (que é atualizado pelo Firebase) 
+    // em vez de ALL_IN_PROGRESS (que estava sempre vazio).
+    const activeServices = window.ACTIVE_SERVICES || [];
+    
+    if (activeServices.length > 0) {
+        trackingInProgressList.innerHTML = activeServices.map(service => {
+            // Busca nomes dos mecânicos e serviços a partir dos arrays globais
+            const mechanic = ALL_MECHANICS.find(m => m.fbId === service.mechanicId) || { name: 'Desconhecido' };
+            // Tenta buscar o nome do serviço no cadastro, senão usa a descrição salva
+            const serviceType = ALL_SERVICES.find(s => s.fbId === service.serviceId) || { name: service.serviceDesc };
+            
+            // CORREÇÃO: Formata a data de início (que é uma string ISO) para Hora Local
+            // A função formatTime() era para durações, não para data/hora.
+            const startTimeStr = service.startTime ? new Date(service.startTime).toLocaleTimeString('pt-BR') : 'N/A';
+
+            return `
             <div class="tracking-card">
                 <p><strong>${mechanic.name}</strong> em Serviço:</p>
-                <p><strong>Carro:</strong> ${service.carModel} (${service.carPlate})</p>
+                <p><strong>Carro:</strong> ${service.carModel || 'N/A'} (${service.carPlate || 'N/A'})</p>
                 <p><strong>Serviço:</strong> ${serviceType.name}</p>
-                <p>Início: ${formatTime(service.startTime)}</p>
-                </div>
-        `;
-    }).join('');
+                <p>Início: ${startTimeStr}</p>
+            </div>
+            `;
+        }).join('');
+    } else {
+        // Adiciona uma mensagem se não houver serviços
+        trackingInProgressList.innerHTML = '<p style="font-style: italic; color: #777;">Nenhum serviço em andamento no momento.</p>';
+    }
 
 
     // 2. Renderizar Mecânicos Disponíveis (Por Categoria)
     trackingAvailableMechanics.innerHTML = '';
-    const available = ALL_MECHANICS.filter(m => m.status === 'available');
     
-    // Agrupar por Categoria (assumindo que o mecânico tem uma propriedade 'category')
+    // CORREÇÃO: Filtra usando m.isAvailable === true (o correto) 
+    // em vez de m.status === 'available' (que não existe).
+    // Também adiciona a verificação para garantir que ele não esteja em um serviço ativo.
+    const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
+    const available = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
+
+    // CORREÇÃO: Agrupa por 'role' (função) em vez de 'category' (que não existe)
+    // e usa a função getRoleDisplayName() que você já tinha.
     const grouped = available.reduce((acc, mech) => {
-        const cat = mech.category || 'Geral';
+        const cat = getRoleDisplayName(mech.role); // Usando a função existente
         if (!acc[cat]) acc[cat] = [];
         acc[cat].push(mech.name);
         return acc;
     }, {});
 
+    let availableHtml = '';
+    // Gera o HTML para as categorias
     for (const category in grouped) {
-        trackingAvailableMechanics.innerHTML += `
-            <h4>${category}</h4>
-            <ul>${grouped[category].map(name => `<li>${name}</li>`).join('')}</ul>
+        availableHtml += `
+        <h4>${category}</h4>
+        <ul>${grouped[category].map(name => `<li>${name}</li>`).join('')}</ul>
         `;
     }
     
-    // 3. Renderizar Próximos Serviços (Requer Nova Lógica de Fila)
-    // Para simplificar, vou renderizar a lista de serviços existentes por tipo (Mecânico, Balanceamento, etc.)
-    // **************** ATENÇÃO: Esta é uma LÓGICA DE DADOS FICTÍCIA ****************
-    // Se você tiver uma coleção 'C_QUEUE_SERVICES', você a buscará aqui.
-    // Por enquanto, farei uma lista estática.
+    // Adiciona o HTML ou uma mensagem de "nenhum disponível"
+    if (availableHtml === '') {
+        trackingAvailableMechanics.innerHTML = '<p style="font-style: italic; color: #777;">Nenhum mecânico disponível.</p>';
+    } else {
+        trackingAvailableMechanics.innerHTML = availableHtml;
+    }
+
+    // 3. Renderizar Próximos Serviços (Fila)
+    // CORREÇÃO: Removendo dados fictícios (placeholders)
+    // Esta funcionalidade (fila de espera) não está implementada no seu código.
+    // O código anterior mostrava dados falsos ("Carro X", "Carro Y").
+    // Este novo texto informa que a função não está implementada.
     trackingNextServices.innerHTML = `
-        <div style="border-bottom: 1px solid #ccc; padding-bottom: 10px;">
-            <h4>Serviço Mecânico</h4>
-            <p>1. Carro X (ABC-1234)</p>
-            <p>2. Carro Y (DEF-5678)</p>
-        </div>
-        <div>
-            <h4>Balanceamento/Alinhamento</h4>
-            <p>1. Carro Z (GHI-9012)</p>
-        </div>
+        <p style="font-style: italic; color: #777;">
+            A funcionalidade de "Fila de Próximos Serviços" não está implementada.
+        </p>
     `;
     }
     
