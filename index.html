@@ -686,6 +686,12 @@
     function validateForm() {
         const isMechanicSelected = mechanicSelect.value !== "";
         const isServiceSelected = serviceSelect.value !== "";
+            // NOVO: Verifica se os campos de carro foram preenchidos
+        const carPlateValid = carPlateInput.value.trim() !== '';
+        const carModelValid = carModelInput.value.trim() !== '';
+        
+        // O botão deve ser habilitado SOMENTE se TUDO for válido
+        const formValid = mechanicValid && serviceValid && carPlateValid && carModelValid;
         playButton.disabled = !isMechanicSelected || !isServiceSelected;
     }
 
