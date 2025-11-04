@@ -244,7 +244,7 @@
         </div>
 </div>
 
-<div id="view-tracking" class="view" style="display: none;">
+<div id="view-tracking" class="view-container">
     <h2>Acompanhamento de Serviços</h2>
 
     <section>
@@ -1139,6 +1139,8 @@
         serviceSelect.addEventListener('change', validateForm);
         formMechanics.addEventListener('submit', handleAddMechanic);
         formServices.addEventListener('submit', handleAddService);
+        carPlateInput.addEventListener('input', validateForm); 
+        carModelInput.addEventListener('input', validateForm);
         
         // Inicia a aplicação e configura os listeners do Firebase
         initializeApp();
