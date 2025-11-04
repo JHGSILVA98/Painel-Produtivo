@@ -684,16 +684,20 @@
     }
 
     function validateForm() {
-        const isMechanicSelected = mechanicSelect.value !== "";
-        const isServiceSelected = serviceSelect.value !== "";
-            // NOVO: Verifica se os campos de carro foram preenchidos
-        const carPlateValid = carPlateInput.value.trim() !== '';
-        const carModelValid = carModelInput.value.trim() !== '';
-        
-        // O botão deve ser habilitado SOMENTE se TUDO for válido
-        const formValid = mechanicValid && serviceValid && carPlateValid && carModelValid;
-        playButton.disabled = !isMechanicSelected || !isServiceSelected;
-    }
+    // Verifica os campos de seleção existentes
+    const isMechanicSelected = mechanicSelect.value !== "" && mechanicSelect.value !== "0";
+    const isServiceSelected = serviceSelect.value !== "" && serviceSelect.value !== "0";
+    
+    // Verifica se os novos campos de carro foram preenchidos (remove espaços em branco)
+    const carPlateValid = carPlateInput.value.trim() !== '';
+    const carModelValid = carModelInput.value.trim() !== ''; 
+
+    // O formulário é válido SOMENTE se TODAS as condições forem verdadeiras
+    const formValid = isMechanicSelected && isServiceSelected && carPlateValid && carModelValid;
+
+    // Atualiza o estado do botão 'play-button' (ID 1793)
+    playButton.disabled = !formValid;
+}
 
     function renderActiveServices(activeServices) {
         // Limpa timers antigos
