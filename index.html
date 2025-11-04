@@ -1231,6 +1231,30 @@
             return;
         }
 
+        async function handleStartFromQueue(queueFbId) { // Certifique-se de que é ASYNC!
+            if (!confirm("Deseja iniciar o serviço deste veículo agora?")) return;
+
+            // 1. Encontra o item da fila
+            const queueItem = ALL_QUEUE.find(item => item.fbId === queueFbId);
+            if (!queueItem) {
+                alert("Item da fila não encontrado.");
+                return;
+            }
+            
+            // 2. Lógica de transição (que você enviou)
+            alert("Agora selecione o Mecânico e o Serviço no formulário 'Iniciar Novo Serviço'. Os dados do carro foram copiados.");
+            
+            // Copia os dados para o formulário de Iniciar Novo Serviço
+            document.getElementById('car-plate').value = queueItem.carPlate;
+            document.getElementById('car-model').value = queueItem.carModel;
+            
+            // 3. Remove da fila (DELETE)
+            await deleteFromDB(C_QUEUE_SERVICES, queueFbId); // await só funciona em função async
+            
+            // Redireciona para o painel de serviço (se não estiver já)
+            showView('painel'); 
+        } // <--- CHAVE DE FECHAMENTO QUE ESTAVA FALTANDO OU INCORRETA!
+
         ALL_QUEUE.forEach(item => {
             // Mapeia os IDs de serviço para os nomes
             const serviceNames = item.serviceIds.map(id => {
@@ -1263,29 +1287,6 @@
         });
     }
 
-        async function handleStartFromQueue(queueFbId) { // Certifique-se de que é ASYNC!
-            if (!confirm("Deseja iniciar o serviço deste veículo agora?")) return;
-
-            // 1. Encontra o item da fila
-            const queueItem = ALL_QUEUE.find(item => item.fbId === queueFbId);
-            if (!queueItem) {
-                alert("Item da fila não encontrado.");
-                return;
-            }
-            
-            // 2. Lógica de transição (que você enviou)
-            alert("Agora selecione o Mecânico e o Serviço no formulário 'Iniciar Novo Serviço'. Os dados do carro foram copiados.");
-            
-            // Copia os dados para o formulário de Iniciar Novo Serviço
-            document.getElementById('car-plate').value = queueItem.carPlate;
-            document.getElementById('car-model').value = queueItem.carModel;
-            
-            // 3. Remove da fila (DELETE)
-            await deleteFromDB(C_QUEUE_SERVICES, queueFbId); // await só funciona em função async
-            
-            // Redireciona para o painel de serviço (se não estiver já)
-            showView('painel'); 
-        } // <--- CHAVE DE FECHAMENTO QUE ESTAVA FALTANDO OU INCORRETA!
 
         
 
