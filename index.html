@@ -216,6 +216,41 @@
                 <input type="text" id="car-model" required>
                 <button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
             </form>
+            <h2>Painel de Serviço</h2>
+    
+            <div style="display: flex; gap: 20px;">
+                
+                <div style="flex: 1;">
+                    <h3>Iniciar Novo Serviço</h3>
+                    </div>
+
+                <div style="flex: 1;">
+                    <h3>Registrar Entrada do Veículo (Fila)</h3>
+                    <form id="new-queue-form">
+                        
+                        <label for="queue-car-plate">Placa do Carro:</label>
+                        <input type="text" id="queue-car-plate" required>
+                        
+                        <label for="queue-car-model">Modelo do Carro:</label>
+                        <input type="text" id="queue-car-model" required>
+
+                        <label for="queue-services">Serviços a Realizar:</label>
+                        <select id="queue-services" multiple required style="min-height: 100px;">
+                            </select>
+
+                        <button type="submit" class="btn-primary" style="margin-top: 15px;">Adicionar à Fila</button>
+                    </form>
+                </div>
+
+            </div>
+            
+            <h3 style="margin-top: 30px;">Fila de Espera</h3>
+            <div id="queue-list" class="service-list">
+                </div>
+            
+            <h3 style="margin-top: 30px;">Serviços em Andamento</h3>
+            <div id="in-progress-list" class="service-list">
+                </div>
 
             <div id="available-mechanics-section">
                 <h3>Mecânicos Disponíveis</h3>
@@ -350,8 +385,18 @@
     // Nomes das "Coleções" no Firestore
     const C_MECHANICS = 'mechanics';
     const C_SERVICES = 'services';
+    const C_QUEUE_SERVICES = 'queue_services'; // Nova coleção no Firebase
     const C_ACTIVE = 'activeServices';
     const C_COMPLETED = 'completedServices'; 
+
+    // ... (Variáveis DOM existentes)
+    const queueForm = document.getElementById('new-queue-form');
+    const queueCarPlateInput = document.getElementById('queue-car-plate');
+    const queueCarModelInput = document.getElementById('queue-car-model');
+    const queueServicesSelect = document.getElementById('queue-services');
+    const queueList = document.getElementById('queue-list');
+
+    
 
     // === ESTADO DA APLICAÇÃO (Dados em memória para uso no frontend) ===
     let activeTimers = {};
@@ -359,7 +404,8 @@
     let ALL_SERVICES = [];
     let CURRENT_USER = null; // ESSENCIAL: Declaração global
     const ALL_IN_PROGRESS = []; // ESSENCIAL: Inicialização do Array
-    
+    // ... (Arrays existentes)
+    const ALL_QUEUE = []; // NOVO: Array para guardar a fila
 
     // === CONSTANTES E ELEMENTOS DO DOM (MANTIDOS) ===
     const ROLES = {
@@ -547,6 +593,22 @@
             updateAvailableMechanics(window.ACTIVE_SERVICES || []);
             if (document.getElementById('nav-timeclock').classList.contains('active')) renderTimeclockCards();
             if (document.getElementById('nav-config').classList.contains('active')) renderAdminMechanics();
+        });
+            // NOVO: Listener para a FILA DE SERVIÇOS (C_QUEUE_SERVICES)
+        db.collection(C_QUEUE_SERVICES).orderBy('queuedAt').onSnapshot(snapshot => {
+            ALL_QUEUE.length = 0; // Limpa o array
+            snapshot.forEach(doc => {
+                ALL_QUEUE.push({ fbId: doc.id, ...doc.data() });
+            });
+            
+            // Renderiza a fila e atualiza o select de serviços
+            renderQueueList(); 
+            populateQueueServicesSelect(); // Esta função é nova (Passo 2.F)
+            
+            // Se você quiser que a tela de acompanhamento também use dados em tempo real:
+            if (document.getElementById('view-tracking').style.display === 'block') {
+                renderTrackingView();
+            }
         });
         
         db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
@@ -863,6 +925,38 @@
         validateForm();
     }
 
+    async function handleAddToQueue(event) {
+    event.preventDefault();
+
+    const carPlate = queueCarPlateInput.value.trim().toUpperCase();
+    const carModel = queueCarModelInput.value.trim();
+    
+    // Pega todos os IDs dos serviços selecionados no select múltiplo
+    const selectedServiceIds = Array.from(queueServicesSelect.options)
+        .filter(option => option.selected)
+        .map(option => option.value);
+
+    if (selectedServiceIds.length === 0) {
+        alert("Selecione ao menos um serviço para adicionar à fila.");
+        return;
+    }
+
+    const queueData = {
+        carPlate: carPlate,
+        carModel: carModel,
+        serviceIds: selectedServiceIds, // Array de IDs
+        queuedAt: new Date().toISOString(), // Timestamp para a ordem
+        addedBy: CURRENT_USER 
+    };
+
+    await addToDB(C_QUEUE_SERVICES, queueData);
+
+    // Limpa o formulário
+    queueCarPlateInput.value = '';
+    queueCarModelInput.value = '';
+    Array.from(queueServicesSelect.options).forEach(option => option.selected = false);
+    }
+
     async function handleStopService(serviceFbId, mechanicFbId) {
     if (!confirm("Confirmar a finalização deste serviço?")) return;
     
@@ -1130,6 +1224,86 @@
         });
     }
 
+        function renderQueueList() {
+        queueList.innerHTML = '';
+        if (ALL_QUEUE.length === 0) {
+            queueList.innerHTML = '<p>Nenhum veículo na fila de espera.</p>';
+            return;
+        }
+
+        ALL_QUEUE.forEach(item => {
+            // Mapeia os IDs de serviço para os nomes
+            const serviceNames = item.serviceIds.map(id => {
+                const service = ALL_SERVICES.find(s => s.fbId === id);
+                return service ? service.name : 'Serviço Desconhecido';
+            }).join(', ');
+            
+            const html = `
+                <div class="queue-item">
+                    <p><strong>Placa:</strong> ${item.carPlate} | <strong>Modelo:</strong> ${item.carModel}</p>
+                    <p><strong>Serviços:</strong> ${serviceNames}</p>
+                    <p>Adicionado em: ${formatTime(item.queuedAt)}</p>
+                    
+                    <button onclick="handleStartFromQueue('${item.fbId}')" class="btn-secondary" style="margin-top: 10px;">
+                        Iniciar Serviço
+                    </button>
+                </div>
+            `;
+            queueList.innerHTML += html;
+        });
+    }
+
+        function populateQueueServicesSelect() {
+        queueServicesSelect.innerHTML = '';
+        ALL_SERVICES.forEach(service => {
+            const option = document.createElement('option');
+            option.value = service.fbId;
+            option.textContent = service.name;
+            queueServicesSelect.appendChild(option);
+        });
+    }
+
+        async function handleStartFromQueue(queueFbId) {
+        if (!confirm("Deseja iniciar o serviço deste veículo agora?")) return;
+
+        // 1. Encontra o item da fila
+        const queueItem = ALL_QUEUE.find(item => item.fbId === queueFbId);
+        if (!queueItem) {
+            alert("Item da fila não encontrado.");
+            return;
+        }
+
+        // 2. Monta os dados para o serviço em andamento
+        const serviceData = {
+            carPlate: queueItem.carPlate,
+            carModel: queueItem.carModel,
+            startTime: new Date().toISOString(),
+            status: 'in-progress',
+            startedBy: CURRENT_USER,
+            // *** ATENÇÃO ***: O serviço precisa de mechanicId e serviceId (singular) para ser iniciado.
+            // Como ele tem serviceIds (plural), você terá que fazer uma escolha ou
+            // Mover para uma lógica de *Múltiplos Serviços* em andamento.
+            // POR ENQUANTO, VAMOS MOVER SÓ COM A PLACA/MODELO E DEIXAR PENDENTE A ATRIBUIÇÃO DE MECÂNICO.
+            
+            // Para simplificar, vamos obrigar o usuário a ATRIBUIR O MECÂNICO E O SERVIÇO ANTES DE INICIAR.
+            // Se você quiser continuar com esta lógica de 'iniciar da fila',
+            // você precisará de um formulário pop-up para o usuário escolher o mecânico.
+            // Se não, o item deve ser movido para o formulário de 'Iniciar Novo Serviço'.
+            
+            // VERSÃO SIMPLES (REQUER ESCOLHA MANUAL NO PAINEL):
+            alert("Agora selecione o Mecânico e o Serviço no formulário 'Iniciar Novo Serviço'. Os dados do carro foram copiados.");
+            
+            // Copia os dados para o formulário de Iniciar Novo Serviço
+            document.getElementById('car-plate').value = queueItem.carPlate;
+            document.getElementById('car-model').value = queueItem.carModel;
+            
+            // 3. Remove da fila (DELETE)
+            await deleteFromDB(C_QUEUE_SERVICES, queueFbId);
+            
+            // Redireciona para o painel de serviço (se não estiver já)
+            showView('painel'); 
+    }
+
     async function handleAddService(event) {
         event.preventDefault();
         const name = inputServiceName.value.trim();
@@ -1156,6 +1330,11 @@
     document.addEventListener('DOMContentLoaded', () => {
         // Setup Listeners de Navegação
         document.getElementById('nav-painel').addEventListener('click', () => showView('painel'));
+                // ...
+        document.getElementById('new-service-form').addEventListener('submit', handleStartService);
+        // NOVO: Listener do formulário de fila
+        queueForm.addEventListener('submit', handleAddToQueue); 
+        // ...
         document.getElementById('nav-report').addEventListener('click', () => showView('report'));
         document.getElementById('nav-timeclock').addEventListener('click', () => showView('timeclock'));
         document.getElementById('nav-config').addEventListener('click', () => showView('config'));
