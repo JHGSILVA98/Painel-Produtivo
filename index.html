@@ -509,9 +509,9 @@
         if (viewId === 'painel') {
             viewPainel.style.display = 'block';
             navPainel.classList.add('active');
-        } else if (viewName === 'tracking') { // NOVO PONTO DE CONEXÃO
-        viewTracking.style.display = 'block';
-        navTracking.classList.add('active');
+        } else if (viewId === 'tracking') { // NOVO PONTO DE CONEXÃO
+            viewTracking.style.display = 'block';
+            navTracking.classList.add('active');
         renderTrackingView(); // CHAMA A FUNÇÃO DE RENDERIZAÇÃO
         }else if (viewId === 'report') {
             viewReport.style.display = 'block';
