@@ -244,7 +244,7 @@
         </div>
 </div>
 
-<div id="view-tracking" class="view">
+<div id="view-tracking" class="view" style="display: none;">
     <h2>Acompanhamento de Serviços</h2>
 
     <section>
@@ -378,9 +378,7 @@
     const viewTracking = document.getElementById('view-tracking'); // Nova view
     const navTracking = document.getElementById('nav-tracking'); // Novo botão
 
-    // Novos inputs do formulário
-    const carPlateInput = document.getElementById('car-plate');
-    const carModelInput = document.getElementById('car-model');
+    
 
     // Containers de destino para a nova view
     const trackingInProgressList = document.getElementById('tracking-in-progress-list');
@@ -390,6 +388,9 @@
     
     const mechanicSelect = document.getElementById('mechanic-select');
     const serviceSelect = document.getElementById('service-select');
+    // Novos inputs do formulário
+    const carPlateInput = document.getElementById('car-plate');
+    const carModelInput = document.getElementById('car-model');
     const playButton = document.getElementById('play-button');
     const inProgressList = document.getElementById('in-progress-list');
     const availableMechanicsList = document.getElementById('mechanic-list-general');
@@ -506,6 +507,12 @@
         [viewPainel, viewReport, viewTimeclock, viewConfig].forEach(v => v.style.display = 'none');
         [navPainel, navReport, navTimeclock, navConfig].forEach(n => n.classList.remove('active'));
 
+        // 1. Esconder todas as views
+        // CERTIFIQUE-SE QUE TODAS ESTÃO AQUI:
+        [viewPainel, viewReport, viewTimeclock, viewConfig, viewTracking].forEach(v => v.style.display = 'none');
+        
+        // 2. Remover a classe 'active' de todos os botões
+        [navPainel, navReport, navTimeclock, navConfig, navTracking].forEach(n => n.classList.remove('active'));
         if (viewId === 'painel') {
             viewPainel.style.display = 'block';
             navPainel.classList.add('active');
