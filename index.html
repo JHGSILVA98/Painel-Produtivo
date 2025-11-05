@@ -646,12 +646,17 @@ continue;
 
 map.items.forEach(itemData => {
 const tempDiv = document.createElement('div');
-tempDiv.innerHTML = itemData.html;
-const itemElement = tempDiv.firstChild;
+tempDiv.innerHTML = itemData.html.trim();
+const itemElement = tempDiv.firstElementChild;
 
-// Anexa o listener
-itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
+// Verifica se o elemento foi criado corretamente
+if (itemElement) {
+const button = itemElement.querySelector('.start-queue-item-btn');
+if (button) {
+button.addEventListener('click', () => handleStartFromQueue(itemData.fbId));
+}
 map.element.appendChild(itemElement);
+}
 });
 }
 }
