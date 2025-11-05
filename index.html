@@ -1370,30 +1370,30 @@
     // === INICIALIZAÇÃO DA APLICAÇÃO ===
     // ===============================================
     document.addEventListener('DOMContentLoaded', () => {
-        // Setup Listeners de Navegação
-        document.getElementById('nav-painel').addEventListener('click', () => showView('painel'));
-                // ...
-        document.getElementById('new-service-form').addEventListener('submit', handleStartService);
-        // NOVO: Listener do formulário de fila
-        queueForm.addEventListener('submit', handleAddToQueue); 
-        // ...
-        document.getElementById('nav-report').addEventListener('click', () => showView('report'));
-        document.getElementById('nav-timeclock').addEventListener('click', () => showView('timeclock'));
-        document.getElementById('nav-config').addEventListener('click', () => showView('config'));
-        
-        // Setup Listeners de Formulário
-        document.getElementById('new-service-form').addEventListener('submit', handleStartService); // ID corrigido
-        mechanicSelect.addEventListener('change', validateForm);
-        serviceSelect.addEventListener('change', validateForm);
-        formMechanics.addEventListener('submit', handleAddMechanic);
-        formServices.addEventListener('submit', handleAddService);
-        carPlateInput.addEventListener('input', validateForm); 
-        carModelInput.addEventListener('input', validateForm);
-        // INICIALIZE AQUI, ONDE O DOM ESTÁ PRONTO:
-        // INICIALIZAÇÃO DO CONTAINER DE SERVIÇOS DA FILA
-        queueServicesContainer = document.getElementById('queue-services-container'); 
+    // Setup Listeners de Navegação
+    document.getElementById('nav-painel').addEventListener('click', () => showView('painel'));
+    document.getElementById('nav-tracking').addEventListener('click', () => showView('tracking')); // Adicionado listener de tracking
+    document.getElementById('nav-report').addEventListener('click', () => showView('report'));
+    document.getElementById('nav-timeclock').addEventListener('click', () => showView('timeclock'));
+    document.getElementById('nav-config').addEventListener('click', () => showView('config'));
 
-    // ... (o restante do código de listeners) ...
+    // --- CORREÇÃO: INICIALIZAÇÃO DAS VARIÁVEIS DOM ---
+    // Você DEVE inicializar a variável AQUI, depois que o HTML foi carregado.
+    queueServicesContainer = document.getElementById('queue-services-container'); 
+    
+    // Setup Listeners de Formulário
+    document.getElementById('new-service-form').addEventListener('submit', handleStartService);
+    queueForm.addEventListener('submit', handleAddToQueue); // Listener do formulário de fila
+    
+    mechanicSelect.addEventListener('change', validateForm);
+    serviceSelect.addEventListener('change', validateForm);
+    formMechanics.addEventListener('submit', handleAddMechanic);
+    formServices.addEventListener('submit', handleAddService);
+    
+    carPlateInput.addEventListener('input', validateForm);
+    carModelInput.addEventListener('input', validateForm);
+
+    // Inicia a aplicação e configura os listeners do Firebase
     initializeApp();
 });
 </script> 
