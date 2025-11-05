@@ -1,4 +1,4 @@
-	<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
@@ -142,6 +142,21 @@ border-radius: 6px;
 margin-bottom: 8px;
 border-left: 4px solid #007bff;
 font-size: 14px;
+transition: all 0.3s ease; /* Adicionado para transição suave */
+}
+/* NOVO: Estilo para item com prioridade */
+.queue-item.priority-item {
+border-left-color: #28a745; /* Verde */
+background-color: #e6ffed;
+}
+/* NOVO: Estilo para item bloqueado/aguardando */
+.queue-item.locked-item {
+border-left-color: #6c757d; /* Cinza */
+background-color: #f8f9fa;
+opacity: 0.7;
+}
+.queue-item.locked-item p {
+color: #6c757d;
 }
 .queue-item p { margin: 3px 0; }
 .queue-item button {
@@ -403,6 +418,9 @@ MECHANIC: 'Mecânico Geral',
 ALIGNER: 'Alinhador',
 BALANCER: 'Balanceador'
 };
+// *** NOVO: Ordem de prioridade sequencial ***
+const SERVICE_ORDER = ['MECHANIC', 'BALANCER', 'ALIGNER'];
+
 // VIEWS
 const viewQueue = document.getElementById('view-queue');
 const viewProduction = document.getElementById('view-production');
@@ -448,6 +466,7 @@ const adminServicesList = document.getElementById('admin-services-list');
 // === FUNÇÕES DE UTILIDADE E AUXILIARES ===
 // ===============================================
 function getRoleDisplayName(roleKey) {
+if (!roleKey) return 'N/A';
 return ROLES[roleKey] || roleKey;
 }
 function isToday(timestamp) {
@@ -526,7 +545,6 @@ ALL_QUEUE.push({ fbId: doc.id, ...doc.data() });
 // Renderiza a fila CATEGORIZADA (ordenada por queuedAt por padrão do Firestore)
 renderCategorizedQueueList();
 });
-
 db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
 ALL_SERVICES.length = 0; // Limpa o array
 snapshot.forEach(doc => {
@@ -535,10 +553,8 @@ ALL_SERVICES.push({ fbId: doc.id, ...doc.data() });
 // *** MUDANÇA 2 (APLICADA): CHAMA A NOVA FUNÇÃO ***
 // Isso irá popular os checkboxes na tela de Fila
 renderQueueServiceCheckboxes();
-
 if (document.getElementById('view-config').style.display === 'block') renderAdminServices();
 });
-
 // 2. LISTENER DE SERVIÇOS ATIVOS (Tempo Real)
 db.collection(C_ACTIVE).onSnapshot(snapshot => {
 const activeServices = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
@@ -550,11 +566,11 @@ updateAvailableMechanics(activeServices);
 // ===============================================
 // === LÓGICA DA FILA E PRODUÇÃO ===
 // ===============================================
-// NOVO: Cria o HTML para um item da fila com base nos dados.
-function createQueueItemHtml(item) {
+// *** ATUALIZADO (NOVA LÓGICA DE PRIORIDADE) ***
+// Cria o HTML para um item da fila com base nos dados E no cargo da fila.
+function createQueueItemHtml(item, queueRole) {
 // CORREÇÃO: Usa uma verificação defensiva para requiredRoles
 const roles = (item.requiredRoles && Array.isArray(item.requiredRoles)) ? item.requiredRoles : [];
-
 // *** ALTERADO ***: Pega a lista de serviços que ESTÃO no item da fila (baseado nos IDs)
 const serviceNames = (item.serviceIds && Array.isArray(item.serviceIds))
 ? item.serviceIds.map(id => {
@@ -562,24 +578,43 @@ const service = ALL_SERVICES.find(s => s.fbId === id);
 return service ? service.name : 'Serviço ID:' + id;
 }).join(', ')
 : 'Nenhum serviço especificado';
-
 // Se queuedAt for um number (getTime()), usa new Date(number). Se for string (toISOString()), new Date(string).
 const queueDate = new Date(item.queuedAt);
+
+// *** LÓGICA DE PRIORIDADE E ESTADO ***
+const isPriority = (item.currentPriorityStep === queueRole);
+const isDisabled = !isPriority;
+let statusText = '';
+let priorityClass = '';
+
+if (isPriority) {
+statusText = 'Próximo (Aguardando)';
+priorityClass = 'priority-item';
+} else if (item.currentPriorityStep && item.currentPriorityStep.startsWith('IN_PROGRESS_')) {
+statusText = 'Em serviço...';
+priorityClass = 'locked-item';
+} else {
+statusText = `(Aguardando ${getRoleDisplayName(item.currentPriorityStep)})`;
+priorityClass = 'locked-item';
+}
+// *** FIM DA LÓGICA DE PRIORIDADE ***
+
 return `
-<div class="queue-item" data-fbid="${item.fbId}">
+<div class="queue-item ${priorityClass}" data-fbid="${item.fbId}">
 <p><strong>Placa:</strong> ${item.carPlate}</p>
 <p><strong>Modelo:</strong> ${item.carModel}</p>
 <p><strong>Serviços:</strong> <small>${serviceNames || 'Nenhum serviço correspondente'}</small></p>
-<p><small>Em fila desde: ${queueDate.toLocaleTimeString('pt-BR')}</small></p>
-<button class="btn-primary start-queue-item-btn">Iniciar Serviço</button>
+<p><small>Status: ${statusText}</small></p>
+<button class="btn-primary start-queue-item-btn" ${isDisabled ? 'disabled' : ''}>Iniciar Serviço</button>
 </div>
 `;
 }
-// CORRIGIDO: Filtra a fila em 3 listas e renderiza (Req. 1)
-// CORRIGIDO: Filtra a fila em 3 listas e renderiza (Req. 1)
+// *** ATUALIZADO (NOVA LÓGICA DE PRIORIDADE) ***
+// Renderiza a fila categorizada, agora com ordenação de prioridade.
 function renderCategorizedQueueList() {
 // Limpa todas as listas primeiro
-[queueListMechanic, queueListAligner, queueListBalancer].forEach(el => el.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>');
+const emptyMsg = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>';
+[queueListMechanic, queueListAligner, queueListBalancer].forEach(el => el.innerHTML = emptyMsg);
 if (ALL_QUEUE.length === 0) return;
 // Mapeamento de Filas
 const queueMaps = {
@@ -587,43 +622,64 @@ const queueMaps = {
 'ALIGNER': { element: queueListAligner, items: [] },
 'BALANCER': { element: queueListBalancer, items: [] }
 };
+// 1. Popula os mapas com os OBJETOS 'item' completos
 ALL_QUEUE.forEach(item => {
-const itemHtml = createQueueItemHtml(item);
 // Um item aparece em todas as filas para as quais ele tem um role requerido
 if (item.requiredRoles && Array.isArray(item.requiredRoles)) {
 item.requiredRoles.forEach(role => {
 if (queueMaps[role]) {
-queueMaps[role].items.push({ html: itemHtml, fbId: item.fbId }); // Guarda o fbId junto
+queueMaps[role].items.push(item); // Adiciona o objeto 'item'
 }
 });
 }
 });
-
-// Renderiza e anexa os listeners
-for (const role in queueMaps) {
+// 2. Ordena e Renderiza cada fila
+for (const role in queueMaps) { // 'role' é 'MECHANIC', 'ALIGNER', ou 'BALANCER'
 const map = queueMaps[role];
+
+// *** NOVO: LÓGICA DE ORDENAÇÃO DE PRIORIDADE ***
+map.items.sort((a, b) => {
+const isAPriority = (a.currentPriorityStep === role);
+const isBPriority = (b.currentPriorityStep === role);
+
+if (isAPriority && !isBPriority) {
+return -1; // A (prioridade) vem primeiro
+}
+if (!isAPriority && isBPriority) {
+return 1; // B (prioridade) vem primeiro
+}
+
+// Se ambos são prioridade ou ambos não são, ordena pelo tempo de entrada
+return (a.queuedAt || 0) - (b.queuedAt || 0);
+});
+// *** FIM DA LÓGICA DE ORDENAÇÃO ***
+
+// 3. Renderiza os itens ordenados
 map.element.innerHTML = ''; // Limpa novamente
 if (map.items.length === 0) {
-map.element.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>';
+map.element.innerHTML = emptyMsg;
 continue;
 }
 map.items.forEach(itemData => {
+// Passa o 'role' da fila atual para criar o HTML
+const itemHtml = createQueueItemHtml(itemData, role);
 const tempDiv = document.createElement('div');
-tempDiv.innerHTML = itemData.html;
-// *** LINHA CORRIGIDA AQUI ***
-const itemElement = tempDiv.firstElementChild; // Trocado de .firstChild para .firstElementChild
-// Anexa o listener ao botão
-// Esta linha agora deve funcionar, pois itemElement é o <div>
-if (itemElement) { // Adicionando uma verificação extra por segurança
-itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
+tempDiv.innerHTML = itemHtml;
+const itemElement = tempDiv.firstElementChild;
+
+if (itemElement) {
+// Anexa o listener APENAS se o botão não estiver desabilitado
+const startBtn = itemElement.querySelector('.start-queue-item-btn');
+if (startBtn && !startBtn.disabled) {
+startBtn.addEventListener('click', () => handleStartFromQueue(itemData.fbId));
+}
 map.element.appendChild(itemElement);
 } else {
-console.warn("Falha ao criar itemElement para:", itemData.html);
+console.warn("Falha ao criar itemElement para:", itemHtml);
 }
 });
 }
 }
-
 // *** MUDANÇA 1 (APLICADA): NOVA FUNÇÃO INSERIDA AQUI ***
 // NOVA FUNÇÃO: Renderiza os checkboxes de serviço dinamicamente
 function renderQueueServiceCheckboxes() {
@@ -653,8 +709,8 @@ style="width: auto;">
 container.appendChild(div);
 });
 }
-
 // *** MUDANÇA 3 (APLICADA): FUNÇÃO 'handleAddToQueue' SUBSTITUÍDA ***
+// *** ATUALIZADO (NOVA LÓGICA DE PRIORIDADE) ***
 // MODIFICADA: Lida com a entrada de veículo usando os checkboxes de SERVIÇO
 async function handleAddToQueue(event) {
 event.preventDefault(); //
@@ -667,21 +723,23 @@ const selectedServiceIds = Array.from(checkedCheckboxes).map(cb => cb.value); //
 // 3. Extrai os 'roles' (categorias) do 'data-role' e remove duplicatas
 const roles = Array.from(checkedCheckboxes).map(cb => cb.dataset.role);
 const requiredRoles = [...new Set(roles)]; //
-
 if (selectedServiceIds.length === 0) { //
 alert("Selecione ao menos um serviço para adicionar à fila."); //
 return; //
 }
-// A lógica anterior (linhas 625-632) para encontrar 'selectedServiceIds' não é mais necessária.
+
+// *** NOVO: Define a primeira etapa de prioridade ***
+const firstStep = SERVICE_ORDER.find(role => requiredRoles.includes(role)) || (requiredRoles.length > 0 ? requiredRoles[0] : null);
+
 const queueData = { //
 carPlate: carPlate, //
 carModel: carModel, //
 serviceIds: selectedServiceIds, // (Agora vem direto dos checkboxes)
 requiredRoles: requiredRoles, // (Agora vem do 'data-role' dos checkboxes)
 queuedAt: new Date().getTime(), //
-addedBy: CURRENT_USER //
+addedBy: CURRENT_USER, //
+currentPriorityStep: firstStep // *** NOVO CAMPO DE PRIORIDADE ***
 };
-
 try {
 await addToDB(C_QUEUE_SERVICES, queueData); //
 // Limpa o formulário
@@ -694,7 +752,6 @@ console.error("Erro ao adicionar à fila:", error); //
 }
 }
 // *** FIM DA SUBSTITUIÇÃO ***
-
 // MANTIDA: Lógica de Carregamento de Formulário de Início
 async function handleStartFromQueue(queueFbId) {
 const queueItem = ALL_QUEUE.find(item => item.fbId === queueFbId);
@@ -710,15 +767,36 @@ hiddenQueueItemId.value = queueFbId; // Guarda o ID
 queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
 // Verificação defensiva para serviceIds
 const serviceIds = (queueItem.serviceIds && Array.isArray(queueItem.serviceIds)) ? queueItem.serviceIds : [];
+
+// *** ATUALIZADO: Filtra serviços apenas para a ETAPA DE PRIORIDADE ATUAL ***
+const currentStep = queueItem.currentPriorityStep;
+let servicesForCurrentStep = [];
+
+serviceIds.forEach(serviceId => {
+const service = ALL_SERVICES.find(s => s.fbId === serviceId);
+if (service && service.role === currentStep) {
+servicesForCurrentStep.push(service);
+}
+});
+
+// Se não houver serviços para a etapa atual (improvável, mas seguro), mostra todos os restantes
+if (servicesForCurrentStep.length === 0) {
 serviceIds.forEach(serviceId => {
 const service = ALL_SERVICES.find(s => s.fbId === serviceId);
 if (service) {
-queueServiceToStartSelect.innerHTML += `<option value="${service.fbId}" data-name="${service.name}" data-role="${service.role}">${service.name}</option>`;
+servicesForCurrentStep.push(service);
 }
 });
+}
+
+// Popula o dropdown
+servicesForCurrentStep.forEach(service => {
+queueServiceToStartSelect.innerHTML += `<option value="${service.fbId}" data-name="${service.name}" data-role="${service.role}">${service.name}</option>`;
+});
+
 // 4. (Opcional) Tenta pré-selecionar o primeiro
-if (serviceIds.length > 0) {
-queueServiceToStartSelect.value = serviceIds[0];
+if (servicesForCurrentStep.length > 0) {
+queueServiceToStartSelect.value = servicesForCurrentStep[0].fbId;
 }
 // 5. Valida o formulário
 validateForm();
@@ -730,13 +808,17 @@ function validateForm() {
 const isReady = carPlateInput.value && mechanicSelect.value && queueServiceToStartSelect.value;
 playButton.disabled = !isReady;
 }
+// *** ATUALIZADO (NOVA LÓGICA DE PRIORIDADE) ***
 async function handleStartService(event) {
 event.preventDefault();
 const mechanicId = mechanicSelect.value;
 const serviceId = queueServiceToStartSelect.value;
 const mechanicName = mechanicSelect.options[mechanicSelect.selectedIndex].dataset.name;
 const serviceName = queueServiceToStartSelect.options[queueServiceToStartSelect.selectedIndex].dataset.name;
+// *** NOVO: Pega o 'role' do serviço que está começando ***
+const serviceRole = queueServiceToStartSelect.options[queueServiceToStartSelect.selectedIndex].dataset.role;
 const queueId = hiddenQueueItemId.value;
+
 if (!mechanicId || !serviceId) {
 alert("Selecione o Funcionário e o Serviço.");
 return;
@@ -752,32 +834,17 @@ startTime: new Date().toISOString(),
 startQueueId: queueId, // Linka ao item da fila
 active: true
 };
+// 1. Adiciona o serviço à lista de ativos
 await addToDB(C_ACTIVE, serviceData);
+// 2. Marca o mecânico como ocupado
 await updateInDB(C_MECHANICS, mechanicId, { isAvailable: false, lastActiveTime: new Date().toISOString() });
-// *** LÓGICA DE REMOÇÃO DA FILA ATUALIZADA ***
-// Em vez de deletar o item inteiro, vamos apenas remover o serviço que foi iniciado.
-// Se não houver mais serviços, aí sim deletamos o item da fila.
+// *** LÓGICA DE FILA MOVIDA PARA handleStopService ***
+// *** NOVO: Atualiza o item da fila para "Em Progresso" ***
 if (queueId) {
-const queueItem = ALL_QUEUE.find(item => item.fbId === queueId);
-if (queueItem) {
-// Remove o serviceId que acabou de ser iniciado
-const remainingServiceIds = queueItem.serviceIds.filter(id => id !== serviceId);
-if (remainingServiceIds.length === 0) {
-// Se foi o último serviço, deleta o item da fila
-await deleteFromDB(C_QUEUE_SERVICES, queueId);
-} else {
-// Se ainda há serviços, atualiza o item da fila
-// Recalcula os roles necessários
-const remainingRoles = ALL_SERVICES
-.filter(s => remainingServiceIds.includes(s.fbId))
-.map(s => s.role);
-const uniqueRemainingRoles = [...new Set(remainingRoles)];
+// Define um estado "em progresso" para que o item fique "travado" em todas as filas
 await updateInDB(C_QUEUE_SERVICES, queueId, {
-serviceIds: remainingServiceIds,
-requiredRoles: uniqueRemainingRoles
+currentPriorityStep: `IN_PROGRESS_${serviceRole}`
 });
-}
-}
 }
 // Limpa o formulário após iniciar
 carPlateInput.value = '';
@@ -787,6 +854,7 @@ queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um carro da
 hiddenQueueItemId.value = '';
 validateForm();
 }
+// *** ATUALIZADO (NOVA LÓGICA DE PRIORIDADE) ***
 async function handleStopService(fbId, mechanicId) {
 if (!confirm("Tem certeza que deseja finalizar este serviço?")) return;
 const activeService = window.ACTIVE_SERVICES.find(s => s.fbId === fbId);
@@ -813,6 +881,40 @@ isAvailable: true,
 queueTime: finishTime.getTime() // Define o novo tempo de rodízio
 });
 }
+
+// *** NOVO: LÓGICA DE TRANSIÇÃO DE FILA DE PRIORIDADE ***
+const queueId = activeService.startQueueId;
+if (queueId) {
+const queueItem = ALL_QUEUE.find(item => item.fbId === queueId);
+if (queueItem) {
+// Pega o ID do serviço que acabou de ser finalizado
+const justFinishedServiceId = activeService.serviceId;
+// Remove o serviceId que acabou de ser finalizado
+const remainingServiceIds = queueItem.serviceIds.filter(id => id !== justFinishedServiceId);
+
+if (remainingServiceIds.length === 0) {
+// Se foi o último serviço, deleta o item da fila
+await deleteFromDB(C_QUEUE_SERVICES, queueId);
+} else {
+// Se ainda há serviços, atualiza o item da fila
+// Recalcula os roles necessários
+const remainingRoles = ALL_SERVICES
+.filter(s => remainingServiceIds.includes(s.fbId))
+.map(s => s.role);
+const uniqueRemainingRoles = [...new Set(remainingRoles)];
+
+// Encontra a PRÓXIMA etapa de prioridade
+const nextStep = SERVICE_ORDER.find(role => uniqueRemainingRoles.includes(role)) || (uniqueRemainingRoles.length > 0 ? uniqueRemainingRoles[0] : null);
+
+await updateInDB(C_QUEUE_SERVICES, queueId, {
+serviceIds: remainingServiceIds,
+requiredRoles: uniqueRemainingRoles,
+currentPriorityStep: nextStep // Define a próxima prioridade!
+});
+}
+}
+}
+// *** FIM DA LÓGICA DE TRANSIÇÃO ***
 }
 function renderActiveServices(activeServices) {
 inProgressList.innerHTML = '';
@@ -835,7 +937,6 @@ row.innerHTML = `
 <button class="btn-stop" data-fbid="${service.fbId}" data-mechanicid="${service.mechanicId}">◼ Finalizar</button>
 `;
 inProgressList.appendChild(row);
-
 // Inicializa o timer
 let startTime = new Date(service.startTime).getTime();
 activeTimers[service.fbId] = setInterval(() => {
