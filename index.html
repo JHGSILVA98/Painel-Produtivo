@@ -190,42 +190,44 @@ margin: 0 auto; /* Centraliza a imagem se ela não preencher o container (embora
 <div id="view-painel" class="view-container">
 <div class="container">
 <div class="sidebar">
-<h3>Iniciar Novo Serviço</h3>
-<form id="new-service-form">
-<select id="mechanic-select" required>
-<option value="">-- Selecione um Funcionário --</option>
-</select>
-<select id="service-select" required>
-<option value="">-- Selecione um Serviço --</option>
-</select>
-<label for="car-plate">Placa do Carro:</label>
-<input type="text" id="car-plate" required>
-<label for="car-model">Modelo do Carro:</label>
-<input type="text" id="car-model" required>
-<button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
-</form>
+    <h3>Iniciar Novo Serviço</h3>
+    <form id="new-service-form">
+        <select id="mechanic-select" required>
+            <option value="">-- Selecione um Funcionário --</option>
+        </select>
+        <select id="service-select" required>
+            <option value="">-- Selecione um Serviço --</option>
+        </select>
+        <label for="car-plate">Placa do Carro:</label>
+        <input type="text" id="car-plate" required>
+        <label for="car-model">Modelo do Carro:</label>
+        <input type="text" id="car-model" required>
+        <button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
+        <button type="button" id="cancel-queue-button" class="btn-secondary" style="display: none; margin-top: 5px; background-color: #7a7a7a;">Cancelar Início da Fila</button>
+    </form>
 
-<div style="margin-top: 30px;">
-<h3>Registrar Entrada do Veículo (Fila)</h3>
-<form id="new-queue-form">
-<label for="queue-car-plate">Placa do Carro:</label>
-<input type="text" id="queue-car-plate" required>
-<label for="queue-car-model">Modelo do Carro:</label>
-<input type="text" id="queue-car-model" required>
-<label for="queue-services-container">Serviços a Realizar:</label>
-<div id="queue-services-container" class="checkbox-container">
-</div>
-<button type="submit" class="btn-primary" style="margin-top: 15px;">Adicionar à Fila</button>
-</form>
-</div>
+    <div style="margin-top: 30px;">
+        <h3>Registrar Entrada do Veículo (Fila)</h3>
+        <form id="new-queue-form">
+            <label for="queue-car-plate">Placa do Carro:</label>
+            <input type="text" id="queue-car-plate" required>
+            <label for="queue-car-model">Modelo do Carro:</label>
+            <input type="text" id="queue-car-model" required>
+            <label for="queue-services-container">Serviços a Realizar:</label>
+            <div id="queue-services-container" class="checkbox-container">
+                </div>
+            <button type="submit" class="btn-primary" style="margin-top: 15px;">Adicionar à Fila</button>
+        </form>
+    </div>
 
-<div id="available-mechanics-section" style="margin-top: 30px;">
-<h3>Mecânicos Disponíveis</h3>
-<div id="mechanic-list-general" class="available-list-group"></div>
-<h3>Alinhadores Disponíveis</h3>
-<div id="mechanic-list-aligner" class="available-list-group"></div>
-<h3>Balanceadores Disponíveis</h3>
-<div id="mechanic-list-balancer" class="available-list-group"></div>
+    <div id="available-mechanics-section" style="margin-top: 30px;">
+        <h3>Mecânicos Disponíveis</h3>
+        <div id="mechanic-list-general" class="available-list-group"></div>
+        <h3>Alinhadores Disponíveis</h3>
+        <div id="mechanic-list-aligner" class="available-list-group"></div>
+        <h3>Balanceadores Disponíveis</h3>
+        <div id="mechanic-list-balancer" class="available-list-group"></div>
+    </div>
 </div>
 
 </div>
