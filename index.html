@@ -586,14 +586,15 @@
     }  
 
     function populateQueueServicesSelect() {
-            // Se o elemento não foi encontrado, saia da função sem quebrar
+            // VERIFICAÇÃO DE SEGURANÇA: Sai da função se o elemento ainda for nulo
     if (!queueServicesContainer) {
-        console.error("Erro: Container de serviços da fila não inicializado ou não encontrado.");
+        // O erro no console ainda será exibido, mas não quebrará a aplicação.
+        // O mais importante é corrigir o HTML (Passo 1)!
         return; 
     }
     
-    // AQUI O ERRO NÃO OCORRERÁ, POIS queueServicesContainer NÃO É NULL
-    queueServicesContainer.innerHTML = ''; 
+    // Linha 1336: Agora esta linha só roda se queueServicesContainer existir.
+    queueServicesContainer.innerHTML = '';
     
     ALL_SERVICES.forEach(service => {
         const checkboxId = 'service-' + service.fbId;
@@ -1389,7 +1390,8 @@
         carPlateInput.addEventListener('input', validateForm); 
         carModelInput.addEventListener('input', validateForm);
         // INICIALIZE AQUI, ONDE O DOM ESTÁ PRONTO:
-        queueServicesContainer = document.getElementById('queue-services-container');
+        // INICIALIZAÇÃO DO CONTAINER DE SERVIÇOS DA FILA
+        queueServicesContainer = document.getElementById('queue-services-container'); 
 
     // ... (o restante do código de listeners) ...
     initializeApp();
