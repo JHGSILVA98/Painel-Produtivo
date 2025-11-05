@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel de Produtividade V15 (Fila Corrigida)</title>
+<title>Painel de Produtividade V16 (Fila Corrigida - Final)</title>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -588,9 +588,12 @@ updateAvailableMechanics(activeServices);
 
 // NOVO: Cria o HTML para um item da fila com base nos dados.
 function createQueueItemHtml(item) {
+    // CORREÇÃO: Usa uma verificação defensiva para requiredRoles
+    const roles = (item.requiredRoles && Array.isArray(item.requiredRoles)) ? item.requiredRoles : [];
+    
     // Pega a lista de serviços que pertencem às categorias requeridas (para exibição)
     const serviceNames = ALL_SERVICES
-        .filter(s => item.requiredRoles.includes(s.role))
+        .filter(s => roles.includes(s.role))
         .map(s => s.name)
         .join(', ');
 
@@ -608,7 +611,7 @@ function createQueueItemHtml(item) {
     `;
 }
 
-// NOVO: Filtra a fila em 3 listas e renderiza (Req. 1)
+// CORRIGIDO: Filtra a fila em 3 listas e renderiza (Req. 1)
 function renderCategorizedQueueList() {
     // Limpa todas as listas primeiro
     [queueListMechanic, queueListAligner, queueListBalancer].forEach(el => el.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>');
@@ -626,11 +629,16 @@ function renderCategorizedQueueList() {
         const itemHtml = createQueueItemHtml(item);
 
         // Um item aparece em todas as filas para as quais ele tem um role requerido
-        item.requiredRoles.forEach(role => {
-            if (queueMaps[role]) {
-                queueMaps[role].items.push({ html: itemHtml, fbId: item.fbId }); // Guarda o fbId junto
-            }
-        });
+        // **********************************************
+        // *** CORREÇÃO DO ERRO 'forEach of undefined' ***
+        // **********************************************
+        if (item.requiredRoles && Array.isArray(item.requiredRoles)) {
+            item.requiredRoles.forEach(role => { 
+                if (queueMaps[role]) {
+                    queueMaps[role].items.push({ html: itemHtml, fbId: item.fbId }); // Guarda o fbId junto
+                }
+            });
+        }
     });
 
     // Renderiza e anexa os listeners
@@ -714,15 +722,19 @@ async function handleStartFromQueue(queueFbId) {
     hiddenQueueItemId.value = queueFbId; // Guarda o ID
     // 3. Popula o select SÓ com os serviços que fazem parte daquele item da fila
     queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
-    queueItem.serviceIds.forEach(serviceId => {
+    
+    // Verificação defensiva para serviceIds
+    const serviceIds = (queueItem.serviceIds && Array.isArray(queueItem.serviceIds)) ? queueItem.serviceIds : [];
+
+    serviceIds.forEach(serviceId => {
         const service = ALL_SERVICES.find(s => s.fbId === serviceId);
         if (service) {
             queueServiceToStartSelect.innerHTML += `<option value="${service.fbId}" data-name="${service.name}" data-role="${service.role}">${service.name}</option>`;
         }
     });
     // 4. (Opcional) Tenta pré-selecionar o primeiro
-    if (queueItem.serviceIds.length > 0) {
-        queueServiceToStartSelect.value = queueItem.serviceIds[0];
+    if (serviceIds.length > 0) {
+        queueServiceToStartSelect.value = serviceIds[0];
     }
     // 5. Valida o formulário
     validateForm(); 
