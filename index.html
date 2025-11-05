@@ -631,55 +631,58 @@ return `
 </div>
 `;
 }
-// CORRIGIDO E ROBUSTECIDO: Filtra a fila em 3 listas e renderiza 
+// CORRIGIDO: renderCategorizedQueueList
 function renderCategorizedQueueList() {
-// Limpa todas as listas primeiro
-[queueListMechanic, queueListAligner, queueListBalancer].forEach(el => el.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>');
-if (ALL_QUEUE.length === 0) return;
-// Mapeamento de Filas
-const queueMaps = {
-'MECHANIC': { element: queueListMechanic, items: [] },
-'ALIGNER': { element: queueListAligner, items: [] },
-'BALANCER': { element: queueListBalancer, items: [] }
-};
-ALL_QUEUE.forEach(item => {
-const itemHtml = createQueueItemHtml(item);
-const requiredRoles = (item.requiredRoles && Array.isArray(item.requiredRoles)) ? item.requiredRoles : [];
-// Um item aparece em todas as filas para as quais ele tem um role requerido
-requiredRoles.forEach(role => {
-if (queueMaps[role]) {
-queueMaps[role].items.push({ html: itemHtml, fbId: item.fbId }); 
-}
-});
-});
-// Renderiza e anexa os listeners
-for (const role in queueMaps) {
-const map = queueMaps[role];
-map.element.innerHTML = '';
-if (map.items.length === 0) {
-map.element.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>';
-continue;
-}
-map.items.forEach(itemData => {
-    // 1. Cria um elemento temporário
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = itemData.html;
+    // Limpa todas as listas primeiro
+    [queueListMechanic, queueListAligner, queueListBalancer].forEach(el => el.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>');
 
-    // 2. Tenta obter o primeiro elemento HTML (que deve ser o .queue-item)
-    let itemElement = tempDiv.firstElementChild; 
+    if (ALL_QUEUE.length === 0) return;
 
-    // 3. Checagem Defensiva (A CORREÇÃO FINAL PARA O TYPERROR)
-    // Garante que itemElement existe e que possui a função querySelector (ou seja, é um Elemento DOM)
-    if (itemElement && typeof itemElement.querySelector === 'function') {
-        // Anexa o listener ao botão
-        itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
-        map.element.appendChild(itemElement);
-    } else {
-        // O itemElement não é um elemento DOM (provavelmente um Nó de Texto). Ignora e loga.
-        console.warn("Falha ao processar HTML do item de fila. Objeto capturado:", itemElement ? itemElement.constructor.name : 'NULO');
+    const queueMaps = {
+        'MECHANIC': { element: queueListMechanic, items: [] },
+        'ALIGNER': { element: queueListAligner, items: [] },
+        'BALANCER': { element: queueListBalancer, items: [] }
+    };
+
+    ALL_QUEUE.forEach(item => {
+        const itemHtml = createQueueItemHtml(item);
+        const requiredRoles = (item.requiredRoles && Array.isArray(item.requiredRoles)) ? item.requiredRoles : [];
+        
+        requiredRoles.forEach(role => {
+            if (queueMaps[role]) {
+                queueMaps[role].items.push({ html: itemHtml, fbId: item.fbId }); 
+            }
+        });
+    });
+
+    for (const role in queueMaps) {
+        const map = queueMaps[role];
+        map.element.innerHTML = '';
+        
+        if (map.items.length === 0) {
+            map.element.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>';
+            continue;
+        }
+
+        map.items.forEach(itemData => {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = itemData.html;
+            
+            // NOVO MÉTODO ROBUSTO: Usa children[0]
+            const itemElement = tempDiv.children[0]; 
+            
+            // VERIFICAÇÃO DEFINITIVA (Linha crítica): Node.ELEMENT_NODE é sempre 1.
+            // A linha 617 será executada APENAS se o objeto for um Elemento HTML.
+            if (itemElement && itemElement.nodeType === 1) { 
+                // ESTA É A LINHA 617 QUE ESTAVA FALHANDO
+                itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
+                map.element.appendChild(itemElement);
+            } else {
+                console.error("ERRO DE RENDERIZAÇÃO CRÍTICO: Objeto capturado não é um Elemento DOM (nodeType != 1).");
+                console.warn("Item falho:", itemElement ? itemElement.constructor.name : 'NULO');
+            }
+        });
     }
-});
-}
 }
 // Lida com a entrada de veículo
 async function handleAddToQueue(event) {
