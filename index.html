@@ -1,1401 +1,1212 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Produtividade V11 (Firebase Integrado)</title>
-
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
-    
-    
-    <style>
-        /* NOVO ESTILO: TELA DE LOGIN */
-        #login-screen {
-            max-width: 400px;
-            margin: 100px auto;
-            padding: 30px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        #login-screen input {
-        width: 100%; /* ADICIONE ISTO para forçar a largura total */
-        margin-bottom: 15px;
-        box-sizing: border-box; /* Isto é importante para que o padding não estoure a largura de 100% */
-        }
-        #app-content { 
-            display: none; /* Esconde o painel por padrão */
-        }
-
-        /* --- ESTILOS PARA A NOVA TELA DE ACOMPANHAMENTO --- */
-        .tracking-card {
-            border: 1px solid #007bff;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            background-color: #eaf5ff;
-        }
-
-        .tracking-card p {
-            margin: 5px 0;
-            font-size: 14px;
-        }
-
-        #tracking-available-mechanics h4 {
-            margin-top: 15px;
-            border-bottom: none;
-            color: #28a745;
-        }
-
-        #tracking-available-mechanics ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        #tracking-available-mechanics li {
-            padding: 5px 0;
-            border-bottom: 1px dotted #eee;
-        }
-
-
-        /* --- ESTILOS GERAIS --- */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
-        h2, h3 { border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #333; }
-        button { padding: 10px 15px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
-        button:disabled { background-color: #6c757d; cursor: not-allowed; }
-        input[type="text"], 
-        input[type="email"], /* Inclua o email */
-        input[type="password"], /* Inclua a senha */
-        select { 
-            padding: 12px; /* Garante que o preenchimento interno é o mesmo */
-            height: auto; /* Garante que a altura é definida pelo padding */
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-            font-size: 16px; 
-            width: 100%; 
-            box-sizing: border-box; /* Crucial para altura e largura */
-        }
-        .btn-play { background-color: #28a745; }
-        .btn-stop { background-color: #dc3545; }
-        .btn-primary { background-color: #007bff; }
-        .btn-delete { background-color: #7a7a7a; font-size: 14px; padding: 5px 10px; }
-        .btn-secondary { background-color: #6c757d; }
-        .btn-clock-in { background-color: #17a2b8; } 
-        .btn-clock-out { background-color: #ffc107; color: #333; } 
-        /* --- NAVEGAÇÃO --- */
-        nav { background-color: #343a40; padding: 15px 24px; display: flex; gap: 15px; flex-wrap: wrap; }
-        nav button { background-color: #6c757d; font-size: 14px; }
-        nav button.active { background-color: #007bff; box-shadow: 0 0 0 2px rgba(0,123,255,.5); }
-        .view-container { padding: 24px; display: none; }
-        #view-painel { display: block; }
-        /* === TELA 1: PAINEL (GRID - DESKTOP) === */
-        #view-painel .container { display: grid; grid-template-columns: 1fr; gap: 24px; }
-        @media (min-width: 900px) { #view-painel .container { grid-template-columns: 300px 1fr; } }
-        .sidebar { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 24px; }
-        #new-service-form { display: flex; flex-direction: column; gap: 15px; }
-        #available-mechanics-section h3 { border-bottom: 1px dashed #007bff; padding-bottom: 4px; margin-top: 15px; margin-bottom: 10px; }
-        .available-list-group { display: flex; flex-direction: column; gap: 4px; }
-        .mechanic-tag { display: flex; justify-content: space-between; align-items: center; background-color: #e9ecef; color: #333; padding: 8px 12px; border-radius: 4px; font-size: 16px; font-weight: 500; }
-        .mechanic-tag .position { background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 14px; margin-right: 10px; }
-        .mechanic-tag:first-child { border: 2px solid #28a745; background-color: #d4edda; }
-        .available-list-group:empty::after { content: "Nenhum disponível nesta função."; color: #777; font-style: italic; padding: 5px 0;}
-        .main-content { display: flex; flex-direction: column; gap: 15px; }
-        @media (min-width: 900px) { .service-row { display: grid; grid-template-columns: 1.5fr 3fr 1fr 1fr 1fr; align-items: center; gap: 12px; } }
-        .service-row { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .time-display { font-family: 'Courier New', Courier, monospace; font-size: 16px; background-color: #e9ecef; padding: 10px; border-radius: 4px; text-align: center; }
-        /* === TELA 2: RELATÓRIO DIÁRIO === */
-        #report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 0; }
-        .mechanic-report-group { background-color: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .mechanic-report-group h3 { border-bottom: 2px solid #28a745; color: #28a745; }
-        .service-report-row { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr; border-bottom: 1px dashed #eee; padding: 10px 0; font-size: 15px; }
-        .report-summary { font-weight: bold; margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc; }
-        /* === TELA 3: REGISTRO DE PONTO === */
-        #view-timeclock .timeclock-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        .timeclock-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
-        .timeclock-card h3 { margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px; font-size: 18px; }
-        .timeclock-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .timeclock-status { font-weight: bold; text-align: center; padding: 5px; border-radius: 4px; }
-        .status-on { background-color: #d4edda; color: #155724; }
-        .status-off { background-color: #f8d7da; color: #721c24; }
-        .status-break { background-color: #fff3cd; color: #856404; }
-        /* === TELA 4: ADMINISTRAÇÃO === */
-        #view-config .config-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .admin-section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .admin-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        .admin-list ul { list-style: none; padding: 0; }
-        .admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-        /* === AJUSTES PARA MOBILE === */
-        @media (max-width: 899px) {
-            .sidebar { position: static; }
-            nav { flex-wrap: wrap; padding: 10px; }
-            nav button { width: calc(50% - 7.5px); margin-bottom: 5px; }
-            .service-row { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "mech mech" "desc desc" "inicio duracao" "btn btn"; gap: 8px; padding: 15px; }
-            .service-row strong { grid-area: mech; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-            .service-row .service-desc { grid-area: desc; font-size: 18px; font-weight: bold; }
-            .service-row > *:nth-child(3) { grid-area: inicio; text-align: left; }
-            .service-row > *:nth-child(4) { grid-area: duracao; text-align: right; }
-            .service-row > *:nth-child(3), .service-row > *:nth-child(4) { background-color: transparent; padding: 0; display: flex; flex-direction: column; }
-            .service-row > *:nth-child(3) span, .service-row > *:nth-child(4) span { background-color: #e9ecef; padding: 8px; border-radius: 4px; }
-            .service-row .btn-stop { grid-area: btn; }
-            #view-config .config-container { grid-template-columns: 1fr; }
-            #report-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .service-report-row { grid-template-columns: 1fr 1fr; grid-template-areas: "servico duracao" "inicio fim"; gap: 5px 10px; padding: 8px 0; }
-            .service-report-row span:nth-child(1) { grid-area: servico; font-weight: bold; }
-            .service-report-row span:nth-child(4) { grid-area: duracao; color: #dc3545; text-align: right; }
-            .service-report-row span:nth-child(2) { grid-area: inicio; font-size: 0.9em; }
-            .service-report-row span:nth-child(3) { grid-area: fim; text-align: right; font-size: 0.9em; }
-            .service-report-row[style] { display: grid; }
-            .service-report-row[style] span:nth-child(1) { grid-area: servico; text-align: left; }
-            .service-report-row[style] span:nth-child(4) { grid-area: duracao; text-align: right; }
-            .service-report-row[style] span:nth-child(2) { grid-area: inicio; text-align: left; }
-            .service-report-row[style] span:nth-child(3) { grid-area: fim; text-align: right; }
-            .admin-list li { flex-direction: column; align-items: flex-start; gap: 5px; }
-        }
-
-        .logo-container {
-    text-align: center; /* Centraliza a imagem dentro do contêiner */
-    padding: 6px 0;    /* Espaçamento acima e abaixo da logo */
-    background-color: #ffffff; /* Fundo branco ou da cor que preferir para destacar */
-    border-bottom: 1px solid #ddd; /* Linha sutil para separar da navegação */
-    }
-
-    .app-logo {
-    max-width: 100px; /* Define um tamanho máximo para a logo (ajuste conforme necessário) */
-    height: auto;     /* Mantém a proporção da imagem */
-    display: block;   /* Garante que o text-align funcione */
-    margin: 0 auto;   /* Centraliza a imagem se ela não preencher o container (embora text-align já resolva) */
-    }
-
-    </style>
-    <script>
-        
-    // ******************************************************
-    // *** 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
-    // ******************************************************
-
-    let queueServicesContainer;
-    
-    // Seu web app's Firebase configuration
-    const firebaseConfig = {
-        apiKey: "AIzaSyB6XbdcQyKiZYtVXXwAxRI8cv90GhT-bD8",
-        authDomain: "painelprodutividade-dd513.firebaseapp.com",
-        projectId: "painelprodutividade-dd513",
-        storageBucket: "painelprodutividade-dd513.firebasestorage.app",
-        messagingSenderId: "535369536853",
-        appId: "1:535369536853:web:4d0755d7470b026fa64bdc",
-        measurementId: "G-NRZ55SHKN7"
-    };
-
-    // Inicializa o Firebase (v9.6.1 de Compatibilidade)
-    const app = firebase.initializeApp(firebaseConfig);
-
-    // Adicione a inicialização da autenticação:
-
-        // Esta linha é crucial, pois define a variável que o seu código usa: db.collection(...)
-        const db = firebase.firestore();
-        // NOVO: Inicializa o AUTH
-        const auth = firebase.auth(); 
-        // Inicializa o Analytics
-        const analytics = firebase.analytics();
-    
-   
-
-    // NOVOS ELEMENTOS DOM PARA LOGIN
-    const loginScreen = document.getElementById('login-screen');
-    const appContent = document.getElementById('app-content');
-    const loginForm = document.getElementById('login-form');
-    const loginEmail = document.getElementById('login-email');
-    const loginPassword = document.getElementById('login-password');
-    const loginError = document.getElementById('login-error');
-
-    
-
-    // Nomes das "Coleções" no Firestore
-    const C_MECHANICS = 'mechanics';
-    const C_SERVICES = 'services';
-    const C_QUEUE_SERVICES = 'queue_services'; // Nova coleção no Firebase
-    const C_ACTIVE = 'activeServices';
-    const C_COMPLETED = 'completedServices'; 
-
-    // ... (Variáveis DOM existentes)
-    const queueForm = document.getElementById('new-queue-form');
-    const queueCarPlateInput = document.getElementById('queue-car-plate');
-    const queueCarModelInput = document.getElementById('queue-car-model');
-    const queueServicesSelect = document.getElementById('queue-services');
-    const queueList = document.getElementById('queue-list');
-
-    
-
-    // === ESTADO DA APLICAÇÃO (Dados em memória para uso no frontend) ===
-    let activeTimers = {};
-    let ALL_MECHANICS = [];
-    let ALL_SERVICES = [];
-    let CURRENT_USER = null; // ESSENCIAL: Declaração global
-    const ALL_IN_PROGRESS = []; // ESSENCIAL: Inicialização do Array
-    // ... (Arrays existentes)
-    const ALL_QUEUE = []; // NOVO: Array para guardar a fila
-
-    // === CONSTANTES E ELEMENTOS DO DOM (MANTIDOS) ===
-    const ROLES = {
-        MECHANIC: 'Mecânico Geral',
-        ALIGNER: 'Alinhador',
-        BALANCER: 'Balanceador'
-    };
-    
-    // Elementos DOM (Certifique-se de que estas variáveis estão definidas acima da função initializeApp)
-    const viewPainel = document.getElementById('view-painel');
-    const viewReport = document.getElementById('view-report');
-    const viewTimeclock = document.getElementById('view-timeclock');
-    const viewConfig = document.getElementById('view-config');
-    const navPainel = document.getElementById('nav-painel'); // Certifique-se de que os botões de navegação têm IDs
-    const navReport = document.getElementById('nav-report');
-    const navTimeclock = document.getElementById('nav-timeclock');
-    const navConfig = document.getElementById('nav-config');
-    // ... (após as declarações de viewReport, viewTimeclock, etc.)
-    const viewTracking = document.getElementById('view-tracking'); // Nova view
-    const navTracking = document.getElementById('nav-tracking'); // Novo botão
-
-    
-
-    // Containers de destino para a nova view
-    const trackingInProgressList = document.getElementById('tracking-in-progress-list');
-    const trackingNextServices = document.getElementById('tracking-next-services');
-    const trackingAvailableMechanics = document.getElementById('tracking-available-mechanics');
-    // ...
-    
-    const mechanicSelect = document.getElementById('mechanic-select');
-    const serviceSelect = document.getElementById('service-select');
-    // Novos inputs do formulário
-    const carPlateInput = document.getElementById('car-plate');
-    const carModelInput = document.getElementById('car-model');
-    const playButton = document.getElementById('play-button');
-    const inProgressList = document.getElementById('in-progress-list');
-    const availableMechanicsList = document.getElementById('mechanic-list-general');
-    const availableAlignersList = document.getElementById('mechanic-list-aligner');
-    const availableBalancersList = document.getElementById('mechanic-list-balancer');
-    const reportDateSpan = document.getElementById('report-date');
-    const reportListDiv = document.getElementById('report-list');
-    const btnClearReport = document.getElementById('btn-clear-report');
-    const timeclockList = document.getElementById('timeclock-list');
-    const formMechanics = document.getElementById('new-mechanic-form');
-    const formServices = document.getElementById('new-service-config-form');
-    const inputMechanicName = document.getElementById('input-mechanic-name');
-    const selectMechanicRole = document.getElementById('select-mechanic-role');
-    const inputServiceName = document.getElementById('input-service-name');
-    const adminMechanicsList = document.getElementById('admin-mechanics-list');
-    const adminServicesList = document.getElementById('admin-services-list');
-
-    // ===============================================
-    // === FUNÇÕES DE UTILIDADE E AUXILIARES ===
-    // ===============================================
-
-    function getRoleDisplayName(roleKey) {
-        return ROLES[roleKey] || roleKey; 
-    }
-
-    function isToday(timestamp) {
-        const date = new Date(timestamp);
-        const today = new Date();
-        return date.getDate() === today.getDate() &&
-               date.getMonth() === today.getMonth() &&
-               date.getFullYear() === today.getFullYear();
-    }
-
-    function formatTime(totalSeconds) {
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        return [hours, minutes, seconds].map(unit => String(unit).padStart(2, '0')).join(':');
-    }
-
-    function getMechanicStatus(mechanic) {
-        if (mechanic.isAvailable === true) {
-            return { text: "DISPONÍVEL", class: "status-on" };
-        }
-        if (mechanic.isAvailable === false && mechanic.queueTime) {
-            return { text: "FORA / PAUSA", class: "status-break" };
-        }
-        return { text: "FORA DE EXPEDIENTE", class: "status-off" };
-    }
-
-    // ===============================================
-    // === FUNÇÕES DE CONECTIVIDADE (FIREBASE) ===
-    // ===============================================
-    
-    /**
-     * Lida com a criação de um novo documento no Firestore.
-     */
-   // CÓDIGO CORRIGIDO:
-    // ===============================================
-// === FUNÇÕES DE CONECTIVIDADE (FIREBASE) ===
-// ===============================================
-
-/**
- * Lida com a criação de um novo documento no Firestore.
- */
-    async function addToDB(collectionName, data) {
-        try {
-            // CORREÇÃO: Usa a referência explícita da coleção para o SDK de compatibilidade
-            const collectionRef = db.collection(collectionName);
-            await collectionRef.add(data);
-        } catch (error) {
-            // CÓDIGO COMPLETO SEM {...}
-            console.error(`Erro ao adicionar em ${collectionName}:`, error);
-            alert("Erro ao salvar dados na nuvem.");
-        }
-    }
-
-    /**
-     * Lida com a atualização de um documento existente.
-     */
-    async function updateInDB(collectionName, docId, data) {
-        try {
-            // CORREÇÃO: Usa a referência explícita do documento para o SDK de compatibilidade
-            const docRef = db.collection(collectionName).doc(docId);
-            await docRef.update(data);
-        } catch (error) {
-            // CÓDIGO COMPLETO SEM {...}
-            console.error(`Erro ao atualizar em ${collectionName} (${docId}):`, error);
-            alert("Erro ao atualizar dados na nuvem.");
-        }
-    }
-
-    /**
-     * Lida com a exclusão de um documento.
-     */
-    async function deleteFromDB(collectionName, docId) {
-        try {
-            // CORREÇÃO: Usa a referência explícita do documento para o SDK de compatibilidade
-            const docRef = db.collection(collectionName).doc(docId);
-            await docRef.delete();
-        } catch (error) {
-            // CÓDIGO COMPLETO SEM {...}
-            console.error(`Erro ao deletar em ${collectionName} (${docId}):`, error);
-            alert("Erro ao deletar dados na nuvem.");
-        }
-    }
-    
-    // ===============================================
-    // === LÓGICA DE NAVEGAÇÃO E LISTENERS ===
-    // ===============================================
-
-    function showView(viewId) {
-        // ... (Seu código de navegação) ...
-        [viewPainel, viewReport, viewTimeclock, viewConfig].forEach(v => v.style.display = 'none');
-        [navPainel, navReport, navTimeclock, navConfig].forEach(n => n.classList.remove('active'));
-
-        // 1. Esconder todas as views
-        // CERTIFIQUE-SE QUE TODAS ESTÃO AQUI:
-        [viewPainel, viewReport, viewTimeclock, viewConfig, viewTracking].forEach(v => v.style.display = 'none');
-        
-        // 2. Remover a classe 'active' de todos os botões
-        [navPainel, navReport, navTimeclock, navConfig, navTracking].forEach(n => n.classList.remove('active'));
-        if (viewId === 'painel') {
-            viewPainel.style.display = 'block';
-            navPainel.classList.add('active');
-        } else if (viewId === 'tracking') { // NOVO PONTO DE CONEXÃO
-            viewTracking.style.display = 'block';
-            navTracking.classList.add('active');
-        renderTrackingView(); // CHAMA A FUNÇÃO DE RENDERIZAÇÃO
-        }else if (viewId === 'report') {
-            viewReport.style.display = 'block';
-            navReport.classList.add('active');
-            renderDailyReport(); // Consulta de uso único
-        } else if (viewId === 'timeclock') {
-            viewTimeclock.style.display = 'block';
-            navTimeclock.classList.add('active');
-            renderTimeclockCards(); 
-        } else {
-            viewConfig.style.display = 'block';
-            navConfig.classList.add('active');
-            renderAdminLists(); 
-        }
-    }  
-
-    function populateQueueServicesSelect() {
-            // VERIFICAÇÃO DE SEGURANÇA: Sai da função se o elemento ainda for nulo
-    if (!queueServicesContainer) {
-        // O erro no console ainda será exibido, mas não quebrará a aplicação.
-        // O mais importante é corrigir o HTML (Passo 1)!
-        return; 
-    }
-    
-    // Linha 1336: Agora esta linha só roda se queueServicesContainer existir.
-    queueServicesContainer.innerHTML = '';
-    
-    ALL_SERVICES.forEach(service => {
-        const checkboxId = 'service-' + service.fbId;
-                
-                const div = document.createElement('div');
-                div.className = 'checkbox-item'; // Para estilização opcional
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = checkboxId;
-                checkbox.value = service.fbId;
-                checkbox.name = 'queue-service'; // Nome comum para agrupar
-
-                const label = document.createElement('label');
-                label.htmlFor = checkboxId;
-                label.textContent = service.name;
-
-                div.appendChild(checkbox);
-                div.appendChild(label);
-                queueServicesContainer.appendChild(div);
-            });
-        }
-    
-    function setupFirebaseListeners() {
-        // 1. LISTENERS MASTER (Funcionários e Serviços)
-        // Usa a sintaxe compatível: db.collection().onSnapshot()
-        db.collection(C_MECHANICS).orderBy('name').onSnapshot(snapshot => {
-            ALL_MECHANICS = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-            // Atualiza a visualização do Painel, Ponto e Admin
-            updateAvailableMechanics(window.ACTIVE_SERVICES || []);
-            if (document.getElementById('nav-timeclock').classList.contains('active')) renderTimeclockCards();
-            if (document.getElementById('nav-config').classList.contains('active')) renderAdminMechanics();
-        });
-            // NOVO: Listener para a FILA DE SERVIÇOS (C_QUEUE_SERVICES)
-        db.collection(C_QUEUE_SERVICES).orderBy('queuedAt').onSnapshot(snapshot => {
-            ALL_QUEUE.length = 0; // Limpa o array
-            snapshot.forEach(doc => {
-                ALL_QUEUE.push({ fbId: doc.id, ...doc.data() });
-            });
-            
-            // Renderiza a fila e atualiza o select de serviços
-            renderQueueList(); 
-            populateQueueServicesSelect(); // Esta função é nova (Passo 2.F)
-            
-            // Se você quiser que a tela de acompanhamento também use dados em tempo real:
-            if (document.getElementById('view-tracking').style.display === 'block') {
-                renderTrackingView();
-            }
-        });
-
-                db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
-            // 1. ATUALIZA O ARRAY GLOBAL
-            ALL_SERVICES.length = 0; // Limpa o array (ou use map, como você já faz)
-            snapshot.forEach(doc => {
-                ALL_SERVICES.push({ fbId: doc.id, ...doc.data() });
-            });
-
-            // 2. ATUALIZA OS ELEMENTOS VISUAIS
-            
-            // Para o formulário "Iniciar Novo Serviço"
-            populateServiceSelect(); 
-            
-            // NOVO: Chama para preencher o select de serviços da Fila
-            populateQueueServicesSelect(); // <--- COLOQUE AQUI!
-            
-            // Se você tiver a renderização da tela de admin, também fica aqui:
-            if (document.getElementById('nav-config').classList.contains('active')) renderAdminServices();
-        });
-        
-        
-        
-        // 2. LISTENER DE SERVIÇOS ATIVOS (Tempo Real)
-        db.collection(C_ACTIVE).onSnapshot(snapshot => {
-            const activeServices = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-            window.ACTIVE_SERVICES = activeServices; // Salva na memória global para uso imediato
-            
-            renderActiveServices(activeServices);
-            updateAvailableMechanics(activeServices);
-        });
-    }
-    
-            function showAppContent() {
-            loginScreen.style.display = 'none';
-            appContent.style.display = 'block';
-            // Opcional: Garante que estamos na view correta
-            showView('painel'); 
-        }
-
-        function showLoginScreen() {
-            loginScreen.style.display = 'block';
-            appContent.style.display = 'none';
-        }
-
-        async function handleLogin(event) {
-            event.preventDefault();
-            loginError.style.display = 'none'; // Limpa erros antigos
-            const email = loginEmail.value;
-            const password = loginPassword.value;
-
-            try {
-                await auth.signInWithEmailAndPassword(email, password);
-                // O onAuthStateChanged (na initializeApp) lida com o redirecionamento.
-                loginEmail.value = '';
-                loginPassword.value = '';
-            } catch (error) {
-                console.error("Erro no login:", error);
-                let errorMessage = "Erro ao fazer login. Verifique o e-mail/senha.";
-                if (error.code === 'auth/user-not-found') {
-                    errorMessage = "Usuário não encontrado.";
-                } else if (error.code === 'auth/wrong-password') {
-                    errorMessage = "Senha incorreta.";
-                }
-                loginError.textContent = errorMessage;
-                loginError.style.display = 'block';
-            }
-        }
-
-        function handleLogout() {
-            if (confirm("Deseja realmente sair da aplicação?")) {
-                auth.signOut();
-                // O onAuthStateChanged lida com o retorno à tela de login.
-            }
-        }
-
-        // Inicialização da Aplicação
-    function initializeApp() {
-        // ESSENCIAL: Monitora o estado de autenticação (logado ou deslogado)
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                // USUÁRIO LOGADO: Mostra o painel, esconde o login
-                showAppContent();
-                setupFirebaseListeners(); // Inicia a conexão com o Firestore
-            } else {
-                // USUÁRIO DESLOGADO: Esconde o painel, mostra o login
-                showLoginScreen();
-            }
-        });
-    }
-    
-    // ===============================================
-    // === RESTANTE DA LÓGICA DO PAINEL, RELATÓRIO, PONTO E ADMIN (COLE AQUI) ===
-    // ===============================================
-
-    // [COLE AQUI: Todo o restante do seu JavaScript, das funções 'populateServiceSelect' até 'handleDeleteService' e 'document.addEventListener']
-    
-    function populateServiceSelect() {
-        serviceSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
-        ALL_SERVICES.forEach(s => {
-            serviceSelect.innerHTML += `<option value="${s.fbId}" data-name="${s.name}">${s.name}</option>`;
-        });
-    }
-
-    function renderMechanicGroup(listElement, group) {
-        listElement.innerHTML = '';
-        group.forEach((m, index) => {
-            listElement.innerHTML += `
-                <div class="mechanic-tag">
-                    <div>
-                        <span class="position">${index + 1}</span>
-                        ${m.name}
-                    </div>
-                </div>
-            `;
-        });
-         if (group.length === 0) {
-             listElement.innerHTML = '<div style="font-style: italic; color: #777; padding: 5px 0;">Nenhum disponível nesta função.</div>';
-        }
-    }
-
-    function updateAvailableMechanics(activeServices) {
-        const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
-        
-        let availableMechanics = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
-
-        const mechanicsGroup = availableMechanics.filter(m => m.role === 'MECHANIC');
-        const alignersGroup = availableMechanics.filter(m => m.role === 'ALIGNER');
-        const balancersGroup = availableMechanics.filter(m => m.role === 'BALANCER');
-        
-        const rodizioSort = (a, b) => {
-            return (a.queueTime || 0) - (b.queueTime || 0); 
-        };
-
-        mechanicsGroup.sort(rodizioSort);
-        alignersGroup.sort(rodizioSort);
-        balancersGroup.sort(rodizioSort);
-        
-        // Atualiza o <select>
-        mechanicSelect.innerHTML = '<option value="">-- Selecione um Funcionário --</option>';
-        
-        [...mechanicsGroup, ...alignersGroup, ...balancersGroup].forEach(m => {
-            const roleName = getRoleDisplayName(m.role);
-            mechanicSelect.innerHTML += `<option value="${m.fbId}" data-name="${m.name}">${m.name} (${roleName})</option>`;
-        });
-
-        // Atualiza as listas visuais
-        renderMechanicGroup(availableMechanicsList, mechanicsGroup);
-        renderMechanicGroup(availableAlignersList, alignersGroup);
-        renderMechanicGroup(availableBalancersList, balancersGroup);
-
-        validateForm();
-    }
-
-    function validateForm() {
-    // Verifica os campos de seleção existentes
-    const isMechanicSelected = mechanicSelect.value !== "" && mechanicSelect.value !== "0";
-    const isServiceSelected = serviceSelect.value !== "" && serviceSelect.value !== "0";
-    
-    // Verifica se os novos campos de carro foram preenchidos (remove espaços em branco)
-    const carPlateValid = carPlateInput.value.trim() !== '';
-    const carModelValid = carModelInput.value.trim() !== ''; 
-
-    // O formulário é válido SOMENTE se TODAS as condições forem verdadeiras
-    const formValid = isMechanicSelected && isServiceSelected && carPlateValid && carModelValid;
-
-    // Atualiza o estado do botão 'play-button' (ID 1793)
-    playButton.disabled = !formValid;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Produtividade V11 (Firebase Integrado)</title>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
+<style>
+/* NOVO ESTILO: TELA DE LOGIN */
+#login-screen {
+max-width: 400px;
+margin: 100px auto;
+padding: 30px;
+background: white;
+border-radius: 8px;
+box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+text-align: center;
+}
+#login-screen input {
+width: 100%; /* ADICIONE ISTO para forçar a largura total */
+margin-bottom: 15px;
+box-sizing: border-box; /* Isto é importante para que o padding não estoure a largura de 100% */
+}
+#app-content {
+display: none; /* Esconde o painel por padrão */
+}
+/* --- ESTILOS PARA A NOVA TELA DE ACOMPANHAMENTO --- */
+.tracking-card {
+border: 1px solid #007bff;
+padding: 15px;
+margin-bottom: 10px;
+border-radius: 8px;
+background-color: #eaf5ff;
+}
+.tracking-card p {
+margin: 5px 0;
+font-size: 14px;
+}
+#tracking-available-mechanics h4 {
+margin-top: 15px;
+border-bottom: none;
+color: #28a745;
+}
+#tracking-available-mechanics ul {
+list-style-type: none;
+padding: 0;
+}
+#tracking-available-mechanics li {
+padding: 5px 0;
+border-bottom: 1px dotted #eee;
+}
+/* --- ESTILOS GERAIS --- */
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
+h2, h3 { border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #333; }
+button { padding: 10px 15px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
+button:disabled { background-color: #6c757d; cursor: not-allowed; }
+input[type="text"],
+input[type="email"], /* Inclua o email */
+input[type="password"], /* Inclua a senha */
+select {
+padding: 12px; /* Garante que o preenchimento interno é o mesmo */
+height: auto; /* Garante que a altura é definida pelo padding */
+border: 1px solid #ccc;
+border-radius: 4px;
+font-size: 16px;
+width: 100%;
+box-sizing: border-box; /* Crucial para altura e largura */
+}
+.btn-play { background-color: #28a745; }
+.btn-stop { background-color: #dc3545; }
+.btn-primary { background-color: #007bff; }
+.btn-delete { background-color: #7a7a7a; font-size: 14px; padding: 5px 10px; }
+.btn-secondary { background-color: #6c757d; }
+.btn-clock-in { background-color: #17a2b8; }
+.btn-clock-out { background-color: #ffc107; color: #333; }
+/* --- NAVEGAÇÃO --- */
+nav { background-color: #343a40; padding: 15px 24px; display: flex; gap: 15px; flex-wrap: wrap; }
+nav button { background-color: #6c757d; font-size: 14px; }
+nav button.active { background-color: #007bff; box-shadow: 0 0 0 2px rgba(0,123,255,.5); }
+.view-container { padding: 24px; display: none; }
+#view-painel { display: block; }
+/* === TELA 1: PAINEL (GRID - DESKTOP) === */
+#view-painel .container { display: grid; grid-template-columns: 1fr; gap: 24px; }
+@media (min-width: 900px) { #view-painel .container { grid-template-columns: 300px 1fr; } }
+.sidebar { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 24px; }
+#new-service-form { display: flex; flex-direction: column; gap: 15px; }
+#available-mechanics-section h3 { border-bottom: 1px dashed #007bff; padding-bottom: 4px; margin-top: 15px; margin-bottom: 10px; }
+.available-list-group { display: flex; flex-direction: column; gap: 4px; }
+.mechanic-tag { display: flex; justify-content: space-between; align-items: center; background-color: #e9ecef; color: #333; padding: 8px 12px; border-radius: 4px; font-size: 16px;
+font-weight: 500; }
+.mechanic-tag .position { background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 14px; margin-right: 10px; }
+.mechanic-tag:first-child { border: 2px solid #28a745; background-color: #d4edda; }
+.available-list-group:empty::after { content: "Nenhum disponível nesta função."; color: #777; font-style: italic; padding: 5px 0;}
+.main-content { display: flex; flex-direction: column; gap: 15px; }
+@media (min-width: 900px) { .service-row { display: grid; grid-template-columns: 1.5fr 3fr 1fr 1fr 1fr; align-items: center; gap: 12px; } }
+.service-row { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.time-display { font-family: 'Courier New', Courier, monospace; font-size: 16px; background-color: #e9ecef; padding: 10px; border-radius: 4px; text-align: center; }
+/* === TELA 2: RELATÓRIO DIÁRIO === */
+#report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 0; }
+.mechanic-report-group { background-color: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.mechanic-report-group h3 { border-bottom: 2px solid #28a745; color: #28a745; }
+.service-report-row { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr; border-bottom: 1px dashed #eee; padding: 10px 0; font-size: 15px; }
+.report-summary { font-weight: bold; margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc; }
+/* === TELA 3: REGISTRO DE PONTO === */
+#view-timeclock .timeclock-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.timeclock-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
+.timeclock-card h3 { margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px; font-size: 18px; }
+.timeclock-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.timeclock-status { font-weight: bold; text-align: center; padding: 5px; border-radius: 4px; }
+.status-on { background-color: #d4edda; color: #155724; }
+.status-off { background-color: #f8d7da; color: #721c24; }
+.status-break { background-color: #fff3cd; color: #856404; }
+/* === TELA 4: ADMINISTRAÇÃO === */
+#view-config .config-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.admin-section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.admin-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.admin-list ul { list-style: none; padding: 0; }
+.admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+/* === AJUSTES PARA MOBILE === */
+@media (max-width: 899px) {
+.sidebar { position: static; }
+nav { flex-wrap: wrap; padding: 10px; }
+nav button { width: calc(50% - 7.5px); margin-bottom: 5px; }
+.service-row { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "mech mech" "desc desc" "inicio duracao" "btn btn"; gap: 8px; padding: 15px;
+}
+.service-row strong { grid-area: mech; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+.service-row .service-desc { grid-area: desc; font-size: 18px; font-weight: bold; }
+.service-row > *:nth-child(3) { grid-area: inicio; text-align: left; }
+.service-row > *:nth-child(4) { grid-area: duracao; text-align: right; }
+.service-row > *:nth-child(3), .service-row > *:nth-child(4) { background-color: transparent; padding: 0; display: flex; flex-direction: column; }
+.service-row > *:nth-child(3) span, .service-row > *:nth-child(4) span { background-color: #e9ecef; padding: 8px; border-radius: 4px; }
+.service-row .btn-stop { grid-area: btn; }
+#view-config .config-container { grid-template-columns: 1fr; }
+#report-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+.service-report-row { grid-template-columns: 1fr 1fr; grid-template-areas: "servico duracao" "inicio fim"; gap: 5px 10px; padding: 8px 0; }
+.service-report-row span:nth-child(1) { grid-area: servico; font-weight: bold; }
+.service-report-row span:nth-child(4) { grid-area: duracao; color: #dc3545; text-align: right; }
+.service-report-row span:nth-child(2) { grid-area: inicio; font-size: 0.9em; }
+.service-report-row span:nth-child(3) { grid-area: fim; text-align: right; font-size: 0.9em; }
+.service-report-row[style] { display: grid; }
+.service-report-row[style] span:nth-child(1) { grid-area: servico; text-align: left; }
+.service-report-row[style] span:nth-child(4) { grid-area: duracao; text-align: right; }
+.service-report-row[style] span:nth-child(2) { grid-area: inicio; text-align: left; }
+.service-report-row[style] span:nth-child(3) { grid-area: fim; text-align: right; }
+.admin-list li { flex-direction: column; align-items: flex-start; gap: 5px; }
+}
+.logo-container {
+text-align: center; /* Centraliza a imagem dentro do contêiner */
+padding: 6px 0; /* Espaçamento acima e abaixo da logo */
+background-color: #ffffff; /* Fundo branco ou da cor que preferir para destacar */
+border-bottom: 1px solid #ddd; /* Linha sutil para separar da navegação */
+}
+.app-logo {
+max-width: 100px; /* Define um tamanho máximo para a logo (ajuste conforme necessário) */
+height: auto; /* Mantém a proporção da imagem */
+display: block; /* Garante que o text-align funcione */
+margin: 0 auto; /* Centraliza a imagem se ela não preencher o container (embora text-align já resolva) */
 }
 
-    function renderActiveServices(activeServices) {
-        // Limpa timers antigos
-        Object.values(activeTimers).forEach(clearInterval);
-        activeTimers = {};
-        inProgressList.innerHTML = '';
-
-        // Renderiza novos
-        activeServices.forEach(service => {
-            const row = document.createElement('div');
-            row.className = 'service-row';
-            row.setAttribute('data-fbid', service.fbId); // Usa fbId para referência
-            
-            const startTime = new Date(service.startTime);
-            const roleName = getRoleDisplayName(service.mechanicRole);
-            
-            row.innerHTML = `
-                <strong>${service.mechanicName} <small>(${roleName})</small></strong>
-                <span class="service-desc">${service.serviceDesc}</span>
-                <div class="time-display">Início: <span class="start-time">${startTime.toLocaleTimeString('pt-BR')}</span></div>
-                <div class="time-display">Duração: <span class="duration">00:00:00</span></div>
-                <button class="btn-stop">■ Finalizar</button>
-            `;
-            inProgressList.appendChild(row);
-
-            const durationDisplay = row.querySelector('.duration');
-            function updateTimer() {
-                const now = new Date();
-                const secondsElapsed = Math.floor((now - startTime) / 1000);
-                durationDisplay.textContent = formatTime(secondsElapsed);
-            }
-            
-            updateTimer();
-            activeTimers[service.fbId] = setInterval(updateTimer, 1000);
-
-            row.querySelector('.btn-stop').addEventListener('click', () => handleStopService(service.fbId, service.mechanicId));
-        });
-    }
-
-    function renderTrackingView() {
-    // 1. Renderizar Serviços em Andamento (com Placa e Modelo)
-    // CORREÇÃO: Usando window.ACTIVE_SERVICES (que é atualizado pelo Firebase) 
-    // em vez de ALL_IN_PROGRESS (que estava sempre vazio).
-    const activeServices = window.ACTIVE_SERVICES || [];
-    
-    if (activeServices.length > 0) {
-        trackingInProgressList.innerHTML = activeServices.map(service => {
-            // Busca nomes dos mecânicos e serviços a partir dos arrays globais
-            const mechanic = ALL_MECHANICS.find(m => m.fbId === service.mechanicId) || { name: 'Desconhecido' };
-            // Tenta buscar o nome do serviço no cadastro, senão usa a descrição salva
-            const serviceType = ALL_SERVICES.find(s => s.fbId === service.serviceId) || { name: service.serviceDesc };
-            
-            // CORREÇÃO: Formata a data de início (que é uma string ISO) para Hora Local
-            // A função formatTime() era para durações, não para data/hora.
-            const startTimeStr = service.startTime ? new Date(service.startTime).toLocaleTimeString('pt-BR') : 'N/A';
-
-            return `
-            <div class="tracking-card">
-                <p><strong>${mechanic.name}</strong> em Serviço:</p>
-                <p><strong>Carro:</strong> ${service.carModel || 'N/A'} (${service.carPlate || 'N/A'})</p>
-                <p><strong>Serviço:</strong> ${serviceType.name}</p>
-                <p>Início: ${startTimeStr}</p>
-            </div>
-            `;
-        }).join('');
-    } else {
-        // Adiciona uma mensagem se não houver serviços
-        trackingInProgressList.innerHTML = '<p style="font-style: italic; color: #777;">Nenhum serviço em andamento no momento.</p>';
-    }
-
-
-    // 2. Renderizar Mecânicos Disponíveis (Por Categoria)
-    trackingAvailableMechanics.innerHTML = '';
-    
-    // CORREÇÃO: Filtra usando m.isAvailable === true (o correto) 
-    // em vez de m.status === 'available' (que não existe).
-    // Também adiciona a verificação para garantir que ele não esteja em um serviço ativo.
-    const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
-    const available = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
-
-    // CORREÇÃO: Agrupa por 'role' (função) em vez de 'category' (que não existe)
-    // e usa a função getRoleDisplayName() que você já tinha.
-    const grouped = available.reduce((acc, mech) => {
-        const cat = getRoleDisplayName(mech.role); // Usando a função existente
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(mech.name);
-        return acc;
-    }, {});
-
-    let availableHtml = '';
-    // Gera o HTML para as categorias
-    for (const category in grouped) {
-        availableHtml += `
-        <h4>${category}</h4>
-        <ul>${grouped[category].map(name => `<li>${name}</li>`).join('')}</ul>
-        `;
-    }
-    
-    // Adiciona o HTML ou uma mensagem de "nenhum disponível"
-    if (availableHtml === '') {
-        trackingAvailableMechanics.innerHTML = '<p style="font-style: italic; color: #777;">Nenhum mecânico disponível.</p>';
-    } else {
-        trackingAvailableMechanics.innerHTML = availableHtml;
-    }
-
-    // 3. Renderizar Próximos Serviços (Fila)
-    // CORREÇÃO: Removendo dados fictícios (placeholders)
-    // Esta funcionalidade (fila de espera) não está implementada no seu código.
-    // O código anterior mostrava dados falsos ("Carro X", "Carro Y").
-    // Este novo texto informa que a função não está implementada.
-    trackingNextServices.innerHTML = `
-        <p style="font-style: italic; color: #777;">
-            A funcionalidade de "Fila de Próximos Serviços" não está implementada.
-        </p>
-    `;
-    }
-    
-    async function handleStartService(event) {
-        event.preventDefault();
-
-        const mechanicFbId = mechanicSelect.value;
-        const mechanicOption = mechanicSelect.options[mechanicSelect.selectedIndex];
-        const mechanicName = mechanicOption.dataset.name;
-        
-        const serviceFbId = serviceSelect.value;
-        const serviceOption = serviceSelect.options[serviceSelect.selectedIndex];
-        const serviceDesc = serviceOption.dataset.name;
-
-        const carPlate = carPlateInput.value.toUpperCase(); // Captura e padroniza
-        const carModel = carModelInput.value; // Captura o modelo
-
-
-        if (!mechanicFbId || !serviceFbId) {
-            alert("Por favor, selecione um funcionário e um serviço.");
-            return;
-        }
-        
-        const mechanic = ALL_MECHANICS.find(m => m.fbId === mechanicFbId);
-        
-        const newService = {
-            mechanicId: mechanicFbId, // ID do Firebase do funcionário
-            mechanicName: mechanicName,
-            mechanicRole: mechanic ? mechanic.role : 'UNKNOWN',
-            serviceId: serviceFbId, // ID do Firebase do serviço
-            serviceDesc: serviceDesc,
-            carPlate: carPlate,  // NOVO: Placa
-            carModel: carModel,  // NOVO: Modelo
-            status: 'in-progress',
-            startedBy: CURRENT_USER,
-            startTime: new Date().toISOString()
-        };
-
-        // Salva no Firestore (automaticamente notifica todos os usuários)
-        await addToDB(C_ACTIVE, newService);
-
-        serviceSelect.value = '';
-        mechanicSelect.value = '';
-        carPlateInput.value = '';
-        carModelInput.value = '';
-        validateForm();
-    }
-
-    async function handleAddToQueue(event) {
-    event.preventDefault();
-
-    const carPlate = queueCarPlateInput.value.trim().toUpperCase();
-    const carModel = queueCarModelInput.value.trim();
-
-    
-    
-    // NOVO: Pega todos os checkboxes de serviço marcados
-    const checkedCheckboxes = document.querySelectorAll('input[name="queue-service"]:checked');
-
-    const selectedServiceIds = Array.from(checkedCheckboxes).map(cb => cb.value);
-
-    if (selectedServiceIds.length === 0) {
-        alert("Selecione ao menos um serviço para adicionar à fila.");
-        return;
-    }
-
-    const queueData = {
-        carPlate: carPlate,
-        carModel: carModel,
-        serviceIds: selectedServiceIds, // Array de IDs
-        queuedAt: new Date().toISOString(), // Timestamp para a ordem
-        addedBy: CURRENT_USER 
-    };
-
-    await addToDB(C_QUEUE_SERVICES, queueData);
-
-    // Limpa o formulário
-    queueCarPlateInput.value = '';
-    queueCarModelInput.value = '';
-    Array.from(queueServicesSelect.options).forEach(option => option.selected = false);
-
-    // Limpa os checkboxes após adicionar à fila
-    checkedCheckboxes.forEach(cb => cb.checked = false);
-
-    }
-
-    async function handleStopService(serviceFbId, mechanicFbId) {
-    if (!confirm("Confirmar a finalização deste serviço?")) return;
-    
-    const serviceToStop = window.ACTIVE_SERVICES.find(s => s.fbId === serviceFbId);
-    
-    if (serviceToStop) {
-        const now = Date.now();
-        const startTimeStamp = new Date(serviceToStop.startTime).getTime();
-        const endTimeISO = new Date(now).toISOString();
-
-        // Novo bloco try/catch para debug
-        try {
-            // 2. REGISTRA O SERVIÇO NO HISTÓRICO (C_COMPLETED)
-            const completedService = {
-                ...serviceToStop,
-                endTime: endTimeISO,
-                durationSeconds: Math.floor((now - startTimeStamp) / 1000),
-                completedAt: now
-            };
-            delete completedService.fbId; 
-            await addToDB(C_COMPLETED, completedService);
-
-            // 3. ATUALIZA O queueTime do funcionário (vai para o fim da fila)
-            await updateInDB(C_MECHANICS, mechanicFbId, { 
-                queueTime: now,
-                isAvailable: true // Garante que ele está marcado como disponível
-            });
-            
-            // 4. Remove o serviço da lista ativa
-            await deleteFromDB(C_ACTIVE, serviceFbId);
-            
-            console.log(`Serviço ${serviceFbId} finalizado com sucesso.`);
-
-        } catch (error) {
-            console.error("ERRO CRÍTICO AO FINALIZAR SERVIÇO:", error);
-            alert("Falha ao finalizar o serviço. Verifique o console.");
-        }
-    }
-    }
-
-    // ===============================================
-    // === TELA 2: LÓGICA DO RELATÓRIO DIÁRIO ===
-    // ===============================================
-    
-    async function renderDailyReport() {
-        const today = new Date().toLocaleDateString('pt-BR');
-        reportDateSpan.textContent = today;
-        reportListDiv.innerHTML = '<div>Carregando relatório...</div>';
-        
-        try {
-            // Consulta o Firebase
-            const snapshot = await db.collection(C_COMPLETED)
-                                     .orderBy('completedAt', 'desc')
-                                     .get();
-                                     
-            const completedServices = snapshot.docs
-                .map(doc => ({ id: doc.id, ...doc.data() }))
-                .filter(s => s.completedAt && isToday(s.completedAt));
-
-            if (completedServices.length === 0) {
-                reportListDiv.innerHTML = '<div style="margin-top: 20px; font-style: italic; color: #777;">Nenhum serviço finalizado hoje.</div>';
-                return;
-            }
-
-            const reportByMechanic = completedServices.reduce((acc, service) => {
-                const name = `${service.mechanicName} (${getRoleDisplayName(service.mechanicRole)})`;
-                if (!acc[name]) {
-                    acc[name] = { totalDuration: 0, services: [] };
-                }
-                acc[name].services.push(service);
-                acc[name].totalDuration += service.durationSeconds;
-                return acc;
-            }, {});
-
-            const sortedMechanicNames = Object.keys(reportByMechanic).sort();
-            reportListDiv.innerHTML = '';
-
-            sortedMechanicNames.forEach(name => {
-                // ... (Criação do HTML do relatório como antes)
-                const data = reportByMechanic[name];
-                const groupDiv = document.createElement('div');
-                groupDiv.className = 'mechanic-report-group';
-                
-                let html = `<h3>Funcionário: ${name}</h3>`;
-                html += '<div class="service-report-row" style="font-weight: bold; border-bottom: 1px solid #ccc; padding-top: 0;"><span>Serviço</span><span>Início</span><span>Fim</span><span>Duração</span></div>';
-                
-                data.services.forEach(s => {
-                    const startTime = new Date(s.startTime).toLocaleTimeString('pt-BR');
-                    const endTime = new Date(s.endTime).toLocaleTimeString('pt-BR');
-                    html += `
-                        <div class="service-report-row">
-                            <span>${s.serviceDesc}</span>
-                            <span>${startTime}</span>
-                            <span>${endTime}</span>
-                            <span>${formatTime(s.durationSeconds)}</span>
-                        </div>
-                    `;
-                });
-
-                html += `<div class="report-summary">Total de Serviços: ${data.services.length} | Produtividade Total: ${formatTime(data.totalDuration)}</div>`;
-                
-                groupDiv.innerHTML = html;
-                reportListDiv.appendChild(groupDiv);
-            });
-
-        } catch (error) {
-            console.error("Erro ao gerar relatório:", error);
-            reportListDiv.innerHTML = '<div style="color: red;">Erro ao carregar o relatório. Verifique a conexão com o Firebase.</div>';
-        }
-    }
-    
-    btnClearReport.addEventListener('click', async () => {
-        if (confirm("ATENÇÃO: Você tem certeza que deseja limpar o histórico COMPLETO de serviços finalizados? Esta ação é irreversível.")) {
-            reportListDiv.innerHTML = '<div>Limpando histórico...</div>';
-            try {
-                const snapshot = await db.collection(C_COMPLETED).get();
-                const batch = db.batch();
-                snapshot.docs.forEach((doc) => {
-                    batch.delete(doc.ref);
-                });
-                await batch.commit();
-                alert("Histórico de serviços limpo com sucesso.");
-                renderDailyReport();
-            } catch (error) {
-                console.error("Erro ao limpar histórico:", error);
-                alert("Erro ao limpar o histórico. Tente novamente.");
-                renderDailyReport();
-            }
-        }
-    });
-
-
-    // ===============================================
-    // === TELA 3: LÓGICA DO REGISTRO DE PONTO ===
-    // ===============================================
-
-    function renderTimeclockCards() {
-        // ALL_MECHANICS já está carregado pelo listener
-        const allMechanics = [...ALL_MECHANICS].sort((a, b) => a.name.localeCompare(b.name));
-        timeclockList.innerHTML = '';
-
-        if (allMechanics.length === 0) {
-             timeclockList.innerHTML = '<p>Nenhum funcionário cadastrado. Cadastre em Administração.</p>';
-             return;
-        }
-
-        allMechanics.forEach(m => {
-            const status = getMechanicStatus(m);
-            const roleName = getRoleDisplayName(m.role);
-            const queueTimeDisplay = m.queueTime ? new Date(m.queueTime).toLocaleTimeString('pt-BR') : 'N/A';
-            
-            const card = document.createElement('div');
-            card.className = 'timeclock-card';
-            card.dataset.id = m.fbId; // Usa fbId
-            
-            // Verifica se está ativo para desabilitar o botão de Saída/Pausa
-            const isBusy = window.ACTIVE_SERVICES && window.ACTIVE_SERVICES.some(s => s.mechanicId === m.fbId);
-
-            card.innerHTML = `
-                <h3>${m.name} <small>(${roleName})</small></h3>
-                <div class="timeclock-status ${status.class}">${status.text}</div>
-                <small>Na fila desde: ${queueTimeDisplay}</small>
-                <div class="timeclock-buttons">
-                    <button class="btn-clock-in" data-action="chegada" ${m.isAvailable === true ? 'disabled' : ''}>Chegada / Retorno</button>
-                    <button class="btn-clock-out" data-action="saida" ${m.isAvailable === false || isBusy ? 'disabled' : ''}>Pausa / Saída</button>
-                </div>
-            `;
-            timeclockList.appendChild(card);
-            
-            // Adiciona listeners aos botões dentro do card
-            card.querySelector('.btn-clock-in').addEventListener('click', () => handleTimeclock(m.fbId, true));
-            card.querySelector('.btn-clock-out').addEventListener('click', () => handleTimeclock(m.fbId, false));
-        });
-    }
-
-            // Setup Listeners de Formulário
-        document.getElementById('new-service-form').addEventListener('submit', handleStartService);
-        // NOVO: Listener de Login
-        loginForm.addEventListener('submit', handleLogin);
-        // ... (o restante dos listeners)
-
-    async function handleTimeclock(mechanicFbId, isClockIn) {
-        const updateData = {};
-        
-        if (isClockIn) {
-            updateData.isAvailable = true;
-            updateData.queueTime = Date.now(); // Entrou, vai para o fim da fila
-        } else {
-            updateData.isAvailable = false;
-            // Não zera queueTime, apenas marca como indisponível
-        }
-        
-        await updateInDB(C_MECHANICS, mechanicFbId, updateData);
-    }
-    
-    // ===============================================
-    // === TELA 4: LÓGICA DE ADMINISTRAÇÃO ===
-    // ===============================================
-
-    function renderAdminLists() {
-        renderAdminMechanics();
-        renderAdminServices();
-    }
-    
-    function renderAdminMechanics() {
-        const ul = adminMechanicsList.querySelector('ul');
-        ul.innerHTML = '';
-        ALL_MECHANICS.forEach(m => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <span>${m.name} (${getRoleDisplayName(m.role)})</span>
-                <button class="btn-delete" data-fbid="${m.fbId}">Excluir</button>
-            `;
-            ul.appendChild(li);
-        });
-        ul.querySelectorAll('.btn-delete').forEach(btn => {
-            btn.addEventListener('click', (e) => handleDeleteMechanic(e.target.dataset.fbid));
-        });
-    }
-    
-    async function handleAddMechanic(event) {
-        event.preventDefault();
-        const name = inputMechanicName.value.trim();
-        const role = selectMechanicRole.value;
-        
-        if (!name || !role) return;
-        
-        // Verifica se o funcionário já existe
-        if (ALL_MECHANICS.some(m => m.name.toLowerCase() === name.toLowerCase())) {
-            alert("Este funcionário já existe.");
-            return;
-        }
-        
-        // Cria novo funcionário com isAvailable=false (Saída) e queueTime inicial.
-        await addToDB(C_MECHANICS, { 
-            name: name, 
-            role: role, 
-            isAvailable: false, 
-            queueTime: Date.now() 
-        });
-        
-        inputMechanicName.value = '';
-        selectMechanicRole.value = 'MECHANIC';
-    }
-
-    async function handleDeleteMechanic(fbId) {
-        // Em uma versão real, você checaria se o mecânico está em serviço antes de deletar
-        if (!confirm("Tem certeza que deseja excluir este funcionário?")) return;
-        await deleteFromDB(C_MECHANICS, fbId);
-    }
-
-    function renderAdminServices() {
-        const ul = adminServicesList.querySelector('ul');
-        ul.innerHTML = '';
-        ALL_SERVICES.forEach(s => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <span>${s.name}</span>
-                <button class="btn-delete" data-fbid="${s.fbId}">Excluir</button>
-            `;
-            ul.appendChild(li);
-        });
-        ul.querySelectorAll('.btn-delete').forEach(btn => {
-            btn.addEventListener('click', (e) => handleDeleteService(e.target.dataset.fbid));
-        });
-    }
-
-            
-
-        function renderQueueList() {
-        queueList.innerHTML = '';
-        if (ALL_QUEUE.length === 0) {
-            queueList.innerHTML = '<p>Nenhum veículo na fila de espera.</p>';
-            return;
-        }
-
-        async function handleStartFromQueue(queueFbId) { // Certifique-se de que é ASYNC!
-            if (!confirm("Deseja iniciar o serviço deste veículo agora?")) return;
-
-            // 1. Encontra o item da fila
-            const queueItem = ALL_QUEUE.find(item => item.fbId === queueFbId);
-            if (!queueItem) {
-                alert("Item da fila não encontrado.");
-                return;
-            }
-            
-            // 2. Lógica de transição (que você enviou)
-            alert("Agora selecione o Mecânico e o Serviço no formulário 'Iniciar Novo Serviço'. Os dados do carro foram copiados.");
-            
-            // Copia os dados para o formulário de Iniciar Novo Serviço
-            document.getElementById('car-plate').value = queueItem.carPlate;
-            document.getElementById('car-model').value = queueItem.carModel;
-            
-            // 3. Remove da fila (DELETE)
-            await deleteFromDB(C_QUEUE_SERVICES, queueFbId); // await só funciona em função async
-            
-            // Redireciona para o painel de serviço (se não estiver já)
-            showView('painel'); 
-        } // <--- CHAVE DE FECHAMENTO QUE ESTAVA FALTANDO OU INCORRETA!
-
-        ALL_QUEUE.forEach(item => {
-            // Mapeia os IDs de serviço para os nomes
-            const serviceNames = item.serviceIds.map(id => {
-                const service = ALL_SERVICES.find(s => s.fbId === id);
-                return service ? service.name : 'Serviço Desconhecido';
-            }).join(', ');
-            
-            const html = `
-                <div class="queue-item">
-                    <p><strong>Placa:</strong> ${item.carPlate} | <strong>Modelo:</strong> ${item.carModel}</p>
-                    <p><strong>Serviços:</strong> ${serviceNames}</p>
-                    <p>Adicionado em: ${formatTime(item.queuedAt)}</p>
-                    
-                    <button onclick="handleStartFromQueue('${item.fbId}')" class="btn-secondary" style="margin-top: 10px;">
-                        Iniciar Serviço
-                    </button>
-                `; // Certifique-se de que a crase está fechada corretamente
-            queueList.innerHTML += html;
-        });
-    }
-
-        function populateQueueServicesSelect() {
-        queueServicesSelect.innerHTML = '';
-        ALL_SERVICES.forEach(service => {
-            const option = document.createElement('option');
-            option.value = service.fbId;
-            option.textContent = service.name;
-            queueServicesSelect.appendChild(option);
-        });
-    }
-
-
-        
-
-    async function handleAddService(event) {
-        event.preventDefault();
-        const name = inputServiceName.value.trim();
-        if (!name) return;
-        
-        if (ALL_SERVICES.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-            alert("Este serviço já existe.");
-            return;
-        }
-        
-        await addToDB(C_SERVICES, { name: name });
-        inputServiceName.value = '';
-    }
-
-    async function handleDeleteService(fbId) {
-        // Em uma versão real, você checaria se o serviço está em uso antes de deletar
-        if (!confirm("Tem certeza que deseja excluir este serviço?")) return;
-        await deleteFromDB(C_SERVICES, fbId);
-    }
-    
-    // ===============================================
-    // === INICIALIZAÇÃO DA APLICAÇÃO ===
-    // ===============================================
-    document.addEventListener('DOMContentLoaded', () => {
-    // Setup Listeners de Navegação
-    document.getElementById('nav-painel').addEventListener('click', () => showView('painel'));
-    document.getElementById('nav-tracking').addEventListener('click', () => showView('tracking')); // Adicionado listener de tracking
-    document.getElementById('nav-report').addEventListener('click', () => showView('report'));
-    document.getElementById('nav-timeclock').addEventListener('click', () => showView('timeclock'));
-    document.getElementById('nav-config').addEventListener('click', () => showView('config'));
-
-    // --- CORREÇÃO: INICIALIZAÇÃO DAS VARIÁVEIS DOM ---
-    // Você DEVE inicializar a variável AQUI, depois que o HTML foi carregado.
-    queueServicesContainer = document.getElementById('queue-services-container'); 
-    
-    // Setup Listeners de Formulário
-    document.getElementById('new-service-form').addEventListener('submit', handleStartService);
-    queueForm.addEventListener('submit', handleAddToQueue); // Listener do formulário de fila
-    
-    mechanicSelect.addEventListener('change', validateForm);
-    serviceSelect.addEventListener('change', validateForm);
-    formMechanics.addEventListener('submit', handleAddMechanic);
-    formServices.addEventListener('submit', handleAddService);
-    
-    carPlateInput.addEventListener('input', validateForm);
-    carModelInput.addEventListener('input', validateForm);
-
-    // Inicia a aplicação e configura os listeners do Firebase
-    initializeApp();
-});
-</script> 
+</style>
 </head>
 <body>
 
+<div id="login-screen" style="display: block;">
+<h2>Acesso ao Painel</h2>
+<form id="login-form">
+<input type="text" id="login-email" placeholder="E-mail" required>
+<input type="password" id="login-password" placeholder="Senha" required>
+<button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Entrar</button>
+<p id="login-error" style="color: red; margin-top: 10px; display: none;"></p>
+</form>
+</div>
 
-    <div id="login-screen" style="display: block;">
-        <h2>Acesso ao Painel</h2>
-        <form id="login-form">
-            <input type="text" id="login-email" placeholder="E-mail" required>
-            <input type="password" id="login-password" placeholder="Senha" required>
-            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Entrar</button>
-            <p id="login-error" style="color: red; margin-top: 10px; display: none;"></p>
-        </form>
-    </div>
+<div id="app-content">
+<nav>
+<button id="nav-painel" class="active" onclick="showView('painel')">Painel de Serviço</button>
+<button id="nav-tracking" onclick="showView('tracking')">Acompanhamento</button>
+<button id="nav-report" onclick="showView('report')">Relatório Diário</button>
+<button id="nav-timeclock" onclick="showView('timeclock')">Registro de Ponto</button>
+<button id="nav-config" onclick="showView('config')">Administração</button>
+<button class="btn-secondary" onclick="handleLogout()" style="margin-left: auto;">Sair</button>
+</nav>
+<div class="logo-container">
+<img src="https://caa-al.org.br/img/convenios/446_logo.jpg?w=250&fit=crop&ud=1760605299" alt="Logo da Clínica" class="app-logo">
+</div>
 
-    <div id="app-content">
-        <nav>
-            <button id="nav-painel" class="active" onclick="showView('painel')">Painel de Serviço</button>
-            <button id="nav-tracking" onclick="showView('tracking')">Acompanhamento</button>
-            <button id="nav-report" onclick="showView('report')">Relatório Diário</button>
-            <button id="nav-timeclock" onclick="showView('timeclock')">Registro de Ponto</button>
-            <button id="nav-config" onclick="showView('config')">Administração</button>
-            <button class="btn-secondary" onclick="handleLogout()" style="margin-left: auto;">Sair</button>
-        </nav>
+<div id="view-painel" class="view-container">
+<div class="container">
+<div class="sidebar">
+<h3>Iniciar Novo Serviço</h3>
+<form id="new-service-form">
+<select id="mechanic-select" required>
+<option value="">-- Selecione um Funcionário --</option>
+</select>
+<select id="service-select" required>
+<option value="">-- Selecione um Serviço --</option>
+</select>
+<label for="car-plate">Placa do Carro:</label>
+<input type="text" id="car-plate" required>
+<label for="car-model">Modelo do Carro:</label>
+<input type="text" id="car-model" required>
+<button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
+</form>
 
-    <div class="logo-container">
-        <img src="https://caa-al.org.br/img/convenios/446_logo.jpg?w=250&fit=crop&ud=1760605299" alt="https://clinicaruniao.com.br/wp-content/uploads/2024/07/clinicar_logo-removebg-preview.png" class="app-logo">
-    </div>
+<div style="margin-top: 30px;">
+<h3>Registrar Entrada do Veículo (Fila)</h3>
+<form id="new-queue-form">
+<label for="queue-car-plate">Placa do Carro:</label>
+<input type="text" id="queue-car-plate" required>
+<label for="queue-car-model">Modelo do Carro:</label>
+<input type="text" id="queue-car-model" required>
+<label for="queue-services-container">Serviços a Realizar:</label>
+<div id="queue-services-container" class="checkbox-container">
+</div>
+<button type="submit" class="btn-primary" style="margin-top: 15px;">Adicionar à Fila</button>
+</form>
+</div>
 
-    <div id="view-painel" class="view-container">
-    <div class="container">
-        <div class="sidebar">
-            <h3>Iniciar Novo Serviço</h3>
-            <form id="new-service-form">
-                <select id="mechanic-select" required>
-                    <option value="">-- Selecione um Funcionário --</option>
-                </select>
-                <select id="service-select" required>
-                    <option value="">-- Selecione um Serviço --</option>
-                </select>
-                <label for="car-plate">Placa do Carro:</label>
-                <input type="text" id="car-plate" required>
-                
-                <label for="car-model">Modelo do Carro:</label>
-                <input type="text" id="car-model" required>
-                <button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
-            </form>
+<div id="available-mechanics-section" style="margin-top: 30px;">
+<h3>Mecânicos Disponíveis</h3>
+<div id="mechanic-list-general" class="available-list-group"></div>
+<h3>Alinhadores Disponíveis</h3>
+<div id="mechanic-list-aligner" class="available-list-group"></div>
+<h3>Balanceadores Disponíveis</h3>
+<div id="mechanic-list-balancer" class="available-list-group"></div>
+</div>
 
-            <h2>Painel de Serviço</h2>
-    
-            <div style="display: flex; gap: 20px;">
-                
+</div>
+<div class="main-content">
+<h3 style="margin-top: 0;">Fila de Espera</h3>
+<div id="queue-list" class="service-list">
+</div>
 
-                <div style="flex: 1;">
-                    <h3>Registrar Entrada do Veículo (Fila)</h3>
-                    <form id="new-queue-form">
-                        
-                        <label for="queue-car-plate">Placa do Carro:</label>
-                        <input type="text" id="queue-car-plate" required>
-                        
-                        <label for="queue-car-model">Modelo do Carro:</label>
-                        <input type="text" id="queue-car-model" required>
-
-                        <label for="queue-services-container">Serviços a Realizar:</label>
-                        <div id="queue-services-container" class="checkbox-container">
-                            </div>
-                        <input type="hidden" id="queue-services-hidden" required>
-
-                        <button type="submit" class="btn-primary" style="margin-top: 15px;">Adicionar à Fila</button>
-                    </form>
-                </div>
-
-            </div>
-            
-            <h3 style="margin-top: 30px;">Fila de Espera</h3>
-            <div id="queue-list" class="service-list">
-                </div>
-            
-            <h3 style="margin-top: 30px;">Serviços em Andamento</h3>
-            <div id="in-progress-list" class="service-list">
-                </div>
-
-            <div id="available-mechanics-section">
-                <h3>Mecânicos Disponíveis</h3>
-                <div id="mechanic-list-general" class="available-list-group"></div>
-                <h3>Alinhadores Disponíveis</h3>
-                <div id="mechanic-list-aligner" class="available-list-group"></div>
-                <h3>Balanceadores Disponíveis</h3>
-                <div id="mechanic-list-balancer" class="available-list-group"></div>
-            </div>
-        </div>
-
-        <div class="main-content">
-            <h2>Serviços em Andamento</h2>
-            <div id="in-progress-list">
-                </div>
-        </div>
-    </div>
+<h3 style="margin-top: 30px;">Serviços em Andamento</h3>
+<div id="in-progress-list" class="service-list">
+</div>
+</div>
+</div>
 </div>
 
 <div id="view-report" class="view-container">
-    <div id="report-header">
-        <h2>Relatório Diário: <span id="report-date"></span></h2>
-        <button id="btn-clear-report" class="btn-delete">Limpar Histórico Completo</button>
-    </div>
-    <div id="report-list">
-        </div>
+<div id="report-header">
+<h2>Relatório Diário: <span id="report-date"></span></h2>
+<button id="btn-clear-report" class="btn-delete">Limpar Histórico Completo</button>
+</div>
+<div id="report-list">
+</div>
 </div>
 
 <div id="view-tracking" class="view-container">
-    <h2>Acompanhamento de Serviços</h2>
+<h2>Acompanhamento de Serviços</h2>
+<section style="display: flex; flex-direction: column; gap: 20px;">
+<div style="flex: 1;">
+<h3>Serviços em Andamento</h3>
+<div id="tracking-in-progress-list" class="service-list">
+</div>
+</div>
 
-    <section>
-        <h3>Serviços em Andamento</h3>
-        <div id="tracking-in-progress-list" class="service-list">
-            </div>
-    </section>
+<div style="flex: 1;">
+<h3>Próximos Serviços (Em Fila)</h3>
+<div id="tracking-next-services">
+</div>
+</div>
 
-    <section style="display: flex; justify-content: space-between; gap: 20px; margin-top: 30px;">
-        <div style="flex: 1;">
-            <h3>Próximos Serviços (Em Fila)</h3>
-            <div id="tracking-next-services">
-                </div>
-        </div>
-        
-        <div style="flex: 1; max-width: 300px;">
-            <h3>Mecânicos Disponíveis</h3>
-            <div id="tracking-available-mechanics">
-                </div>
-        </div>
-    </section>
+<div style="flex: 1; max-width: 400px;">
+<h3>Mecânicos Disponíveis</h3>
+<div id="tracking-available-mechanics">
+</div>
+</div>
+</section>
 </div>
 
 <div id="view-timeclock" class="view-container">
-    <h2>Registro de Ponto</h2>
-    <div id="timeclock-list" class="timeclock-list">
-        </div>
+<h2>Registro de Ponto</h2>
+<div id="timeclock-list" class="timeclock-list">
+</div>
 </div>
 
 <div id="view-config" class="view-container">
-    <h2>Administração</h2>
-    <div class="config-container">
-        <div class="admin-section">
-            <h3>Gerenciar Funcionários</h3>
-            <form id="new-mechanic-form" class="admin-form">
-                <input type="text" id="input-mechanic-name" placeholder="Nome do Funcionário" required>
-                <select id="select-mechanic-role" required>
-                    <option value="MECHANIC">Mecânico Geral</option>
-                    <option value="ALIGNER">Alinhador</option>
-                    <option value="BALANCER">Balanceador</option>
-                </select>
-                <button type="submit" class="btn-primary">Adicionar Funcionário</button>
-            </form>
-            <div class="admin-list" id="admin-mechanics-list">
-                <ul></ul>
-            </div>
-        </div>
-
-        <div class="admin-section">
-            <h3>Gerenciar Serviços</h3>
-            <form id="new-service-config-form" class="admin-form">
-                <input type="text" id="input-service-name" placeholder="Nome do Serviço (Ex: Troca de Pneu)" required>
-                <button type="submit" class="btn-primary">Adicionar Serviço</button>
-            </form>
-            <div class="admin-list" id="admin-services-list">
-                <ul></ul>
-            </div>
-        </div>
-    </div>
+<h2>Administração</h2>
+<div class="config-container">
+<div class="admin-section">
+<h3>Gerenciar Funcionários</h3>
+<form id="new-mechanic-form" class="admin-form">
+<input type="text" id="input-mechanic-name" placeholder="Nome do Funcionário" required>
+<select id="select-mechanic-role" required>
+<option value="MECHANIC">Mecânico Geral</option>
+<option value="ALIGNER">Alinhador</option>
+<option value="BALANCER">Balanceador</option>
+</select>
+<button type="submit" class="btn-primary">Adicionar Funcionário</button>
+</form>
+<div class="admin-list" id="admin-mechanics-list">
+<ul></ul>
+</div>
+</div>
+<div class="admin-section">
+<h3>Gerenciar Serviços</h3>
+<form id="new-service-config-form" class="admin-form">
+<input type="text" id="input-service-name" placeholder="Nome do Serviço (Ex: Troca de Pneu)" required>
+<button type="submit" class="btn-primary">Adicionar Serviço</button>
+</form>
+<div class="admin-list" id="admin-services-list">
+<ul></ul>
+</div>
+</div>
+</div>
 </div>
 
+<script>
+// ******************************************************
+// *** 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
+// ******************************************************
+let queueServicesContainer;
+// Seu web app's Firebase configuration
+const firebaseConfig = {
+apiKey: "AIzaSyB6XbdcQyKiZYtVXXwAxRI8cv90GhT-bD8",
+authDomain: "painelprodutividade-dd513.firebaseapp.com",
+projectId: "painelprodutividade-dd513",
+storageBucket: "painelprodutividade-dd513.firebasestorage.app",
+messagingSenderId: "535369536853",
+appId: "1:535369536853:web:4d0755d7470b026fa64bdc",
+measurementId: "G-NRZ55SHKN7"
+};
+
+// Inicializa o Firebase (v9.6.1 de Compatibilidade)
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+const analytics = firebase.analytics();
+
+// NOVOS ELEMENTOS DOM PARA LOGIN
+const loginScreen = document.getElementById('login-screen');
+const appContent = document.getElementById('app-content');
+const loginForm = document.getElementById('login-form');
+const loginEmail = document.getElementById('login-email');
+const loginPassword = document.getElementById('login-password');
+const loginError = document.getElementById('login-error');
+
+// Nomes das "Coleções" no Firestore
+const C_MECHANICS = 'mechanics';
+const C_SERVICES = 'services';
+const C_QUEUE_SERVICES = 'queue_services'; // Nova coleção no Firebase
+const C_ACTIVE = 'activeServices';
+const C_COMPLETED = 'completedServices';
+
+// ... (Variáveis DOM existentes)
+const queueForm = document.getElementById('new-queue-form');
+const queueCarPlateInput = document.getElementById('queue-car-plate');
+const queueCarModelInput = document.getElementById('queue-car-model');
+const queueList = document.getElementById('queue-list');
+
+// === ESTADO DA APLICAÇÃO (Dados em memória para uso no frontend) ===
+let activeTimers = {};
+let ALL_MECHANICS = [];
+let ALL_SERVICES = [];
+let CURRENT_USER = null; // ESSENCIAL: Declaração global
+// CORREÇÃO: Removido ALL_IN_PROGRESS por ser redundante com window.ACTIVE_SERVICES
+const ALL_QUEUE = []; // NOVO: Array para guardar a fila
+
+// === CONSTANTES E ELEMENTOS DO DOM (MANTIDOS) ===
+const ROLES = {
+MECHANIC: 'Mecânico Geral',
+ALIGNER: 'Alinhador',
+BALANCER: 'Balanceador'
+};
+
+// Elementos DOM (Certifique-se de que estas variáveis estão definidas acima da função initializeApp)
+const viewPainel = document.getElementById('view-painel');
+const viewReport = document.getElementById('view-report');
+const viewTimeclock = document.getElementById('view-timeclock');
+const viewConfig = document.getElementById('view-config');
+const navPainel = document.getElementById('nav-painel'); // Certifique-se de que os botões de navegação têm IDs
+const navReport = document.getElementById('nav-report');
+const navTimeclock = document.getElementById('nav-timeclock');
+const navConfig = document.getElementById('nav-config');
+// ... (após as declarações de viewReport, viewTimeclock, etc.)
+const viewTracking = document.getElementById('view-tracking'); // Nova view
+const navTracking = document.getElementById('nav-tracking'); // Novo botão
+// Containers de destino para a nova view
+const trackingInProgressList = document.getElementById('tracking-in-progress-list');
+const trackingNextServices = document.getElementById('tracking-next-services');
+const trackingAvailableMechanics = document.getElementById('tracking-available-mechanics');
+// ...
+const mechanicSelect = document.getElementById('mechanic-select');
+const serviceSelect = document.getElementById('service-select');
+// Novos inputs do formulário
+const carPlateInput = document.getElementById('car-plate');
+const carModelInput = document.getElementById('car-model');
+const playButton = document.getElementById('play-button');
+const inProgressList = document.getElementById('in-progress-list');
+const availableMechanicsList = document.getElementById('mechanic-list-general');
+const availableAlignersList = document.getElementById('mechanic-list-aligner');
+const availableBalancersList = document.getElementById('mechanic-list-balancer');
+const reportDateSpan = document.getElementById('report-date');
+const reportListDiv = document.getElementById('report-list');
+const btnClearReport = document.getElementById('btn-clear-report');
+const timeclockList = document.getElementById('timeclock-list');
+const formMechanics = document.getElementById('new-mechanic-form');
+const formServices = document.getElementById('new-service-config-form');
+const inputMechanicName = document.getElementById('input-mechanic-name');
+const selectMechanicRole = document.getElementById('select-mechanic-role');
+const inputServiceName = document.getElementById('input-service-name');
+const adminMechanicsList = document.getElementById('admin-mechanics-list');
+const adminServicesList = document.getElementById('admin-services-list');
+
+// ===============================================
+// === FUNÇÕES DE UTILIDADE E AUXILIARES ===
+// ===============================================
+function getRoleDisplayName(roleKey) {
+return ROLES[roleKey] || roleKey;
+}
+
+function isToday(timestamp) {
+const date = new Date(timestamp);
+const today = new Date();
+return date.getDate() === today.getDate() &&
+date.getMonth() === today.getMonth() &&
+date.getFullYear() === today.getFullYear();
+}
+
+function formatTime(totalSeconds) {
+const hours = Math.floor(totalSeconds / 3600);
+const minutes = Math.floor((totalSeconds % 3600) / 60);
+const seconds = totalSeconds % 60;
+return [hours, minutes, seconds].map(unit => String(unit).padStart(2, '0')).join(':');
+}
+
+function getMechanicStatus(mechanic) {
+if (mechanic.isAvailable === true) {
+return { text: "DISPONÍVEL", class: "status-on" };
+}
+if (mechanic.isAvailable === false && mechanic.queueTime) {
+return { text: "FORA / PAUSA", class: "status-break" };
+}
+return { text: "FORA DE EXPEDIENTE", class: "status-off" };
+}
+
+// ===============================================
+// === FUNÇÕES DE CONECTIVIDADE (FIREBASE) ===
+// ===============================================
+async function addToDB(collectionName, data) {
+try {
+const collectionRef = db.collection(collectionName);
+await collectionRef.add(data);
+} catch (error) {
+console.error(`Erro ao adicionar em ${collectionName}:`, error);
+alert("Erro ao salvar dados na nuvem.");
+}
+}
+
+async function updateInDB(collectionName, docId, data) {
+try {
+const docRef = db.collection(collectionName).doc(docId);
+await docRef.update(data);
+} catch (error) {
+console.error(`Erro ao atualizar em ${collectionName} (${docId}):`, error);
+alert("Erro ao atualizar dados na nuvem.");
+}
+}
+
+async function deleteFromDB(collectionName, docId) {
+try {
+const docRef = db.collection(collectionName).doc(docId);
+await docRef.delete();
+} catch (error) {
+console.error(`Erro ao deletar em ${collectionName} (${docId}):`, error);
+alert("Erro ao deletar dados na nuvem.");
+}
+}
+
+// ===============================================
+// === LÓGICA DE NAVEGAÇÃO E LISTENERS ===
+// ===============================================
+function showView(viewId) {
+// CORREÇÃO: Removidas linhas redundantes
+// 1. Esconder todas as views
+[viewPainel, viewReport, viewTimeclock, viewConfig, viewTracking].forEach(v => v.style.display = 'none');
+// 2. Remover a classe 'active' de todos os botões
+[navPainel, navReport, navTimeclock, navConfig, navTracking].forEach(n => n.classList.remove('active'));
+
+if (viewId === 'painel') {
+viewPainel.style.display = 'block';
+navPainel.classList.add('active');
+} else if (viewId === 'tracking') { // NOVO PONTO DE CONEXÃO
+viewTracking.style.display = 'block';
+navTracking.classList.add('active');
+renderTrackingView(); // CHAMA A FUNÇÃO DE RENDERIZAÇÃO
+}else if (viewId === 'report') {
+viewReport.style.display = 'block';
+navReport.classList.add('active');
+renderDailyReport(); // Consulta de uso único
+} else if (viewId === 'timeclock') {
+viewTimeclock.style.display = 'block';
+navTimeclock.classList.add('active');
+renderTimeclockCards();
+} else {
+viewConfig.style.display = 'block';
+navConfig.classList.add('active');
+renderAdminLists();
+}
+}
+
+// CORREÇÃO: Esta é a versão correta da função. A duplicata foi removida.
+function populateQueueServicesSelect() {
+// VERIFICAÇÃO DE SEGURANÇA: Sai da função se o elemento ainda for nulo
+if (!queueServicesContainer) {
+return;
+}
+queueServicesContainer.innerHTML = '';
+ALL_SERVICES.forEach(service => {
+const checkboxId = 'service-' + service.fbId;
+const div = document.createElement('div');
+div.className = 'checkbox-item'; // Para estilização opcional
+const checkbox = document.createElement('input');
+checkbox.type = 'checkbox';
+checkbox.id = checkboxId;
+checkbox.value = service.fbId;
+checkbox.name = 'queue-service'; // Nome comum para agrupar
+const label = document.createElement('label');
+label.htmlFor = checkboxId;
+label.textContent = service.name;
+div.appendChild(checkbox);
+div.appendChild(label);
+queueServicesContainer.appendChild(div);
+});
+}
+
+function setupFirebaseListeners() {
+// 1. LISTENERS MASTER (Funcionários e Serviços)
+db.collection(C_MECHANICS).orderBy('name').onSnapshot(snapshot => {
+ALL_MECHANICS = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+// Atualiza a visualização do Painel, Ponto e Admin
+updateAvailableMechanics(window.ACTIVE_SERVICES || []);
+if (document.getElementById('nav-timeclock').classList.contains('active')) renderTimeclockCards();
+if (document.getElementById('nav-config').classList.contains('active')) renderAdminMechanics();
+});
+
+// NOVO: Listener para a FILA DE SERVIÇOS (C_QUEUE_SERVICES)
+db.collection(C_QUEUE_SERVICES).orderBy('queuedAt').onSnapshot(snapshot => {
+ALL_QUEUE.length = 0; // Limpa o array
+snapshot.forEach(doc => {
+ALL_QUEUE.push({ fbId: doc.id, ...doc.data() });
+});
+// Renderiza a fila e atualiza o select de serviços
+renderQueueList();
+// Se você quiser que a tela de acompanhamento também use dados em tempo real:
+if (document.getElementById('view-tracking').style.display === 'block') {
+renderTrackingView();
+}
+});
+
+db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
+ALL_SERVICES.length = 0; // Limpa o array
+snapshot.forEach(doc => {
+ALL_SERVICES.push({ fbId: doc.id, ...doc.data() });
+});
+
+// ATUALIZA OS ELEMENTOS VISUAIS
+// Para o formulário "Iniciar Novo Serviço"
+populateServiceSelect();
+// NOVO: Chama para preencher os checkboxes de serviços da Fila
+populateQueueServicesSelect(); 
+// Se você tiver a renderização da tela de admin, também fica aqui:
+if (document.getElementById('nav-config').classList.contains('active')) renderAdminServices();
+});
+
+// 2. LISTENER DE SERVIÇOS ATIVOS (Tempo Real)
+db.collection(C_ACTIVE).onSnapshot(snapshot => {
+const activeServices = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+window.ACTIVE_SERVICES = activeServices; // Salva na memória global para uso imediato
+renderActiveServices(activeServices);
+updateAvailableMechanics(activeServices);
+// Atualiza a tela de Acompanhamento se ela estiver aberta
+if (document.getElementById('view-tracking').style.display === 'block') {
+renderTrackingView();
+}
+});
+}
+
+function showAppContent() {
+loginScreen.style.display = 'none';
+appContent.style.display = 'block';
+showView('painel');
+}
+
+function showLoginScreen() {
+loginScreen.style.display = 'block';
+appContent.style.display = 'none';
+}
+
+async function handleLogin(event) {
+event.preventDefault();
+loginError.style.display = 'none'; // Limpa erros antigos
+const email = loginEmail.value;
+const password = loginPassword.value;
+try {
+await auth.signInWithEmailAndPassword(email, password);
+// O onAuthStateChanged (na initializeApp) lida com o redirecionamento.
+loginEmail.value = '';
+loginPassword.value = '';
+} catch (error) {
+console.error("Erro no login:", error);
+let errorMessage = "Erro ao fazer login. Verifique o e-mail/senha.";
+if (error.code === 'auth/user-not-found') {
+errorMessage = "Usuário não encontrado.";
+} else if (error.code === 'auth/wrong-password') {
+errorMessage = "Senha incorreta.";
+}
+loginError.textContent = errorMessage;
+loginError.style.display = 'block';
+}
+}
+
+function handleLogout() {
+if (confirm("Deseja realmente sair da aplicação?")) {
+auth.signOut();
+// O onAuthStateChanged lida com o retorno à tela de login.
+}
+}
+
+// Inicialização da Aplicação
+function initializeApp() {
+// ESSENCIAL: Monitora o estado de autenticação (logado ou deslogado)
+auth.onAuthStateChanged(user => {
+if (user) {
+// CORREÇÃO: Define o CURRENT_USER global
+CURRENT_USER = user.email; 
+showAppContent();
+setupFirebaseListeners(); // Inicia a conexão com o Firestore
+} else {
+// CORREÇÃO: Limpa o CURRENT_USER global
+CURRENT_USER = null;
+showLoginScreen();
+}
+});
+}
+
+// ===============================================
+// === RESTANTE DA LÓGICA DO PAINEL, RELATÓRIO, PONTO E ADMIN ===
+// ===============================================
+
+function populateServiceSelect() {
+serviceSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
+ALL_SERVICES.forEach(s => {
+serviceSelect.innerHTML += `<option value="${s.fbId}" data-name="${s.name}">${s.name}</option>`;
+});
+}
+
+function renderMechanicGroup(listElement, group) {
+listElement.innerHTML = '';
+group.forEach((m, index) => {
+listElement.innerHTML += `
+<div class="mechanic-tag">
+<div>
+<span class="position">${index + 1}</span>
+${m.name}
+</div>
+</div>
+`;
+});
+if (group.length === 0) {
+listElement.innerHTML = '<div style="font-style: italic; color: #777; padding: 5px 0;">Nenhum disponível nesta função.</div>';
+}
+}
+
+function updateAvailableMechanics(activeServices) {
+const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
+let availableMechanics = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
+const mechanicsGroup = availableMechanics.filter(m => m.role === 'MECHANIC');
+const alignersGroup = availableMechanics.filter(m => m.role === 'ALIGNER');
+const balancersGroup = availableMechanics.filter(m => m.role === 'BALANCER');
+const rodizioSort = (a, b) => {
+return (a.queueTime || 0) - (b.queueTime || 0);
+};
+mechanicsGroup.sort(rodizioSort);
+alignersGroup.sort(rodizioSort);
+balancersGroup.sort(rodizioSort);
+// Atualiza o <select>
+mechanicSelect.innerHTML = '<option value="">-- Selecione um Funcionário --</option>';
+[...mechanicsGroup, ...alignersGroup, ...balancersGroup].forEach(m => {
+const roleName = getRoleDisplayName(m.role);
+mechanicSelect.innerHTML += `<option value="${m.fbId}" data-name="${m.name}">${m.name} (${roleName})</option>`;
+});
+// Atualiza as listas visuais
+renderMechanicGroup(availableMechanicsList, mechanicsGroup);
+renderMechanicGroup(availableAlignersList, alignersGroup);
+renderMechanicGroup(availableBalancersList, balancersGroup);
+validateForm();
+}
+
+function validateForm() {
+const isMechanicSelected = mechanicSelect.value !== "" && mechanicSelect.value !== "0";
+const isServiceSelected = serviceSelect.value !== "" && serviceSelect.value !== "0";
+const carPlateValid = carPlateInput.value.trim() !== '';
+const carModelValid = carModelInput.value.trim() !== '';
+const formValid = isMechanicSelected && isServiceSelected && carPlateValid && carModelValid;
+playButton.disabled = !formValid;
+}
+
+function renderActiveServices(activeServices) {
+// Limpa timers antigos
+Object.values(activeTimers).forEach(clearInterval);
+activeTimers = {};
+inProgressList.innerHTML = '';
+// Renderiza novos
+activeServices.forEach(service => {
+const row = document.createElement('div');
+row.className = 'service-row';
+row.setAttribute('data-fbid', service.fbId); // Usa fbId para referência
+const startTime = new Date(service.startTime);
+const roleName = getRoleDisplayName(service.mechanicRole);
+row.innerHTML = `
+<strong>${service.mechanicName} <small>(${roleName})</small></strong>
+<span class="service-desc">${service.serviceDesc}</span>
+<div class="time-display">Início: <span class="start-time">${startTime.toLocaleTimeString('pt-BR')}</span></div>
+<div class="time-display">Duração: <span class="duration">00:00:00</span></div>
+<button class="btn-stop">■ Finalizar</button>
+`;
+inProgressList.appendChild(row);
+const durationDisplay = row.querySelector('.duration');
+function updateTimer() {
+const now = new Date();
+const secondsElapsed = Math.floor((now - startTime) / 1000);
+durationDisplay.textContent = formatTime(secondsElapsed);
+}
+updateTimer();
+activeTimers[service.fbId] = setInterval(updateTimer, 1000);
+
+row.querySelector('.btn-stop').addEventListener('click', () => handleStopService(service.fbId, service.mechanicId));
+});
+}
+
+function renderTrackingView() {
+// 1. Renderizar Serviços em Andamento (com Placa e Modelo)
+const activeServices = window.ACTIVE_SERVICES || [];
+if (activeServices.length > 0) {
+trackingInProgressList.innerHTML = activeServices.map(service => {
+const mechanic = ALL_MECHANICS.find(m => m.fbId === service.mechanicId) || { name: 'Desconhecido' };
+const serviceType = ALL_SERVICES.find(s => s.fbId === service.serviceId) || { name: service.serviceDesc };
+const startTimeStr = service.startTime ? new Date(service.startTime).toLocaleTimeString('pt-BR') : 'N/A';
+return `
+<div class="tracking-card">
+<p><strong>${mechanic.name}</strong> em Serviço:</p>
+<p><strong>Carro:</strong> ${service.carModel || 'N/A'} (${service.carPlate || 'N/A'})</p>
+<p><strong>Serviço:</strong> ${serviceType.name}</p>
+<p>Início: ${startTimeStr}</p>
+</div>
+`;
+}).join('');
+} else {
+trackingInProgressList.innerHTML = '<p style="font-style: italic; color: #777;">Nenhum serviço em andamento no momento.</p>';
+}
+
+// 2. Renderizar Mecânicos Disponíveis (Por Categoria)
+trackingAvailableMechanics.innerHTML = '';
+const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
+const available = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
+const grouped = available.reduce((acc, mech) => {
+const cat = getRoleDisplayName(mech.role); // Usando a função existente
+if (!acc[cat]) acc[cat] = [];
+acc[cat].push(mech.name);
+return acc;
+}, {});
+let availableHtml = '';
+for (const category in grouped) {
+availableHtml += `
+<h4>${category}</h4>
+<ul>${grouped[category].map(name => `<li>${name}</li>`).join('')}</ul>
+`;
+}
+if (availableHtml === '') {
+trackingAvailableMechanics.innerHTML = '<p style="font-style: italic; color: #777;">Nenhum mecânico disponível.</p>';
+} else {
+trackingAvailableMechanics.innerHTML = availableHtml;
+}
+
+// 3. Renderizar Próximos Serviços (Fila)
+// CORREÇÃO: Renderiza a ALL_QUEUE real em vez de uma mensagem de "não implementado"
+if (ALL_QUEUE.length > 0) {
+trackingNextServices.innerHTML = ALL_QUEUE.map(item => {
+const serviceNames = item.serviceIds.map(id => {
+const service = ALL_SERVICES.find(s => s.fbId === id);
+return service ? service.name : 'Serviço';
+}).join(', ');
+return `
+<div class="tracking-card" style="background-color: #f8f9fa; border-color: #6c757d;">
+<p><strong>Carro:</strong> ${item.carModel || 'N/A'} (${item.carPlate || 'N/A'})</p>
+<p><strong>Serviços:</strong> ${serviceNames}</p>
+<p><small>Na fila desde: ${new Date(item.queuedAt).toLocaleTimeString('pt-BR')}</small></p>
+</div>
+`;
+}).join('');
+} else {
+trackingNextServices.innerHTML = `
+<p style="font-style: italic; color: #777;">
+Nenhum veículo na fila de espera.
+</p>
+`;
+}
+}
+
+async function handleStartService(event) {
+event.preventDefault();
+const mechanicFbId = mechanicSelect.value;
+const mechanicOption = mechanicSelect.options[mechanicSelect.selectedIndex];
+const mechanicName = mechanicOption.dataset.name;
+const serviceFbId = serviceSelect.value;
+const serviceOption = serviceSelect.options[serviceSelect.selectedIndex];
+const serviceDesc = serviceOption.dataset.name;
+const carPlate = carPlateInput.value.toUpperCase(); // Captura e padroniza
+const carModel = carModelInput.value; // Captura o modelo
+if (!mechanicFbId || !serviceFbId) {
+alert("Por favor, selecione um funcionário e um serviço.");
+return;
+}
+const mechanic = ALL_MECHANICS.find(m => m.fbId === mechanicFbId);
+const newService = {
+mechanicId: mechanicFbId, // ID do Firebase do funcionário
+mechanicName: mechanicName,
+mechanicRole: mechanic ? mechanic.role : 'UNKNOWN',
+serviceId: serviceFbId, // ID do Firebase do serviço
+serviceDesc: serviceDesc,
+carPlate: carPlate, // NOVO: Placa
+carModel: carModel, // NOVO: Modelo
+status: 'in-progress',
+startedBy: CURRENT_USER, // CORREÇÃO: Agora deve conter o email do usuário
+startTime: new Date().toISOString()
+};
+// Salva no Firestore (automaticamente notifica todos os usuários)
+await addToDB(C_ACTIVE, newService);
+serviceSelect.value = '';
+mechanicSelect.value = '';
+carPlateInput.value = '';
+carModelInput.value = '';
+validateForm();
+}
+
+async function handleAddToQueue(event) {
+event.preventDefault();
+const carPlate = queueCarPlateInput.value.trim().toUpperCase();
+const carModel = queueCarModelInput.value.trim();
+// NOVO: Pega todos os checkboxes de serviço marcados
+const checkedCheckboxes = document.querySelectorAll('input[name="queue-service"]:checked');
+const selectedServiceIds = Array.from(checkedCheckboxes).map(cb => cb.value);
+if (selectedServiceIds.length === 0) {
+alert("Selecione ao menos um serviço para adicionar à fila.");
+return;
+}
+const queueData = {
+carPlate: carPlate,
+carModel: carModel,
+serviceIds: selectedServiceIds, // Array de IDs
+queuedAt: new Date().toISOString(), // Timestamp para a ordem
+addedBy: CURRENT_USER // CORREÇÃO: Agora deve conter o email do usuário
+};
+await addToDB(C_QUEUE_SERVICES, queueData);
+// Limpa o formulário
+queueCarPlateInput.value = '';
+queueCarModelInput.value = '';
+// CORREÇÃO: Removida a linha que tentava limpar o 'queueServicesSelect' inexistente.
+// Limpa os checkboxes após adicionar à fila
+checkedCheckboxes.forEach(cb => cb.checked = false);
+}
+
+// CORREÇÃO: Esta função foi movida para fora de 'renderQueueList'
+async function handleStartFromQueue(queueFbId) { 
+if (!confirm("Deseja iniciar o serviço deste veículo agora?")) return;
+// 1. Encontra o item da fila
+const queueItem = ALL_QUEUE.find(item => item.fbId === queueFbId);
+if (!queueItem) {
+alert("Item da fila não encontrado.");
+return;
+}
+// 2. Lógica de transição
+alert("Agora selecione o Mecânico e o Serviço no formulário 'Iniciar Novo Serviço'. Os dados do carro foram copiados.");
+// Copia os dados para o formulário de Iniciar Novo Serviço
+document.getElementById('car-plate').value = queueItem.carPlate;
+document.getElementById('car-model').value = queueItem.carModel;
+
+// Tenta pré-selecionar o primeiro serviço
+if (queueItem.serviceIds && queueItem.serviceIds.length > 0) {
+document.getElementById('service-select').value = queueItem.serviceIds[0];
+}
+// Valida o formulário para habilitar o botão de play, se tudo estiver ok
+validateForm(); 
+
+// 3. Remove da fila (DELETE)
+await deleteFromDB(C_QUEUE_SERVICES, queueFbId); 
+// Redireciona para o painel de serviço (se não estiver já)
+showView('painel');
+}
+
+async function handleStopService(serviceFbId, mechanicFbId) {
+if (!confirm("Confirmar a finalização deste serviço?")) return;
+const serviceToStop = window.ACTIVE_SERVICES.find(s => s.fbId === serviceFbId);
+if (serviceToStop) {
+const now = Date.now();
+const startTimeStamp = new Date(serviceToStop.startTime).getTime();
+const endTimeISO = new Date(now).toISOString();
+try {
+// 2. REGISTRA O SERVIÇO NO HISTÓRICO (C_COMPLETED)
+const completedService = {
+...serviceToStop,
+endTime: endTimeISO,
+durationSeconds: Math.floor((now - startTimeStamp) / 1000),
+completedAt: now
+};
+delete completedService.fbId;
+await addToDB(C_COMPLETED, completedService);
+// 3. ATUALIZA O queueTime do funcionário (vai para o fim da fila)
+await updateInDB(C_MECHANICS, mechanicFbId, {
+queueTime: now,
+isAvailable: true // Garante que ele está marcado como disponível
+});
+// 4. Remove o serviço da lista ativa
+await deleteFromDB(C_ACTIVE, serviceFbId);
+console.log(`Serviço ${serviceFbId} finalizado com sucesso.`);
+} catch (error) {
+console.error("ERRO CRÍTICO AO FINALIZAR SERVIÇO:", error);
+alert("Falha ao finalizar o serviço. Verifique o console.");
+}
+}
+}
+
+// ===============================================
+// === TELA 2: LÓGICA DO RELATÓRIO DIÁRIO ===
+// ===============================================
+async function renderDailyReport() {
+const today = new Date().toLocaleDateString('pt-BR');
+reportDateSpan.textContent = today;
+reportListDiv.innerHTML = '<div>Carregando relatório...</div>';
+try {
+// Consulta o Firebase
+const snapshot = await db.collection(C_COMPLETED)
+.orderBy('completedAt', 'desc')
+.get();
+const completedServices = snapshot.docs
+.map(doc => ({ id: doc.id, ...doc.data() }))
+.filter(s => s.completedAt && isToday(s.completedAt));
+if (completedServices.length === 0) {
+reportListDiv.innerHTML = '<div style="margin-top: 20px; font-style: italic; color: #777;">Nenhum serviço finalizado hoje.</div>';
+return;
+}
+const reportByMechanic = completedServices.reduce((acc, service) => {
+const name = `${service.mechanicName} (${getRoleDisplayName(service.mechanicRole)})`;
+if (!acc[name]) {
+acc[name] = { totalDuration: 0, services: [] };
+}
+acc[name].services.push(service);
+acc[name].totalDuration += service.durationSeconds;
+return acc;
+}, {});
+const sortedMechanicNames = Object.keys(reportByMechanic).sort();
+reportListDiv.innerHTML = '';
+sortedMechanicNames.forEach(name => {
+const data = reportByMechanic[name];
+const groupDiv = document.createElement('div');
+groupDiv.className = 'mechanic-report-group';
+let html = `<h3>Funcionário: ${name}</h3>`;
+html += '<div class="service-report-row" style="font-weight: bold; border-bottom: 1px solid #ccc; padding-top: 0;"><span>Serviço</span><span>Início</span><span>Fim</span><span>Duração</span></div>';
+data.services.forEach(s => {
+const startTime = new Date(s.startTime).toLocaleTimeString('pt-BR');
+const endTime = new Date(s.endTime).toLocaleTimeString('pt-BR');
+html += `
+<div class="service-report-row">
+<span>${s.serviceDesc}</span>
+<span>${startTime}</span>
+<span>${endTime}</span>
+<span>${formatTime(s.durationSeconds)}</span>
+</div>
+`;
+});
+html += `<div class="report-summary">Total de Serviços: ${data.services.length} | Produtividade Total: ${formatTime(data.totalDuration)}</div>`;
+groupDiv.innerHTML = html;
+reportListDiv.appendChild(groupDiv);
+});
+} catch (error) {
+console.error("Erro ao gerar relatório:", error);
+reportListDiv.innerHTML = '<div style="color: red;">Erro ao carregar o relatório. Verifique a conexão com o Firebase.</div>';
+}
+}
+
+btnClearReport.addEventListener('click', async () => {
+if (confirm("ATENÇÃO: Você tem certeza que deseja limpar o histórico COMPLETO de serviços finalizados? Esta ação é irreversível.")) {
+reportListDiv.innerHTML = '<div>Limpando histórico...</div>';
+try {
+const snapshot = await db.collection(C_COMPLETED).get();
+const batch = db.batch();
+snapshot.docs.forEach((doc) => {
+batch.delete(doc.ref);
+});
+await batch.commit();
+alert("Histórico de serviços limpo com sucesso.");
+renderDailyReport();
+} catch (error) {
+console.error("Erro ao limpar histórico:", error);
+alert("Erro ao limpar o histórico. Tente novamente.");
+renderDailyReport();
+}
+}
+});
+
+// ===============================================
+// === TELA 3: LÓGICA DO REGISTRO DE PONTO ===
+// ===============================================
+function renderTimeclockCards() {
+// ALL_MECHANICS já está carregado pelo listener
+const allMechanics = [...ALL_MECHANICS].sort((a, b) => a.name.localeCompare(b.name));
+timeclockList.innerHTML = '';
+if (allMechanics.length === 0) {
+timeclockList.innerHTML = '<p>Nenhum funcionário cadastrado. Cadastre em Administração.</p>';
+return;
+}
+allMechanics.forEach(m => {
+const status = getMechanicStatus(m);
+const roleName = getRoleDisplayName(m.role);
+const queueTimeDisplay = m.queueTime ? new Date(m.queueTime).toLocaleTimeString('pt-BR') : 'N/A';
+const card = document.createElement('div');
+card.className = 'timeclock-card';
+card.dataset.id = m.fbId; // Usa fbId
+// Verifica se está ativo para desabilitar o botão de Saída/Pausa
+const isBusy = window.ACTIVE_SERVICES && window.ACTIVE_SERVICES.some(s => s.mechanicId === m.fbId);
+card.innerHTML = `
+<h3>${m.name} <small>(${roleName})</small></h3>
+<div class="timeclock-status ${status.class}">${status.text}</div>
+<small>Na fila desde: ${queueTimeDisplay}</small>
+<div class="timeclock-buttons">
+<button class="btn-clock-in" data-action="chegada" ${m.isAvailable === true ? 'disabled' : ''}>Chegada / Retorno</button>
+<button class="btn-clock-out" data-action="saida" ${m.isAvailable === false || isBusy ? 'disabled' : ''}>Pausa / Saída</button>
+</div>
+`;
+timeclockList.appendChild(card);
+// Adiciona listeners aos botões dentro do card
+card.querySelector('.btn-clock-in').addEventListener('click', () => handleTimeclock(m.fbId, true));
+card.querySelector('.btn-clock-out').addEventListener('click', () => handleTimeclock(m.fbId, false));
+});
+}
+
+async function handleTimeclock(mechanicFbId, isClockIn) {
+const updateData = {};
+if (isClockIn) {
+updateData.isAvailable = true;
+updateData.queueTime = Date.now(); // Entrou, vai para o fim da fila
+} else {
+updateData.isAvailable = false;
+// Não zera queueTime, apenas marca como indisponível
+}
+await updateInDB(C_MECHANICS, mechanicFbId, updateData);
+}
+
+// ===============================================
+// === TELA 4: LÓGICA DE ADMINISTRAÇÃO ===
+// ===============================================
+function renderAdminLists() {
+renderAdminMechanics();
+renderAdminServices();
+}
+
+function renderAdminMechanics() {
+const ul = adminMechanicsList.querySelector('ul');
+ul.innerHTML = '';
+ALL_MECHANICS.forEach(m => {
+const li = document.createElement('li');
+li.innerHTML = `
+<span>${m.name} (${getRoleDisplayName(m.role)})</span>
+<button class="btn-delete" data-fbid="${m.fbId}">Excluir</button>
+`;
+ul.appendChild(li);
+});
+ul.querySelectorAll('.btn-delete').forEach(btn => {
+btn.addEventListener('click', (e) => handleDeleteMechanic(e.target.dataset.fbid));
+});
+}
+
+async function handleAddMechanic(event) {
+event.preventDefault();
+const name = inputMechanicName.value.trim();
+const role = selectMechanicRole.value;
+if (!name || !role) return;
+// Verifica se o funcionário já existe
+if (ALL_MECHANICS.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+alert("Este funcionário já existe.");
+return;
+}
+// Cria novo funcionário com isAvailable=false (Saída) e queueTime inicial.
+await addToDB(C_MECHANICS, {
+name: name,
+role: role,
+isAvailable: false,
+queueTime: Date.now()
+});
+inputMechanicName.value = '';
+selectMechanicRole.value = 'MECHANIC';
+}
+
+async function handleDeleteMechanic(fbId) {
+// Em uma versão real, você checaria se o mecânico está em serviço antes de deletar
+if (!confirm("Tem certeza que deseja excluir este funcionário?")) return;
+await deleteFromDB(C_MECHANICS, fbId);
+}
+
+function renderAdminServices() {
+const ul = adminServicesList.querySelector('ul');
+ul.innerHTML = '';
+ALL_SERVICES.forEach(s => {
+const li = document.createElement('li');
+li.innerHTML = `
+<span>${s.name}</span>
+<button class="btn-delete" data-fbid="${s.fbId}">Excluir</button>
+`;
+ul.appendChild(li);
+});
+ul.querySelectorAll('.btn-delete').forEach(btn => {
+btn.addEventListener('click', (e) => handleDeleteService(e.target.dataset.fbid));
+});
+}
+
+// CORREÇÃO: Função reescrita para usar addEventListener e corrigir o bug do 'onclick'
+function renderQueueList() {
+queueList.innerHTML = '';
+if (ALL_QUEUE.length === 0) {
+queueList.innerHTML = '<p>Nenhum veículo na fila de espera.</p>';
+return;
+}
+
+ALL_QUEUE.forEach(item => {
+// Mapeia os IDs de serviço para os nomes
+const serviceNames = item.serviceIds.map(id => {
+const service = ALL_SERVICES.find(s => s.fbId === id);
+return service ? service.name : 'Serviço Desconhecido';
+}).join(', ');
+
+const itemDiv = document.createElement('div');
+// Adiciona estilos para se parecer com 'service-row'
+itemDiv.style.backgroundColor = '#fff';
+itemDiv.style.padding = '15px';
+itemDiv.style.borderRadius = '8px';
+itemDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+itemDiv.style.marginBottom = '10px';
+
+// CORREÇÃO: Corrigido formatTime(item.queuedAt) para new Date(...)
+itemDiv.innerHTML = `
+<p><strong>Placa:</strong> ${item.carPlate} | <strong>Modelo:</strong> ${item.carModel}</p>
+<p><strong>Serviços:</strong> ${serviceNames}</p>
+<p><small>Adicionado em: ${new Date(item.queuedAt).toLocaleTimeString('pt-BR')}</small></p>
+<button class="btn-secondary" style="margin-top: 10px;">
+Iniciar Serviço
+</button>
+`; 
+
+// Adiciona o listener de clique programaticamente
+itemDiv.querySelector('button').addEventListener('click', () => handleStartFromQueue(item.fbId));
+queueList.appendChild(itemDiv);
+});
+}
+
+// CORREÇÃO: Removida a função 'populateQueueServicesSelect' duplicada que estava aqui.
+
+async function handleAddService(event) {
+event.preventDefault();
+const name = inputServiceName.value.trim();
+if (!name) return;
+if (ALL_SERVICES.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+alert("Este serviço já existe.");
+return;
+}
+await addToDB(C_SERVICES, { name: name });
+inputServiceName.value = '';
+}
+
+async function handleDeleteService(fbId) {
+// Em uma versão real, você checaria se o serviço está em uso antes de deletar
+if (!confirm("Tem certeza que deseja excluir este serviço?")) return;
+await deleteFromDB(C_SERVICES, fbId);
+}
+
+// ===============================================
+// === INICIALIZAÇÃO DA APLICAÇÃO ===
+// ===============================================
+document.addEventListener('DOMContentLoaded', () => {
+// Setup Listeners de Navegação
+document.getElementById('nav-painel').addEventListener('click', () => showView('painel'));
+document.getElementById('nav-tracking').addEventListener('click', () => showView('tracking')); // Adicionado listener de tracking
+document.getElementById('nav-report').addEventListener('click', () => showView('report'));
+document.getElementById('nav-timeclock').addEventListener('click', () => showView('timeclock'));
+document.getElementById('nav-config').addEventListener('click', () => showView('config'));
+
+// --- CORREÇÃO: INICIALIZAÇÃO DAS VARIÁVEIS DOM ---
+queueServicesContainer = document.getElementById('queue-services-container');
+
+// Setup Listeners de Formulário
+document.getElementById('new-service-form').addEventListener('submit', handleStartService);
+queueForm.addEventListener('submit', handleAddToQueue); // Listener do formulário de fila
+mechanicSelect.addEventListener('change', validateForm);
+serviceSelect.addEventListener('change', validateForm);
+formMechanics.addEventListener('submit', handleAddMechanic);
+formServices.addEventListener('submit', handleAddService);
+carPlateInput.addEventListener('input', validateForm);
+carModelInput.addEventListener('input', validateForm);
+// CORREÇÃO: Movido o listener de login para dentro do DOMContentLoaded
+loginForm.addEventListener('submit', handleLogin);
+
+// Inicia a aplicação e configura os listeners do Firebase
+initializeApp();
+});
+</script>
 </body>
 </html>
