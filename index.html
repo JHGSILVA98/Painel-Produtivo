@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel de Produtividade V13 (Layout Separado)</title>
+<title>Painel de Produtividade V14 (Layout Separado - Corrigido)</title>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -274,7 +274,7 @@ margin: 0 auto;
 <div id="view-queue" class="view-container">
 <div class="container">
 
-        <div class="panel-column">
+    <div class="panel-column">
         <div class="admin-section">
             <h3>Registrar Entrada do Veículo (Fila)</h3>
             <form id="new-queue-form">
@@ -284,13 +284,13 @@ margin: 0 auto;
                 <input type="text" id="queue-car-model" required>
                 <label for="queue-services-container">Serviços a Realizar:</label>
                 <div id="queue-services-container" class="checkbox-container">
-                                    </div>
+                    </div>
                 <button type="submit" class="btn-primary" style="margin-top: 15px;">Adicionar à Fila</button>
             </form>
         </div>
     </div>
 
-        <div class="panel-column">
+    <div class="panel-column">
         <h3 style="margin-top: 0; margin-bottom: 10px; border-bottom: none;">Fila de Espera Categorizada</h3>
         <div id="categorized-queues-container">
             <div>
@@ -314,37 +314,37 @@ margin: 0 auto;
 <div id="view-production" class="view-container">
 <div class="container">
     
-        <div class="panel-column">
-                <div class="admin-section" style="margin-bottom: 0;">
+    <div class="panel-column">
+        <div class="admin-section" style="margin-bottom: 0;">
             <h3>Iniciar Serviço (da Fila)</h3>
             <p style="font-style: italic; font-size: 14px; margin-top: -10px; margin-bottom: 15px;">
                 Selecione um carro da Fila para carregar os dados.
             </p>
             <form id="new-service-form">
-                                <label for="car-plate">Placa do Carro:</label>
+                <label for="car-plate">Placa do Carro:</label>
                 <input type="text" id="car-plate" required readonly style="background: #eee;">
                 <label for="car-model">Modelo do Carro:</label>
                 <input type="text" id="car-model" required readonly style="background: #eee;">
                 
-                                <label for="queue-service-to-start-select">Serviço a Iniciar:</label>
+                <label for="queue-service-to-start-select">Serviço a Iniciar:</label>
                 <select id="queue-service-to-start-select" required>
                     <option value="">-- Selecione um carro da fila --</option>
                 </select>
                 
-                                <label for="mechanic-select">Funcionário Disponível:</label>
+                <label for="mechanic-select">Funcionário Disponível:</label>
                 <select id="mechanic-select" required>
                     <option value="">-- Selecione um Funcionário --</option>
                 </select>
                 
-                                <button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
+                <button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
                 
-                                <input type="hidden" id="hidden-queue-item-id">
+                <input type="hidden" id="hidden-queue-item-id">
             </form>
         </div>
         
-                <h3 style="margin-top: 10px; margin-bottom: 0;">Funcionários Disponíveis</h3>
+        <h3 style="margin-top: 10px; margin-bottom: 0;">Funcionários Disponíveis</h3>
         <div id="available-mechanics-section">
-                        <h4>Mecânicos Gerais</h4>
+            <h4>Mecânicos Gerais</h4>
             <div id="mechanic-list-general" class="available-list-group"></div>
             <h4>Alinhadores</h4>
             <div id="mechanic-list-aligner" class="available-list-group"></div>
@@ -353,15 +353,14 @@ margin: 0 auto;
         </div>
     </div>
     
-        <div class="panel-column">
+    <div class="panel-column">
         <h3 style="margin-top: 0; margin-bottom: 0;">Serviços em Andamento</h3>
         <div id="in-progress-list" class="service-list inner-scroll-list">
-                    </div>
+            </div>
     </div>
     
 </div>
 </div>
-
 <div id="view-report" class="view-container">
 <div id="report-header">
 <h2>Relatório Diário: <span id="report-date"></span></h2>
@@ -505,12 +504,16 @@ const inProgressList = document.getElementById('in-progress-list');
 const availableMechanicsList = document.getElementById('mechanic-list-general');
 const availableAlignersList = document.getElementById('mechanic-list-aligner');
 const availableBalancersList = document.getElementById('mechanic-list-balancer');
+const newServiceForm = document.getElementById('new-service-form'); // Adicionado
 // ELEMENTOS DE ADMIN
+const inputMechanicName = document.getElementById('input-mechanic-name');
+const selectMechanicRole = document.getElementById('select-mechanic-role');
+const formMechanics = document.getElementById('new-mechanic-form');
+const adminMechanicsList = document.getElementById('admin-mechanics-list');
 const inputServiceName = document.getElementById('input-service-name');
 const selectServiceRole = document.getElementById('select-service-role'); // Novo Select
 const formServices = document.getElementById('new-service-config-form');
 const adminServicesList = document.getElementById('admin-services-list');
-// ... (outros elementos mantidos)
 
 // ===============================================
 // === FUNÇÕES DE UTILIDADE E AUXILIARES ===
@@ -805,9 +808,158 @@ validateForm();
 showView('production');
 document.getElementById('mechanic-select').focus();
 }
-// MANTIDA: Lógica de Iniciar Serviço, Finalizar Serviço, Funções de Disponibilidade...
 
-// MANTIDA: updateAvailableMechanics (apenas alteração no DOM dos H3/H4)
+// ===============================================
+// === LÓGICA DE PRODUÇÃO (RESTAURADA) ===
+// ===============================================
+
+function validateForm() {
+    const isReady = carPlateInput.value && mechanicSelect.value && queueServiceToStartSelect.value;
+    playButton.disabled = !isReady;
+}
+
+async function handleStartService(event) {
+    event.preventDefault();
+    const mechanicId = mechanicSelect.value;
+    const serviceId = queueServiceToStartSelect.value;
+    const mechanicName = mechanicSelect.options[mechanicSelect.selectedIndex].dataset.name;
+    const serviceName = queueServiceToStartSelect.options[queueServiceToStartSelect.selectedIndex].dataset.name;
+    const queueId = hiddenQueueItemId.value;
+
+    if (!mechanicId || !serviceId) {
+        alert("Selecione o Funcionário e o Serviço.");
+        return;
+    }
+
+    const serviceData = {
+        mechanicId: mechanicId,
+        mechanicName: mechanicName,
+        serviceId: serviceId,
+        serviceName: serviceName,
+        carPlate: carPlateInput.value,
+        carModel: carModelInput.value,
+        startTime: new Date().toISOString(),
+        startQueueId: queueId, // Linka ao item da fila
+        active: true
+    };
+
+    await addToDB(C_ACTIVE, serviceData);
+    await updateInDB(C_MECHANICS, mechanicId, { isAvailable: false, lastActiveTime: new Date().toISOString() });
+    
+    // Deleta o item da fila (ou, idealmente, apenas o serviceId que foi iniciado, 
+    // mas para simplificar, remove o item completo)
+    if (queueId) {
+        await deleteFromDB(C_QUEUE_SERVICES, queueId);
+    }
+
+    // Limpa o formulário após iniciar
+    carPlateInput.value = '';
+    carModelInput.value = '';
+    mechanicSelect.value = '';
+    queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um carro da fila --</option>';
+    hiddenQueueItemId.value = '';
+    validateForm();
+}
+
+async function handleStopService(fbId, mechanicId) {
+    if (!confirm("Tem certeza que deseja finalizar este serviço?")) return;
+
+    const activeService = window.ACTIVE_SERVICES.find(s => s.fbId === fbId);
+    if (!activeService) return;
+
+    const finishTime = new Date();
+    const startTime = new Date(activeService.startTime);
+    const durationMs = finishTime.getTime() - startTime.getTime();
+    const durationSeconds = Math.round(durationMs / 1000);
+
+    // 1. Move para a coleção de concluídos (C_COMPLETED)
+    const completedData = {
+        ...activeService,
+        endTime: finishTime.toISOString(),
+        durationSeconds: durationSeconds,
+        active: false
+    };
+    await addToDB(C_COMPLETED, completedData);
+
+    // 2. Remove da coleção de ativos (C_ACTIVE)
+    await deleteFromDB(C_ACTIVE, fbId);
+
+    // 3. Atualiza a disponibilidade do mecânico
+    const mechanic = ALL_MECHANICS.find(m => m.fbId === mechanicId);
+    if (mechanic && mechanic.isAvailable === false) {
+        await updateInDB(C_MECHANICS, mechanicId, { 
+            isAvailable: true, 
+            queueTime: finishTime.getTime() // Define o novo tempo de rodízio
+        });
+    }
+}
+
+function renderActiveServices(activeServices) {
+    inProgressList.innerHTML = '';
+    clearInterval(window.timerInterval); // Para timers anteriores
+    activeTimers = {}; // Limpa o objeto de timers
+
+    if (activeServices.length === 0) {
+        inProgressList.innerHTML = '<p style="text-align: center; color: #777; padding: 20px;">Nenhum serviço em andamento.</p>';
+        return;
+    }
+
+    activeServices.forEach(service => {
+        const row = document.createElement('div');
+        row.className = 'service-row';
+        row.dataset.fbid = service.fbId;
+        
+        const mechanicName = ALL_MECHANICS.find(m => m.fbId === service.mechanicId)?.name || 'Mecânico Desconhecido';
+        
+        row.innerHTML = `
+            <strong>${mechanicName}</strong>
+            <span class="service-desc">${service.serviceName} (${service.carPlate})</span>
+            <span>Início: ${new Date(service.startTime).toLocaleTimeString('pt-BR')}</span>
+            <span class="time-display" id="timer-${service.fbId}">00:00:00</span>
+            <button class="btn-stop" data-fbid="${service.fbId}" data-mechanicid="${service.mechanicId}">◼ Finalizar</button>
+        `;
+        inProgressList.appendChild(row);
+
+        // Inicializa o timer
+        let startTime = new Date(service.startTime).getTime();
+        activeTimers[service.fbId] = setInterval(() => {
+            const now = new Date().getTime();
+            const elapsed = Math.round((now - startTime) / 1000);
+            const timerElement = document.getElementById(`timer-${service.fbId}`);
+            if (timerElement) {
+                timerElement.textContent = formatTime(elapsed);
+            }
+        }, 1000);
+    });
+
+    // Adiciona o listener para o botão Finalizar
+    inProgressList.querySelectorAll('.btn-stop').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const fbId = e.target.dataset.fbid;
+            const mechanicId = e.target.dataset.mechanicid;
+            handleStopService(fbId, mechanicId);
+        });
+    });
+}
+
+// Função auxiliar para renderizar grupos de mecânicos disponíveis
+function renderMechanicGroup(element, group) {
+    element.innerHTML = '';
+    group.forEach((m, index) => {
+        const tag = document.createElement('div');
+        tag.className = 'mechanic-tag';
+        const roleText = getRoleDisplayName(m.role || 'N/A');
+        tag.innerHTML = `
+            <div>
+                <span class="position">${index + 1}º</span>
+                ${m.name}
+            </div>
+            <small>${roleText}</small>
+        `;
+        element.appendChild(tag);
+    });
+}
+
 function updateAvailableMechanics(activeServices) {
     const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
     let availableMechanics = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
@@ -833,18 +985,61 @@ function updateAvailableMechanics(activeServices) {
     validateForm();
 }
 
-// MANTIDA: renderActiveServices, renderTrackingView, renderDailyReport, renderTimeclockCards, etc.
 
 // ===============================================
-// === TELA 4: LÓGICA DE ADMINISTRAÇÃO MODIFICADA ===
+// === LÓGICA DE ADMINISTRAÇÃO E PONTO (RESTAURADA) ===
 // ===============================================
 
-// MODIFICADA: Adiciona o role ao serviço (essencial para as 3 filas)
+async function handleAddMechanic(event) {
+    event.preventDefault();
+    const name = inputMechanicName.value.trim();
+    const role = selectMechanicRole.value; // Posição
+    if (!name) return;
+
+    if (ALL_MECHANICS.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+        alert("Este funcionário já está cadastrado.");
+        return;
+    }
+
+    const mechanicData = {
+        name: name,
+        role: role, // Salva o cargo
+        isAvailable: false,
+        lastActiveTime: new Date().toISOString(),
+        queueTime: 0 // Tempo de espera para rodízio
+    };
+    await addToDB(C_MECHANICS, mechanicData);
+    inputMechanicName.value = '';
+}
+
+function renderAdminMechanics() {
+    const ul = adminMechanicsList.querySelector('ul');
+    ul.innerHTML = '';
+    ALL_MECHANICS.forEach(m => {
+        const li = document.createElement('li');
+        const roleName = getRoleDisplayName(m.role || 'N/A');
+        li.innerHTML = `
+            <span>${m.name} <small>(${roleName})</small></span>
+            <button class="btn-delete" data-fbid="${m.fbId}">Excluir</button>
+        `;
+        ul.appendChild(li);
+    });
+    ul.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => handleDeleteMechanic(e.target.dataset.fbid));
+    });
+}
+
+async function handleDeleteMechanic(fbId) {
+    if (confirm("ATENÇÃO: Excluir funcionário pode impactar relatórios. Tem certeza?")) {
+        await deleteFromDB(C_MECHANICS, fbId);
+    }
+}
+
+// LÓGICA DE SERVIÇOS (MANTIDA/MODIFICADA)
 async function handleAddService(event) {
     event.preventDefault();
     const name = inputServiceName.value.trim();
     const role = selectServiceRole.value; // NOVO
-
     if (!name || !role) return;
 
     if (ALL_SERVICES.some(s => s.name.toLowerCase() === name.toLowerCase())) {
@@ -874,11 +1069,154 @@ function renderAdminServices() {
     });
 }
 
-// ... (Outras funções de Admin, Ponto e Relatório mantidas) ...
+async function handleDeleteService(fbId) {
+    if (confirm("Tem certeza que deseja excluir este serviço?")) {
+        await deleteFromDB(C_SERVICES, fbId);
+    }
+}
+
+function renderAdminLists() {
+    renderAdminMechanics();
+    renderAdminServices();
+}
+
+// LÓGICA DE PONTO (TIMECLOCK)
+
+async function handleStartBreak(mechanicId) {
+    await updateInDB(C_MECHANICS, mechanicId, { isAvailable: false, queueTime: 0, lastActiveTime: new Date().toISOString() });
+}
+
+async function handleEndBreak(mechanicId) {
+    await updateInDB(C_MECHANICS, mechanicId, { isAvailable: true, queueTime: new Date().getTime() });
+}
+
+function renderTimeclockCards() {
+    const timeclockList = document.getElementById('timeclock-list');
+    timeclockList.innerHTML = '';
+
+    ALL_MECHANICS.forEach(m => {
+        const status = getMechanicStatus(m);
+        const isBusyInService = window.ACTIVE_SERVICES.some(s => s.mechanicId === m.fbId);
+
+        const card = document.createElement('div');
+        card.className = 'timeclock-card';
+        card.innerHTML = `
+            <h3>${m.name}</h3>
+            <p><small>Cargo: ${getRoleDisplayName(m.role)}</small></p>
+            <div class="timeclock-status ${status.class}">
+                ${status.text}
+            </div>
+            <div class="timeclock-buttons">
+                <button 
+                    class="btn-clock-in" 
+                    onclick="handleEndBreak('${m.fbId}')"
+                    ${m.isAvailable ? 'disabled' : ''}
+                >Entrar (Disponível)</button>
+                <button 
+                    class="btn-clock-out" 
+                    onclick="handleStartBreak('${m.fbId}')"
+                    ${!m.isAvailable || isBusyInService ? 'disabled' : ''}
+                >Sair / Pausa</button>
+            </div>
+        `;
+        timeclockList.appendChild(card);
+    });
+}
+
+// LÓGICA DE RELATÓRIO E ACOMPANHAMENTO (TRACKING)
+
+function renderTrackingView() {
+    const inProgressTrackingList = document.getElementById('tracking-in-progress-list');
+    const availableTrackingMechanics = document.getElementById('tracking-available-mechanics');
+
+    // 1. Serviços em Andamento (Acompanhamento)
+    inProgressTrackingList.innerHTML = window.ACTIVE_SERVICES.length > 0 ? '' : '<p style="text-align: center; color: #777; padding: 20px;">Nenhum serviço em andamento.</p>';
+    window.ACTIVE_SERVICES.forEach(service => {
+        const mechanicName = ALL_MECHANICS.find(m => m.fbId === service.mechanicId)?.name || 'Mecânico Desconhecido';
+        const card = document.createElement('div');
+        card.className = 'tracking-card';
+        card.innerHTML = `
+            <p><strong>Carro:</strong> ${service.carPlate}</p>
+            <p><strong>Serviço:</strong> ${service.serviceName}</p>
+            <p><strong>Funcionário:</strong> ${mechanicName}</p>
+            <p><strong>Início:</strong> ${new Date(service.startTime).toLocaleTimeString('pt-BR')}</p>
+        `;
+        inProgressTrackingList.appendChild(card);
+    });
+
+    // 2. Funcionários e Fila (Acompanhamento)
+    const availableMechanics = ALL_MECHANICS.filter(m => m.isAvailable === true);
+    availableTrackingMechanics.innerHTML = `
+        <h4>Funcionários Disponíveis (${availableMechanics.length})</h4>
+        <ul>
+            ${availableMechanics.map(m => `<li>${m.name} (${getRoleDisplayName(m.role)})</li>`).join('')}
+        </ul>
+        <h4>Carros na Fila (${ALL_QUEUE.length})</h4>
+        <ul>
+            ${ALL_QUEUE.map(item => `<li>${item.carPlate} (${item.carModel}) - Serviços: ${item.serviceIds.map(id => getServiceDetails(id).name).join(', ')}</li>`).join('')}
+        </ul>
+    `;
+}
+
+function renderDailyReport() {
+    const reportList = document.getElementById('report-list');
+    const reportDate = document.getElementById('report-date');
+    
+    // Simulação: Pegar todos os serviços concluídos, filtrando apenas os de hoje.
+    // Em uma app real, você faria uma query filtrada no Firestore.
+    db.collection(C_COMPLETED).get().then(snapshot => {
+        const completedToday = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() })).filter(s => isToday(new Date(s.endTime).getTime()));
+        
+        reportDate.textContent = new Date().toLocaleDateString('pt-BR');
+        reportList.innerHTML = completedToday.length > 0 ? '' : '<p style="text-align: center; color: #777; padding: 20px;">Nenhum serviço concluído hoje.</p>';
+
+        const reportGroups = {};
+        completedToday.forEach(service => {
+            if (!reportGroups[service.mechanicId]) {
+                reportGroups[service.mechanicId] = {
+                    mechanicName: service.mechanicName,
+                    services: [],
+                    totalDuration: 0,
+                    count: 0
+                };
+            }
+            reportGroups[service.mechanicId].services.push(service);
+            reportGroups[service.mechanicId].totalDuration += service.durationSeconds;
+            reportGroups[service.mechanicId].count++;
+        });
+
+        for (const mechId in reportGroups) {
+            const group = reportGroups[mechId];
+            const groupElement = document.createElement('div');
+            groupElement.className = 'mechanic-report-group';
+            groupElement.innerHTML = `
+                <h3>${group.mechanicName}</h3>
+                ${group.services.map(s => `
+                    <div class="service-report-row">
+                        <span>${s.serviceName} (${s.carPlate})</span>
+                        <span>Início: ${new Date(s.startTime).toLocaleTimeString('pt-BR')}</span>
+                        <span>Fim: ${new Date(s.endTime).toLocaleTimeString('pt-BR')}</span>
+                        <span>Duração: ${formatTime(s.durationSeconds)}</span>
+                    </div>
+                `).join('')}
+                <div class="report-summary">
+                    <span>Serviços Concluídos: ${group.count}</span>
+                    <span>Tempo Total de Serviço: ${formatTime(group.totalDuration)}</span>
+                    <span>Média por Serviço: ${formatTime(Math.round(group.totalDuration / group.count))}</span>
+                </div>
+            `;
+            reportList.appendChild(groupElement);
+        }
+    }).catch(error => {
+        console.error("Erro ao carregar relatório:", error);
+        reportList.innerHTML = '<p style="color: red; padding: 20px;">Erro ao carregar o relatório.</p>';
+    });
+}
+
 
 // ===============================================
 // === FUNÇÕES DE CONECTIVIDADE (FIREBASE) ===
-// ... (Funções de CRUD adicionadas aqui) ...
+// ===============================================
 
 async function addToDB(collectionName, data) {
     try {
@@ -907,7 +1245,6 @@ async function deleteFromDB(collectionName, docId) {
         alert("Erro ao deletar dados na nuvem.");
     }
 }
-// ... (outras funções CRUD e de login/logout) ...
 function showAppContent() {
     loginScreen.style.display = 'none';
     appContent.style.display = 'block';
