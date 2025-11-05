@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel de Produtividade V14 (Layout Separado - Corrigido)</title>
+<title>Painel de Produtividade V15 (Fila Corrigida)</title>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
 <style>
 /* NOVO ESTILO: TELA DE LOGIN */
 #login-screen {
@@ -395,7 +394,6 @@ margin: 0 auto;
 // ******************************************************
 // *** 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
 // ******************************************************
-// Removida 'queueServicesContainer' pois não é mais usada para popular o formulário de fila
 // Seu web app's Firebase configuration
 const firebaseConfig = {
 apiKey: "AIzaSyB6XbdcQyKiZYtVXXwAxRI8cv90GhT-bD8",
@@ -404,13 +402,14 @@ projectId: "painelprodutividade-dd513",
 storageBucket: "painelprodutividade-dd513.firebaseapp.com",
 messagingSenderId: "535369536853",
 appId: "1:535369536853:web:4d0755d7470b026fa64bdc",
-measurementId: "G-NRZ55SHKN7"
+// measurementId: "G-NRZ55SHKN7" // REMOVIDO
 };
 // Inicializa o Firebase (v9.6.1 de Compatibilidade)
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
-const analytics = firebase.analytics();
+// const analytics = firebase.analytics(); // REMOVIDO
+
 // NOVOS ELEMENTOS DOM PARA LOGIN
 const loginScreen = document.getElementById('login-screen');
 const appContent = document.getElementById('app-content');
@@ -444,14 +443,12 @@ const viewProduction = document.getElementById('view-production');
 const viewReport = document.getElementById('view-report');
 const viewTimeclock = document.getElementById('view-timeclock');
 const viewConfig = document.getElementById('view-config');
-// Removida: viewTracking
 // BOTÕES
 const navQueue = document.getElementById('nav-queue');
 const navProduction = document.getElementById('nav-production');
 const navReport = document.getElementById('nav-report');
 const navTimeclock = document.getElementById('nav-timeclock');
 const navConfig = document.getElementById('nav-config');
-// Removida: navTracking
 // ELEMENTOS DA FILA
 const queueForm = document.getElementById('new-queue-form');
 const queueCarPlateInput = document.getElementById('queue-car-plate');
@@ -545,7 +542,6 @@ if (viewId === 'queue') {
     navConfig.classList.add('active');
     renderAdminLists();
 }
-// A tela de Acompanhamento (Tracking) foi excluída
 }
 
 function setupFirebaseListeners() {
@@ -559,6 +555,7 @@ if (document.getElementById('view-config').style.display === 'block') renderAdmi
 });
 
 // NOVO: Listener para a FILA DE SERVIÇOS (C_QUEUE_SERVICES)
+// Ordena pelo novo formato de timestamp (number)
 db.collection(C_QUEUE_SERVICES).orderBy('queuedAt').onSnapshot(snapshot => {
 ALL_QUEUE.length = 0; // Limpa o array
 snapshot.forEach(doc => {
@@ -589,8 +586,6 @@ updateAvailableMechanics(activeServices);
 // === LÓGICA DA FILA E PRODUÇÃO ===
 // ===============================================
 
-// Removida: populateQueueServicesSelect (Função não é mais necessária)
-
 // NOVO: Cria o HTML para um item da fila com base nos dados.
 function createQueueItemHtml(item) {
     // Pega a lista de serviços que pertencem às categorias requeridas (para exibição)
@@ -599,12 +594,15 @@ function createQueueItemHtml(item) {
         .map(s => s.name)
         .join(', ');
 
+    // Se queuedAt for um number (getTime()), usa new Date(number). Se for string (toISOString()), new Date(string).
+    const queueDate = new Date(item.queuedAt);
+
     return `
         <div class="queue-item" data-fbid="${item.fbId}">
             <p><strong>Placa:</strong> ${item.carPlate}</p>
             <p><strong>Modelo:</strong> ${item.carModel}</p>
             <p><strong>Serviços (Potenciais):</strong> <small>${serviceNames || 'Nenhum serviço correspondente'}</small></p>
-            <p><small>Em fila desde: ${new Date(item.queuedAt).toLocaleTimeString('pt-BR')}</small></p>
+            <p><small>Em fila desde: ${queueDate.toLocaleTimeString('pt-BR')}</small></p>
             <button class="btn-primary start-queue-item-btn">Iniciar Serviço</button>
         </div>
     `;
@@ -630,7 +628,7 @@ function renderCategorizedQueueList() {
         // Um item aparece em todas as filas para as quais ele tem um role requerido
         item.requiredRoles.forEach(role => {
             if (queueMaps[role]) {
-                queueMaps[role].items.push(itemHtml);
+                queueMaps[role].items.push({ html: itemHtml, fbId: item.fbId }); // Guarda o fbId junto
             }
         });
     });
@@ -645,14 +643,13 @@ function renderCategorizedQueueList() {
             continue;
         }
 
-        map.items.forEach(html => {
+        map.items.forEach(itemData => {
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
+            tempDiv.innerHTML = itemData.html;
             const itemElement = tempDiv.firstChild;
             
             // Anexa o listener ao botão
-            const fbId = itemElement.dataset.fbid;
-            itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(fbId));
+            itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
             
             map.element.appendChild(itemElement);
         });
@@ -686,16 +683,22 @@ async function handleAddToQueue(event) {
     const queueData = {
         carPlate: carPlate,
         carModel: carModel,
-        serviceIds: selectedServiceIds, // Salva todos os serviços potenciais
-        requiredRoles: requiredRoles, // SALVA OS ROLES REQUERIDOS
-        queuedAt: new Date().toISOString(), 
+        serviceIds: selectedServiceIds, 
+        requiredRoles: requiredRoles, 
+        queuedAt: new Date().getTime(), // CORREÇÃO APLICADA: Usando Timestamp em milissegundos (number)
         addedBy: CURRENT_USER 
     };
-    await addToDB(C_QUEUE_SERVICES, queueData);
-    // Limpa o formulário
-    queueCarPlateInput.value = '';
-    queueCarModelInput.value = '';
-    checkedCheckboxes.forEach(cb => cb.checked = false); // Desmarca
+
+    try {
+        await addToDB(C_QUEUE_SERVICES, queueData);
+        // Limpa o formulário
+        queueCarPlateInput.value = '';
+        queueCarModelInput.value = '';
+        checkedCheckboxes.forEach(cb => cb.checked = false); // Desmarca
+    } catch (error) {
+        alert("Erro ao adicionar o veículo à fila. Verifique a conexão com o Firebase.");
+        console.error("Erro ao adicionar à fila:", error);
+    }
 }
 
 // MANTIDA: Lógica de Carregamento de Formulário de Início
@@ -727,8 +730,6 @@ async function handleStartFromQueue(queueFbId) {
     showView('production');
     document.getElementById('mechanic-select').focus();
 }
-
-// ... (Funções de Produção, Admin e Relatório mantidas e sem Tracking) ...
 
 function validateForm() {
     const isReady = carPlateInput.value && mechanicSelect.value && queueServiceToStartSelect.value;
@@ -1104,6 +1105,7 @@ async function addToDB(collectionName, data) {
     } catch (error) {
         console.error(`Erro ao adicionar em ${collectionName}:`, error);
         alert("Erro ao salvar dados na nuvem.");
+        throw error; // Propaga o erro para o chamador
     }
 }
 async function updateInDB(collectionName, docId, data) {
