@@ -346,8 +346,7 @@
     // *** 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
     // ******************************************************
 
-    // Local: Junto com as outras declarações DOM
-    const queueServicesContainer = document.getElementById('queue-services-container');
+    let queueServicesContainer;
     
     // Seu web app's Firebase configuration
     const firebaseConfig = {
@@ -1380,11 +1379,12 @@
         formServices.addEventListener('submit', handleAddService);
         carPlateInput.addEventListener('input', validateForm); 
         carModelInput.addEventListener('input', validateForm);
-        
-        // Inicia a aplicação e configura os listeners do Firebase
+        // INICIALIZE AQUI, ONDE O DOM ESTÁ PRONTO:
+        queueServicesContainer = document.getElementById('queue-services-container');
+
+    // ... (o restante do código de listeners) ...
     initializeApp();
-    
-    }); // <-- CHAVE DE FECHAMENTO DO document.addEventListener + parêntese.
+});
 </script> 
 
 </body>
