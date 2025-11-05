@@ -3,30 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel de Produtividade V18 (Fila Corrigida)</title>
+<title>Painel de Produtividade V2 - Fila Funcional</title>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 <style>
 /* NOVO ESTILO: TELA DE LOGIN */
 #login-screen {
-max-width: 400px;
-margin: 100px auto;
-padding: 30px;
-background: white;
-border-radius: 8px;
-box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-text-align: center;
+    max-width: 400px;
+    margin: 100px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    text-align: center;
 }
 #login-screen input {
-width: 100%;
-margin-bottom: 15px;
-box-sizing: border-box;
+    width: 100%;
+    margin-bottom: 15px;
+    box-sizing: border-box;
 }
 #app-content {
-display: none;
+    display: none;
 }
-/* ---- ESTILOS GERAIS ---- */
+/* ---- ESTILOS GERAIS (MANTIDOS) ---- */
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
 h2, h3 { border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #333; }
 button { padding: 10px 15px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
@@ -35,1224 +35,1096 @@ input[type="text"],
 input[type="email"],
 input[type="password"],
 select {
-padding: 12px;
-height: auto;
-border: 1px solid #ccc;
-border-radius: 4px;
-font-size: 16px;
-width: 100%;
-box-sizing: border-box;
+    padding: 12px;
+    height: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    width: 100%;
+    box-sizing: border-box;
 }
-.btn-play { background-color: #28a745; }
-.btn-stop { background-color: #dc3545; }
 .btn-primary { background-color: #007bff; }
 .btn-delete { background-color: #7a7a7a; font-size: 14px; padding: 5px 10px; }
 .btn-secondary { background-color: #6c757d; }
 .btn-clock-in { background-color: #17a2b8; }
 .btn-clock-out { background-color: #ffc107; color: #333; }
-/* ---- NAVEGAÇÃO ---- */
+.btn-start-queue { background-color: #28a745; margin-top: 5px; }
+
+
+/* ---- NAVEGAÇÃO E LAYOUT GERAL (MANTIDOS) ---- */
 nav { background-color: #343a40; padding: 15px 24px; display: flex; gap: 15px; flex-wrap: wrap; }
 nav button { background-color: #6c757d; font-size: 14px; }
 nav button.active { background-color: #007bff; box-shadow: 0 0 0 2px rgba(0,123,255,.5); }
-.view-container { padding: 24px; display: none; }
-#view-queue { display: block; }
-/* === LAYOUTS DE PAINEL (GRID - DESKTOP - NO SCROLL) === */
-@media (min-width: 1200px) {
-.view-container .container {
-display: grid;
-gap: 24px;
-height: calc(100vh - 80px - 48px - 60px);
-min-height: 550px;
+.view-container { padding: 24px; display: none; } /* Inicialmente esconde todas as views */
+.logo-container {
+    text-align: center;
+    padding: 6px 0;
+    background-color: #ffffff;
+    border-bottom: 1px solid #ddd;
 }
-#view-queue .container {
-grid-template-columns: 370px 1fr;
+.app-logo {
+    max-width: 100px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
 }
-#view-production .container {
-grid-template-columns: 1fr 1fr 1fr;
+
+/* === NOVO ESTILO: TELA DE FILA === */
+#queue-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 3fr; /* Formulário + Fila */
+    gap: 30px;
+    margin-top: 20px;
 }
-.panel-column {
-display: flex;
-flex-direction: column;
-gap: 15px;
-overflow-y: hidden;
+#queue-form-container {
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-.panel-column .admin-section {
-flex-shrink: 0;
-background: #fff;
-padding: 20px;
-border-radius: 8px;
-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-flex-grow: 1;
-overflow-y: auto;
+#queue-lists-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
 }
-#categorized-queues-container {
-flex-grow: 1;
-display: grid;
-grid-template-columns: 1fr 1fr 1fr;
-gap: 15px;
-overflow-y: hidden;
+.queue-list-section {
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    min-height: 200px;
 }
-.inner-scroll-list {
-flex-grow: 1;
-overflow-y: auto;
-min-height: 200px;
-background: #ffffff;
-padding: 15px;
-border-radius: 8px;
-box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+.queue-list-section h3 {
+    border-bottom: 2px solid #ccc;
+    color: #007bff;
+    margin-top: 0;
 }
-#available-mechanics-section {
-flex-grow: 1;
-padding: 15px;
-background: #ffffff;
-border-radius: 8px;
-box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-overflow-y: auto;
-}
-#new-queue-form { display: flex; flex-direction: column; gap: 15px; height: 100%;}
-#queue-services-container { overflow-y: auto; max-height: 200px; padding: 5px; border: 1px solid #eee; border-radius: 4px; }
-}
-.sidebar { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-#new-service-form { display: flex; flex-direction: column; gap: 15px; height: 100%; }
-#available-mechanics-section h3 { border-bottom: 1px dashed #007bff; padding-bottom: 4px; margin-top: 15px; margin-bottom: 10px; }
-.available-list-group { display: flex; flex-direction: column; gap: 4px; }
-.mechanic-tag { display: flex; justify-content: space-between; align-items: center; background-color: #e9ecef; color: #333; padding: 8px 12px; border-radius: 4px; font-size: 16px; font-weight: 500; }
-.mechanic-tag .position { background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 14px; margin-right: 10px; }
-.mechanic-tag:first-child { border: 2px solid #28a745; background-color: #d4edda; }
-.available-list-group:empty::after { content: "Nenhum disponível nesta função."; color: #777; font-style: italic; padding: 5px 0;}
-.main-content { display: flex; flex-direction: column; gap: 15px; }
-@media (min-width: 900px) { .service-row { display: grid; grid-template-columns: 1.5fr 3fr 1fr 1fr 1fr; align-items: center; gap: 12px; } }
-.service-row { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.time-display { font-family: 'Courier New', Courier, monospace; font-size: 16px; background-color: #e9ecef; padding: 10px; border-radius: 4px; text-align: center; }
-/* Estilos para o item da fila */
 .queue-item {
-background-color: #f8f8f8;
-padding: 10px;
-border-radius: 6px;
-margin-bottom: 8px;
-border-left: 4px solid #007bff;
-font-size: 14px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-left: 5px solid #007bff;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    position: relative;
+    font-size: 14px;
 }
+.queue-item strong { color: #333; }
 .queue-item p { margin: 3px 0; }
-.queue-item button {
-width: 100%;
-margin-top: 8px;
-padding: 8px;
-font-size: 14px;
+.queue-item .queue-number {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #ff6347; /* Cor de destaque para o número da fila */
 }
-/* === TELA 2: RELATÓRIO DIÁRIO === */
-#report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 0; }
-.mechanic-report-group { background-color: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.mechanic-report-group h3 { border-bottom: 2px solid #28a745; color: #28a745; }
-.service-report-row { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr; border-bottom: 1px dashed #eee; padding: 10px 0; font-size: 15px; }
-.report-summary { font-weight: bold; margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc; }
-/* === TELA 3: REGISTRO DE PONTO === */
+.queue-item .queue-time {
+    font-size: 10px;
+    color: #777;
+}
+
+/* === AJUSTES PARA MOBILE === */
+@media (max-width: 1199px) {
+    #queue-main-grid { grid-template-columns: 1fr; }
+    #queue-lists-container { grid-template-columns: 1fr; }
+    nav button { width: calc(50% - 7.5px); margin-bottom: 5px; }
+}
+
+/* Outros estilos (Timeclock e Admin) - Mantidos do código anterior... */
 #view-timeclock .timeclock-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 .timeclock-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
-.timeclock-card h3 { margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px; font-size: 18px; }
-.timeclock-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .timeclock-status { font-weight: bold; text-align: center; padding: 5px; border-radius: 4px; }
 .status-on { background-color: #d4edda; color: #155724; }
 .status-off { background-color: #f8d7da; color: #721c24; }
 .status-break { background-color: #fff3cd; color: #856404; }
-/* === TELA 4: ADMINISTRAÇÃO === */
 #view-config .config-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.admin-section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.admin-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-.admin-list ul { list-style: none; padding: 0; }
-.admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-/* === AJUSTES PARA MOBILE === */
-@media (max-width: 1199px) {
-.sidebar { position: static; }
-nav { flex-wrap: wrap; padding: 10px; }
-nav button { width: calc(50% - 7.5px); margin-bottom: 5px; }
-.service-row { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "mech mech" "desc desc" "inicio duracao" "btn btn"; gap: 8px; padding: 15px; }
-.service-row strong { grid-area: mech; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-.service-row .service-desc { grid-area: desc; font-size: 18px; font-weight: bold; }
-.service-row > *:nth-child(3) { grid-area: inicio; text-align: left; }
-.service-row > *:nth-child(4) { grid-area: duracao; text-align: right; }
-.service-row > *:nth-child(3) span, .service-row > *:nth-child(4) span { background-color: #e9ecef; padding: 8px; border-radius: 4px; }
-.service-row .btn-stop { grid-area: btn; }
-#view-config .config-container { grid-template-columns: 1fr; }
-.service-report-row { grid-template-columns: 1fr 1fr; grid-template-areas: "servico duracao" "inicio fim"; gap: 5px 10px; padding: 8px 0; }
-.service-report-row span:nth-child(1) { grid-area: servico; font-weight: bold; }
-.service-report-row span:nth-child(4) { grid-area: duracao; color: #dc3545; text-align: right; }
-.admin-list li { flex-direction: column; align-items: flex-start; gap: 5px; }
-#categorized-queues-container { grid-template-columns: 1fr; }
-.inner-scroll-list { max-height: 400px; }
-}
-.logo-container {
-text-align: center;
-padding: 6px 0;
-background-color: #ffffff;
-border-bottom: 1px solid #ddd;
-}
-.app-logo {
-max-width: 100px;
-height: auto;
-display: block;
-margin: 0 auto;
-}
+@media (max-width: 768px) { #view-config .config-container { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
-<div id="login-screen" style="display: block;">
-<h2>Acesso ao Painel</h2>
-<form id="login-form">
-<input type="text" id="login-email" placeholder="E-mail" required>
-<input type="password" id="login-password" placeholder="Senha" required>
-<button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Entrar</button>
-<p id="login-error" style="color: red; margin-top: 10px; display: none;"></p>
-</form>
-</div>
-
-<div id="app-content">
-<nav>
-<button id="nav-queue" class="active">Fila e Entrada</button>
-<button id="nav-production">Painel de Serviço</button>
-<button id="nav-report">Relatório Diário</button>
-<button id="nav-timeclock">Registro de Ponto</button>
-<button id="nav-config">Administração</button>
-<button class="btn-secondary" id="btn-logout" style="margin-left: auto;">Sair</button>
-</nav>
-
-<div class="logo-container">
-<img src="https://caa-al.org.br/img/convenios/446_logo.jpg?w=250&fit=crop&ud=1760605299" alt="Logo da Clínica" class="app-logo">
-</div>
-
-<div id="view-queue" class="view-container">
-<div class="container">
-<div class="panel-column">
-<div class="admin-section">
-<h3>Registrar Entrada do Veículo (Fila)</h3>
-<form id="new-queue-form">
-<label for="queue-car-plate">Placa do Carro:</label>
-<input type="text" id="queue-car-plate" required>
-<label for="queue-car-model">Modelo do Carro:</label>
-<input type="text" id="queue-car-model" required>
-<label>Serviços a Realizar:</label>
-<div id="queue-category-selection" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
-<div><input type="checkbox" name="queue-category" value="MECHANIC" id="cat-mech" style="width: auto;"><label for="cat-mech">Serviço Mecânico</label></div>
-<div><input type="checkbox" name="queue-category" value="ALIGNER" id="cat-aligner" style="width: auto;"><label for="cat-aligner">Alinhamento</label></div>
-<div><input type="checkbox" name="queue-category" value="BALANCER" id="cat-balancer" style="width: auto;"><label for="cat-balancer">Balanceamento</label></div>
-</div>
-<button type="submit" class="btn-primary" style="margin-top: 15px;">Adicionar à Fila</button>
-</form>
-</div>
-</div>
-
-<div class="panel-column">
-<h3 style="margin-top: 0; margin-bottom: 10px; border-bottom: none;">Fila de Espera Categorizada</h3>
-<div id="categorized-queues-container">
-<div>
-<h4 style="color: #007bff; border-bottom: 1px dashed #007bff; padding-bottom: 5px;">Serviço Mecânico</h4>
-<div id="queue-list-mechanic" class="inner-scroll-list"></div>
-</div>
-<div>
-<h4 style="color: #28a745; border-bottom: 1px dashed #28a745; padding-bottom: 5px;">Alinhamento</h4>
-<div id="queue-list-aligner" class="inner-scroll-list"></div>
-</div>
-<div>
-<h4 style="color: #ffc107; border-bottom: 1px dashed #ffc107; padding-bottom: 5px;">Balanceamento</h4>
-<div id="queue-list-balancer" class="inner-scroll-list"></div>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-<div id="view-production" class="view-container">
-<div class="container">
-<div class="panel-column">
-<div class="admin-section">
-<h3>Iniciar Serviço (da Fila)</h3>
-<p style="font-style: italic; font-size: 14px; margin-top: -10px; margin-bottom: 15px;">
-Selecione um carro da Fila para carregar os dados.
-</p>
-<form id="new-service-form">
-<label for="car-plate">Placa do Carro:</label>
-<input type="text" id="car-plate" required readonly style="background: #eee;">
-<label for="car-model">Modelo do Carro:</label>
-<input type="text" id="car-model" required readonly style="background: #eee;">
-<label for="queue-service-to-start-select">Serviço a Iniciar:</label>
-<select id="queue-service-to-start-select" required>
-<option value="">-- Selecione um carro da fila --</option>
-</select>
-<label for="mechanic-select">Funcionário Disponível:</label>
-<select id="mechanic-select" required>
-<option value="">-- Selecione um Funcionário --</option>
-</select>
-<button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
-<input type="hidden" id="hidden-queue-item-id">
-</form>
-</div>
-</div>
-
-<div class="panel-column">
-<h3 style="margin-top: 0; margin-bottom: 0;">Funcionários Disponíveis</h3>
-<div id="available-mechanics-section">
-<h4>Mecânicos Gerais</h4>
-<div id="mechanic-list-general" class="available-list-group"></div>
-<h4>Alinhadores</h4>
-<div id="mechanic-list-aligner" class="available-list-group"></div>
-<h4>Balanceadores</h4>
-<div id="mechanic-list-balancer" class="available-list-group"></div>
-</div>
-</div>
-
-<div class="panel-column">
-<h3 style="margin-top: 0; margin-bottom: 0;">Serviços em Andamento</h3>
-<div id="in-progress-list" class="service-list inner-scroll-list">
-</div>
-</div>
-</div>
-</div>
-
-<div id="view-report" class="view-container">
-<div id="report-header">
-<h2>Relatório Diário: <span id="report-date"></span></h2>
-<button id="btn-clear-report" class="btn-delete">Limpar Histórico Completo</button>
-</div>
-<div id="report-list">
-</div>
-</div>
-
-<div id="view-timeclock" class="view-container">
-<h2>Registro de Ponto</h2>
-<div id="timeclock-list" class="timeclock-list">
-</div>
-</div>
-
-<div id="view-config" class="view-container">
-<h2>Administração</h2>
-<div class="config-container">
-<div class="admin-section">
-<h3>Gerenciar Funcionários</h3>
-<form id="new-mechanic-form" class="admin-form">
-<input type="text" id="input-mechanic-name" placeholder="Nome do Funcionário" required>
-<select id="select-mechanic-role" required>
-<option value="MECHANIC">Mecânico Geral</option>
-<option value="ALIGNER">Alinhador</option>
-<option value="BALANCER">Balanceador</option>
-</select>
-<button type="submit" class="btn-primary">Adicionar Funcionário</button>
-</form>
-<div class="admin-list" id="admin-mechanics-list">
-<ul></ul>
-</div>
-</div>
-
-<div class="admin-section">
-<h3>Gerenciar Serviços</h3>
-<form id="new-service-config-form" class="admin-form">
-<input type="text" id="input-service-name" placeholder="Nome do Serviço (Ex: Troca de Pneu)" required>
-<select id="select-service-role" required>
-<option value="MECHANIC">Requer Mecânico Geral</option>
-<option value="ALIGNER">Requer Alinhador</option>
-<option value="BALANCER">Requer Balanceador</option>
-</select>
-<button type="submit" class="btn-primary">Adicionar Serviço</button>
-</form>
-<div class="admin-list" id="admin-services-list">
-<ul></ul>
-</div>
-</div>
-</div>
-</div>
-
-// A PARTIR DA LINHA 3599 NO SEU ARQUIVO DEVE SER SUBSTITUÍDA POR:
-
-<script>
-// ****************************************************
-// *** CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
-// ****************************************************
-const firebaseConfig = {
-    apiKey: "AIzaSyB6XbdcQyKiZYtVXXwAxRI8cv90GhT-bD8",
-    authDomain: "painelprodutividade-dd513.firebaseapp.com",
-    projectId: "painelprodutividade-dd513",
-    storageBucket: "painelprodutividade-dd513.firebaseapp.com",
-    messagingSenderId: "535369536853",
-    appId: "1:535369536853:web:4d0755d7470b026fa64bdc"
-};
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-
-// ELEMENTOS DOM
-const loginScreen = document.getElementById('login-screen');
-const appContent = document.getElementById('app-content');
-const loginForm = document.getElementById('login-form');
-const loginEmail = document.getElementById('login-email');
-const loginPassword = document.getElementById('login-password');
-const loginError = document.getElementById('login-error');
-
-// Coleções
-const C_MECHANICS = 'mechanics';
-const C_SERVICES = 'services';
-const C_QUEUE_SERVICES = 'queue_services';
-const C_ACTIVE = 'activeServices';
-const C_COMPLETED = 'completedServices';
-
-// ESTADO
-let activeTimers = {};
-let ALL_MECHANICS = [];
-let ALL_SERVICES = [];
-let CURRENT_USER = null;
-let ALL_QUEUE = [];
-
-const ROLES = {
-    MECHANIC: 'Mecânico Geral',
-    ALIGNER: 'Alinhador',
-    BALANCER: 'Balanceador'
-};
-
-// ELEMENTOS DOM - VIEWS
-const viewQueue = document.getElementById('view-queue');
-const viewProduction = document.getElementById('view-production');
-const viewReport = document.getElementById('view-report');
-const viewTimeclock = document.getElementById('view-timeclock');
-const viewConfig = document.getElementById('view-config');
-const navQueue = document.getElementById('nav-queue');
-const navProduction = document.getElementById('nav-production');
-const navReport = document.getElementById('nav-report');
-const navTimeclock = document.getElementById('nav-timeclock');
-const navConfig = document.getElementById('nav-config');
-
-// ELEMENTOS DA FILA
-const queueForm = document.getElementById('new-queue-form');
-const queueCarPlateInput = document.getElementById('queue-car-plate');
-const queueCarModelInput = document.getElementById('queue-car-model');
-const queueListMechanic = document.getElementById('queue-list-mechanic');
-const queueListAligner = document.getElementById('queue-list-aligner');
-const queueListBalancer = document.getElementById('queue-list-balancer');
-
-// ELEMENTOS DE PRODUÇÃO
-const mechanicSelect = document.getElementById('mechanic-select');
-const queueServiceToStartSelect = document.getElementById('queue-service-to-start-select');
-const hiddenQueueItemId = document.getElementById('hidden-queue-item-id');
-const carPlateInput = document.getElementById('car-plate');
-const carModelInput = document.getElementById('car-model');
-const playButton = document.getElementById('play-button');
-const inProgressList = document.getElementById('in-progress-list');
-const availableMechanicsList = document.getElementById('mechanic-list-general');
-const availableAlignersList = document.getElementById('mechanic-list-aligner');
-const availableBalancersList = document.getElementById('mechanic-list-balancer');
-const newServiceForm = document.getElementById('new-service-form');
-
-// ELEMENTOS DE ADMIN
-const inputMechanicName = document.getElementById('input-mechanic-name');
-const selectMechanicRole = document.getElementById('select-mechanic-role');
-const formMechanics = document.getElementById('new-mechanic-form');
-const adminMechanicsList = document.getElementById('admin-mechanics-list');
-const inputServiceName = document.getElementById('input-service-name');
-const selectServiceRole = document.getElementById('select-service-role');
-const formServices = document.getElementById('new-service-config-form');
-const adminServicesList = document.getElementById('admin-services-list');
-
-
-// ===============================================
-// === FUNÇÕES AUXILIARES ===
-// ===============================================
-
-function getRoleDisplayName(roleKey) {
-    return ROLES[roleKey] || roleKey;
-}
-
-function isToday(timestamp) {
-    const date = new Date(timestamp);
-    const today = new Date();
-    return date.getDate() === today.getDate() &&
-        date.getMonth() === today.getMonth() &&
-        date.getFullYear() === today.getFullYear();
-}
-
-function formatTime(totalSeconds) {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return [hours, minutes, seconds].map(unit => String(unit).padStart(2, '0')).join(':');
-}
-
-function getMechanicStatus(mechanic) {
-    if (mechanic.isAvailable === true) {
-        return { text: "DISPONÍVEL", class: "status-on" };
-    }
-    if (mechanic.isAvailable === false && mechanic.queueTime) {
-        return { text: "FORA / PAUSA", class: "status-break" };
-    }
-    return { text: "FORA DE EXPEDIENTE", class: "status-off" };
-}
-
-// ===============================================
-// === FIREBASE TRANSACTIONS ===
-// ===============================================
-
-async function addToDB(collectionName, data) {
-    return db.collection(collectionName).add(data);
-}
-
-async function updateInDB(collectionName, docId, data) {
-    return db.collection(collectionName).doc(docId).update(data);
-}
-
-async function deleteFromDB(collectionName, docId) {
-    return db.collection(collectionName).doc(docId).delete();
-}
-
-// ===============================================
-// === AUTENTICAÇÃO ===
-// ===============================================
-
-function showAppContent() {
-    loginScreen.style.display = 'none';
-    appContent.style.display = 'block';
-    showView('queue'); // Padrão
-}
-
-function showLoginScreen() {
-    loginScreen.style.display = 'block';
-    appContent.style.display = 'none';
-}
-
-async function handleLogin(event) {
-    event.preventDefault();
-    loginError.style.display = 'none';
-    const email = loginEmail.value;
-    const password = loginPassword.value;
-    try {
-        await auth.signInWithEmailAndPassword(email, password);
-    } catch (error) {
-        loginError.textContent = "Erro de login: " + (error.message || 'Credenciais inválidas.');
-        loginError.style.display = 'block';
-    }
-}
-
-function handleLogout() {
-    if (confirm("Deseja realmente sair?")) {
-        auth.signOut();
-    }
-}
-
-function initializeApp() {
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            CURRENT_USER = user.email;
-            showAppContent();
-            setupFirebaseListeners();
-        } else {
-            CURRENT_USER = null;
-            showLoginScreen();
-        }
-    });
-}
-
-// ===============================================
-// === NAVEGAÇÃO ===
-// ===============================================
-
-function showView(viewId) {
-    [viewQueue, viewProduction, viewReport, viewTimeclock, viewConfig].forEach(v => v.style.display = 'none');
-    [navQueue, navProduction, navReport, navTimeclock, navConfig].forEach(n => n.classList.remove('active'));
-
-    if (viewId === 'queue') {
-        viewQueue.style.display = 'block';
-        navQueue.classList.add('active');
-    } else if (viewId === 'production') {
-        viewProduction.style.display = 'block';
-        navProduction.classList.add('active');
-    } else if (viewId === 'report') {
-        viewReport.style.display = 'block';
-        navReport.classList.add('active');
-        renderDailyReport();
-    } else if (viewId === 'timeclock') {
-        viewTimeclock.style.display = 'block';
-        navTimeclock.classList.add('active');
-        renderTimeclockCards();
-    } else {
-        viewConfig.style.display = 'block';
-        navConfig.classList.add('active');
-        renderAdminLists();
-    }
-}
-
-// ===============================================
-// === FIREBASE LISTENERS ===
-// ===============================================
-
-function setupFirebaseListeners() {
-    db.collection(C_MECHANICS).orderBy('name').onSnapshot(snapshot => {
-        ALL_MECHANICS = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-        updateAvailableMechanics(window.ACTIVE_SERVICES || []);
-        if (viewTimeclock.style.display === 'block') renderTimeclockCards();
-        if (viewConfig.style.display === 'block') renderAdminMechanics();
-    }, error => {
-        console.error("Erro ao carregar mecânicos:", error);
-    });
-
-    db.collection(C_QUEUE_SERVICES).onSnapshot(snapshot => {
-        ALL_QUEUE = [];
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            if (!data.requiredRoles || !Array.isArray(data.requiredRoles)) {
-                data.requiredRoles = [];
-            }
-            if (!data.serviceIds || !Array.isArray(data.serviceIds)) {
-                data.serviceIds = [];
-            }
-            ALL_QUEUE.push({ fbId: doc.id, ...data });
-        });
-        ALL_QUEUE.sort((a, b) => (a.queuedAt || 0) - (b.queuedAt || 0));
-        console.log("Fila carregada:", ALL_QUEUE);
-        renderCategorizedQueueList();
-    }, error => {
-        console.error("Erro ao carregar fila:", error);
-        alert("Erro ao carregar a fila. Verifique as permissões do Firestore.");
-    });
-
-    db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
-        ALL_SERVICES = [];
-        snapshot.forEach(doc => {
-            ALL_SERVICES.push({ fbId: doc.id, ...doc.data() });
-        });
-        console.log("Serviços carregados:", ALL_SERVICES);
-        if (viewConfig.style.display === 'block') renderAdminServices();
-        renderCategorizedQueueList();
-    }, error => {
-        console.error("Erro ao carregar serviços:", error);
-    });
-
-    db.collection(C_ACTIVE).onSnapshot(snapshot => {
-        const activeServices = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-        window.ACTIVE_SERVICES = activeServices;
-        renderActiveServices(activeServices);
-        updateAvailableMechanics(activeServices);
-    }, error => {
-        console.error("Erro ao carregar serviços ativos:", error);
-    });
-}
-
-// ===============================================
-// === RENDERIZAÇÃO DA FILA (Área de Correção) ===
-// ===============================================
-
-function renderCategorizedQueueList() {
-    const emptyMessage = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>';
-    queueListMechanic.innerHTML = emptyMessage;
-    queueListAligner.innerHTML = emptyMessage;
-    queueListBalancer.innerHTML = emptyMessage;
-
-    if (ALL_QUEUE.length === 0) return;
-
-    const queueMaps = {
-        'MECHANIC': { element: queueListMechanic, items: [] },
-        'ALIGNER': { element: queueListAligner, items: [] },
-        'BALANCER': { element: queueListBalancer, items: [] }
-    };
-
-    ALL_QUEUE.forEach(item => {
-        if (item.requiredRoles && Array.isArray(item.requiredRoles)) {
-            item.requiredRoles.forEach(role => {
-                if (queueMaps[role]) {
-                    queueMaps[role].items.push(item);
-                }
-            });
-        }
-    });
-
-    for (const role in queueMaps) {
-        const map = queueMaps[role];
-        if (map.items.length === 0) continue;
-
-        map.element.innerHTML = '';
-        
-        map.items.forEach(item => {
-            // CORREÇÃO: 'item' é o objeto de dados, NUNCA chame querySelector() ou outro método DOM nele!
-            // 'queueItemDiv' é o elemento DOM que será criado e manipulado.
-            
-            const roles = item.requiredRoles || [];
-            const serviceNames = ALL_SERVICES
-                .filter(s => roles.includes(s.role))
-                .map(s => s.name)
-                .join(', ');
-
-            const queueDate = new Date(item.queuedAt || Date.now());
-            
-            // 1. Cria o elemento DOM
-            const queueItemDiv = document.createElement('div');
-            queueItemDiv.className = 'queue-item';
-            queueItemDiv.dataset.fbid = item.fbId;
-
-            // 2. Cria e adiciona o conteúdo
-            const plateP = document.createElement('p');
-            plateP.innerHTML = '<strong>Placa:</strong> ' + (item.carPlate || 'N/A');
-            queueItemDiv.appendChild(plateP);
-
-            const modelP = document.createElement('p');
-            modelP.innerHTML = '<strong>Modelo:</strong> ' + (item.carModel || 'N/A');
-            queueItemDiv.appendChild(modelP);
-
-            const servicesP = document.createElement('p');
-            servicesP.innerHTML = '<strong>Serviços (Potenciais):</strong> <small>' + (serviceNames || 'Nenhum') + '</small>';
-            queueItemDiv.appendChild(servicesP);
-
-            const timeP = document.createElement('p');
-            timeP.innerHTML = '<small>Em fila desde: ' + queueDate.toLocaleTimeString('pt-BR') + '</small>';
-            queueItemDiv.appendChild(timeP);
-
-            const button = document.createElement('button');
-            button.className = 'btn-primary';
-            button.textContent = 'Iniciar Serviço';
-            button.addEventListener('click', function() {
-                handleStartFromQueue(item.fbId);
-            });
-            queueItemDiv.appendChild(button);
-
-            // 3. Adiciona o elemento DOM ao container
-            map.element.appendChild(queueItemDiv);
-        });
-    }
-}
-
-// ===============================================
-// === LÓGICA DA FILA ===
-// ===============================================
-
-async function handleAddToQueue(event) {
-    event.preventDefault();
-    const carPlate = queueCarPlateInput.value.trim().toUpperCase();
-    const carModel = queueCarModelInput.value.trim();
-    const checkedCheckboxes = document.querySelectorAll('input[name="queue-category"]:checked');
-    const requiredRoles = Array.from(checkedCheckboxes).map(cb => cb.value);
-
-    if (requiredRoles.length === 0) {
-        alert("Selecione ao menos uma categoria de serviço.");
-        return;
-    }
-
-    const selectedServiceIds = ALL_SERVICES
-        .filter(s => requiredRoles.includes(s.role))
-        .map(s => s.fbId);
-
-    if (selectedServiceIds.length === 0) {
-        alert("Nenhum serviço cadastrado corresponde às categorias selecionadas. Cadastre serviços na tela Administração.");
-        return;
-    }
-
-    const queueData = {
-        carPlate: carPlate,
-        carModel: carModel,
-        serviceIds: selectedServiceIds,
-        requiredRoles: requiredRoles,
-        queuedAt: Date.now(),
-        addedBy: CURRENT_USER
-    };
-
-    try {
-        await addToDB(C_QUEUE_SERVICES, queueData);
-        queueCarPlateInput.value = '';
-        queueCarModelInput.value = '';
-        checkedCheckboxes.forEach(cb => cb.checked = false);
-    } catch (error) {
-        alert("Erro ao adicionar à fila.");
-        console.error("Erro:", error);
-    }
-}
-
-async function handleStartFromQueue(queueFbId) {
-    const queueItem = ALL_QUEUE.find(item => item.fbId === queueFbId);
-
-    if (!queueItem) {
-        alert("Item da fila não encontrado.");
-        return;
-    }
-
-    carPlateInput.value = queueItem.carPlate;
-    carModelInput.value = queueItem.carModel;
-    hiddenQueueItemId.value = queueFbId;
-
-    queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
-
-    const serviceIds = queueItem.serviceIds || [];
-    
-    serviceIds.forEach(serviceId => {
-        const service = ALL_SERVICES.find(s => s.fbId === serviceId);
-        if (service) {
-            const option = document.createElement('option');
-            option.value = service.fbId;
-            option.dataset.name = service.name;
-            option.dataset.role = service.role;
-            option.textContent = service.name;
-            queueServiceToStartSelect.appendChild(option);
-        }
-    });
-
-    if (serviceIds.length > 0) {
-        queueServiceToStartSelect.value = serviceIds[0];
-    }
-
-    validateForm();
-    showView('production');
-    mechanicSelect.focus();
-}
-
-function validateForm() {
-    const isReady = carPlateInput.value && mechanicSelect.value && queueServiceToStartSelect.value;
-    playButton.disabled = !isReady;
-}
-
-async function handleStartService(event) {
-    event.preventDefault();
-
-    const mechanicId = mechanicSelect.value;
-    const serviceId = queueServiceToStartSelect.value;
-    const mechanicName = mechanicSelect.options[mechanicSelect.selectedIndex].dataset.name;
-    const serviceName = queueServiceToStartSelect.options[queueServiceToStartSelect.selectedIndex].dataset.name;
-    const queueId = hiddenQueueItemId.value;
-
-    if (!mechanicId || !serviceId) {
-        alert("Selecione o Funcionário e o Serviço.");
-        return;
-    }
-
-    const serviceData = {
-        mechanicId: mechanicId,
-        mechanicName: mechanicName,
-        serviceId: serviceId,
-        serviceName: serviceName,
-        carPlate: carPlateInput.value,
-        carModel: carModelInput.value,
-        startTime: new Date().toISOString(),
-        startQueueId: queueId,
-        active: true
-    };
-
-    await addToDB(C_ACTIVE, serviceData);
-    await updateInDB(C_MECHANICS, mechanicId, { isAvailable: false, lastActiveTime: new Date().toISOString() });
-
-    if (queueId) {
-        await deleteFromDB(C_QUEUE_SERVICES, queueId);
-    }
-
-    carPlateInput.value = '';
-    carModelInput.value = '';
-    mechanicSelect.value = '';
-    queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um carro da fila --</option>';
-    hiddenQueueItemId.value = '';
-    validateForm();
-}
-
-async function handleStopService(fbId, mechanicId) {
-    if (!confirm("Tem certeza que deseja finalizar este serviço?")) return;
-
-    const activeService = window.ACTIVE_SERVICES.find(s => s.fbId === fbId);
-    if (!activeService) return;
-
-    const finishTime = new Date();
-    const startTime = new Date(activeService.startTime);
-    const durationMs = finishTime.getTime() - startTime.getTime();
-    const durationSeconds = Math.round(durationMs / 1000);
-
-    const completedData = {
-        ...activeService,
-        endTime: finishTime.toISOString(),
-        durationSeconds: durationSeconds,
-        active: false
-    };
-
-    await addToDB(C_COMPLETED, completedData);
-    await deleteFromDB(C_ACTIVE, fbId);
-    
-    // Atualiza o status do mecânico para disponível e registra o tempo para o rodízio
-    const mechanic = ALL_MECHANICS.find(m => m.fbId === mechanicId);
-    if (mechanic && mechanic.isAvailable === false) {
-        await updateInDB(C_MECHANICS, mechanicId, {
-            isAvailable: true,
-            queueTime: finishTime.getTime()
-        });
-    }
-}
-
-function renderActiveServices(activeServices) {
-    inProgressList.innerHTML = '';
-    if (window.timerInterval) clearInterval(window.timerInterval);
-    activeTimers = {};
-
-    if (activeServices.length === 0) {
-        inProgressList.innerHTML = '<p style="text-align: center; color: #777; padding: 20px;">Nenhum serviço em andamento.</p>';
-        return;
-    }
-
-    activeServices.forEach(service => {
-        const row = document.createElement('div');
-        row.className = 'service-row';
-        row.dataset.fbid = service.fbId;
-
-        const mechanicName = ALL_MECHANICS.find(m => m.fbId === service.mechanicId)?.name || 'Mecânico Desconhecido';
-        
-        // CORREÇÃO: Usando innerHTML para criar a estrutura do serviço
-        row.innerHTML = `
-            <strong>${mechanicName}</strong>
-            <span class="service-desc">${service.serviceName} (${service.carPlate})</span>
-            <span>Início: ${new Date(service.startTime).toLocaleTimeString('pt-BR')}</span>
-            <span class="time-display" id="timer-${service.fbId}">00:00:00</span>
-            <button class="btn-stop" data-fbid="${service.fbId}" data-mechanicid="${service.mechanicId}">◼ Finalizar</button>
-        `;
-
-        inProgressList.appendChild(row);
-
-        // Configura o timer
-        let startTime = new Date(service.startTime).getTime();
-        activeTimers[service.fbId] = setInterval(() => {
-            const now = new Date().getTime();
-            const elapsed = Math.round((now - startTime) / 1000);
-            const timerElement = document.getElementById(`timer-${service.fbId}`);
-            if (timerElement) {
-                timerElement.textContent = formatTime(elapsed);
-            }
-        }, 1000);
-    });
-
-    // Adiciona listeners para o botão de finalizar
-    inProgressList.querySelectorAll('.btn-stop').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const fbId = e.target.dataset.fbid;
-            const mechanicId = e.target.dataset.mechanicid;
-            handleStopService(fbId, mechanicId);
-        });
-    });
-}
-
-function renderMechanicGroup(element, group) {
-    element.innerHTML = '';
-    group.forEach((m, index) => {
-        const tag = document.createElement('div');
-        tag.className = 'mechanic-tag';
-        const roleText = getRoleDisplayName(m.role || 'N/A');
-
-        tag.innerHTML = `
-            <div>
-                <span class="position">${index + 1}º</span>
-                ${m.name}
+    <div id="login-screen" style="display: block;">
+        <h2>Acesso ao Painel</h2>
+        <form id="login-form">
+            <input type="text" id="login-email" placeholder="E-mail" required>
+            <input type="password" id="login-password" placeholder="Senha" required>
+            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Entrar</button>
+            <p id="login-error" style="color: red; margin-top: 10px; display: none;"></p>
+        </form>
+    </div>
+
+    <div id="app-content">
+        <nav>
+            <button id="nav-queue">Controle de Entrada e Fila</button>
+            <button id="nav-production">Painel de Serviço</button>
+            <button id="nav-report">Relatório Diário</button>
+            <button id="nav-timeclock">Registro de Ponto</button>
+            <button id="nav-config">Administração</button>
+            <button class="btn-secondary" id="btn-logout" style="margin-left: auto;">Sair</button>
+        </nav>
+
+        <div class="logo-container">
+            <img src="https://caa-al.org.br/img/convenios/446_logo.jpg?w=250&fit=crop&ud=1760605299" alt="Logo da Clínica" class="app-logo">
+        </div>
+
+        <div id="view-queue" class="view-container">
+            <h2>Controle de Entrada e Fila dos Veículos</h2>
+            <div id="queue-main-grid">
+                <div id="queue-form-container">
+                    <h3>Adicionar Veículo à Fila</h3>
+                    <form id="new-queue-form" class="admin-form">
+                        <input type="text" id="queue-car-plate" placeholder="Placa do Veículo (ABC-1234)" required maxlength="8">
+                        <input type="text" id="queue-car-model" placeholder="Modelo do Veículo (Ex: Fiat Uno)" required>
+                        
+                        <h4>Serviços Requeridos:</h4>
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                            <label><input type="checkbox" name="queue-category" value="MECHANIC" required> Serviço Mecânico</label>
+                            <label><input type="checkbox" name="queue-category" value="ALIGNER"> Alinhamento</label>
+                            <label><input type="checkbox" name="queue-category" value="BALANCER"> Balanceamento</label>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="margin-top: 20px;">Adicionar à Fila</button>
+                    </form>
+                </div>
+
+                <div id="queue-lists-container">
+                    <div class="queue-list-section">
+                        <h3>Fila Mecânico Geral</h3>
+                        <div id="queue-list-mechanic">
+                            <p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="queue-list-section">
+                        <h3>Fila Alinhamento</h3>
+                        <div id="queue-list-aligner">
+                            <p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="queue-list-section">
+                        <h3>Fila Balanceamento</h3>
+                        <div id="queue-list-balancer">
+                            <p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <small>${roleText}</small>
-        `;
-        element.appendChild(tag);
-    });
-}
+        </div>
 
-function updateAvailableMechanics(activeServices) {
-    const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
-    let availableMechanics = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
+        <div id="view-production" class="view-container">
+            <h2>Painel de Serviço (Produção)</h2>
+            <div id="in-progress-list" style="margin-top: 20px;">
+                <p style="font-style: italic; color: #777;">Os serviços ativos serão exibidos aqui.</p>
+            </div>
+            <form id="new-service-form" style="display:none;">
+                <input type="hidden" id="hidden-queue-item-id">
+                <input type="text" id="car-plate" placeholder="Placa">
+                <input type="text" id="car-model" placeholder="Modelo">
+                <select id="mechanic-select"></select>
+                <select id="queue-service-to-start-select"></select>
+                <button type="submit" id="play-button" disabled>Iniciar</button>
+            </form>
+            
+            <div style="margin-top: 30px;">
+                <h3>Funcionários Disponíveis</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                    <div id="mechanic-list-general"></div>
+                    <div id="mechanic-list-aligner"></div>
+                    <div id="mechanic-list-balancer"></div>
+                </div>
+            </div>
+        </div>
 
-    const mechanicsGroup = availableMechanics.filter(m => m.role === 'MECHANIC');
-    const alignersGroup = availableMechanics.filter(m => m.role === 'ALIGNER');
-    const balancersGroup = availableMechanics.filter(m => m.role === 'BALANCER');
-
-    // Ordena pelo tempo de fila (rodízio)
-    const rodizioSort = (a, b) => (a.queueTime || 0) - (b.queueTime || 0);
-    mechanicsGroup.sort(rodizioSort);
-    alignersGroup.sort(rodizioSort);
-    balancersGroup.sort(rodizioSort);
-
-    // Popula o select de funcionários
-    mechanicSelect.innerHTML = '<option value="">-- Selecione um Funcionário --</option>';
-    [...mechanicsGroup, ...alignersGroup, ...balancersGroup].forEach(m => {
-        const roleName = getRoleDisplayName(m.role);
-        const option = document.createElement('option');
-        option.value = m.fbId;
-        option.dataset.name = m.name;
-        option.textContent = `${m.name} (${roleName})`;
-        mechanicSelect.appendChild(option);
-    });
-
-    // Popula a lista de disponíveis
-    renderMechanicGroup(availableMechanicsList, mechanicsGroup);
-    renderMechanicGroup(availableAlignersList, alignersGroup);
-    renderMechanicGroup(availableBalancersList, balancersGroup);
-
-    validateForm();
-}
+        <div id="view-report" class="view-container">
+            <h2>Relatório Diário</h2>
+            <p id="report-date">Data: N/A</p>
+            <div id="report-list" style="margin-top: 20px;">
+                <p style="font-style: italic; color: #777;">O relatório de serviços concluídos será exibido aqui.</p>
+            </div>
+            <button id="btn-clear-report" class="btn-delete" style="margin-top: 20px;">Limpar Histórico de Relatórios</button>
+        </div>
 
 
-// ===============================================
-// === ADMINISTRAÇÃO ===
-// ===============================================
+        <div id="view-timeclock" class="view-container">
+            <h2>Registro de Ponto</h2>
+            <div id="timeclock-list" class="timeclock-list">
+                </div>
+        </div>
 
-async function handleAddMechanic(event) {
-    event.preventDefault();
-    const name = inputMechanicName.value.trim();
-    const role = selectMechanicRole.value;
+        <div id="view-config" class="view-container">
+            <h2>Administração</h2>
+            <div class="config-container">
+                <div class="admin-section">
+                    <h3>Gerenciar Funcionários</h3>
+                    <form id="new-mechanic-form" class="admin-form">
+                        <input type="text" id="input-mechanic-name" placeholder="Nome do Funcionário" required>
+                        <select id="select-mechanic-role" required>
+                            <option value="MECHANIC">Mecânico Geral</option>
+                            <option value="ALIGNER">Alinhador</option>
+                            <option value="BALANCER">Balanceador</option>
+                        </select>
+                        <button type="submit" class="btn-primary">Adicionar Funcionário</button>
+                    </form>
+                    <div class="admin-list" id="admin-mechanics-list">
+                        <ul></ul>
+                    </div>
+                </div>
 
-    if (!name) return;
+                <div class="admin-section">
+                    <h3>Gerenciar Serviços</h3>
+                    <form id="new-service-config-form" class="admin-form">
+                        <input type="text" id="input-service-name" placeholder="Nome do Serviço (Ex: Troca de Pneu)" required>
+                        <select id="select-service-role" required>
+                            <option value="MECHANIC">Requer Mecânico Geral</option>
+                            <option value="ALIGNER">Requer Alinhador</option>
+                            <option value="BALANCER">Requer Balanceador</option>
+                        </select>
+                        <button type="submit" class="btn-primary">Adicionar Serviço</button>
+                    </form>
+                    <div class="admin-list" id="admin-services-list">
+                        <ul></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    if (ALL_MECHANICS.some(m => m.name.toLowerCase() === name.toLowerCase())) {
-        alert("Este funcionário já está cadastrado.");
-        return;
-    }
-
-    const mechanicData = {
-        name: name,
-        role: role,
-        isAvailable: false, // Começa indisponível, deve dar "Entrar" no Ponto
-        lastActiveTime: new Date().toISOString(),
-        queueTime: 0 // Tempo de rodízio
-    };
-
-    await addToDB(C_MECHANICS, mechanicData);
-    inputMechanicName.value = '';
-}
-
-function renderAdminMechanics() {
-    const ul = adminMechanicsList.querySelector('ul');
-    ul.innerHTML = '';
-
-    ALL_MECHANICS.forEach(m => {
-        const li = document.createElement('li');
-        const roleName = getRoleDisplayName(m.role || 'N/A');
-        
-        li.innerHTML = `
-            <span>${m.name} <small>(${roleName})</small></span>
-            <button class="btn-delete" data-fbid="${m.fbId}">Excluir</button>
-        `;
-        ul.appendChild(li);
-    });
-
-    ul.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', (e) => handleDeleteMechanic(e.target.dataset.fbid));
-    });
-}
-
-async function handleDeleteMechanic(fbId) {
-    if (confirm("ATENÇÃO: Excluir funcionário pode impactar relatórios. Tem certeza?")) {
-        await deleteFromDB(C_MECHANICS, fbId);
-    }
-}
-
-async function handleAddService(event) {
-    event.preventDefault();
-    const name = inputServiceName.value.trim();
-    const role = selectServiceRole.value;
-
-    if (!name || !role) return;
-
-    if (ALL_SERVICES.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-        alert("Este serviço já existe.");
-        return;
-    }
-
-    await addToDB(C_SERVICES, { name: name, role: role });
-    inputServiceName.value = '';
-    selectServiceRole.value = 'MECHANIC';
-}
-
-function renderAdminServices() {
-    const ul = adminServicesList.querySelector('ul');
-    ul.innerHTML = '';
-
-    ALL_SERVICES.forEach(s => {
-        const li = document.createElement('li');
-        const roleName = getRoleDisplayName(s.role || 'N/A');
-
-        li.innerHTML = `
-            <span>${s.name} <small>(${roleName})</small></span>
-            <button class="btn-delete" data-fbid="${s.fbId}">Excluir</button>
-        `;
-        ul.appendChild(li);
-    });
-
-    ul.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', (e) => handleDeleteService(e.target.dataset.fbid));
-    });
-}
-
-async function handleDeleteService(fbId) {
-    if (confirm("Tem certeza que deseja excluir este serviço?")) {
-        await deleteFromDB(C_SERVICES, fbId);
-    }
-}
-
-function renderAdminLists() {
-    renderAdminMechanics();
-    renderAdminServices();
-}
-
-// ===============================================
-// === RELATÓRIO DIÁRIO ===
-// ===============================================
-
-async function renderDailyReport() {
-    const reportList = document.getElementById('report-list');
-    reportList.innerHTML = '<p style="text-align: center; color: #777; padding: 20px;">Carregando relatório...</p>';
-    document.getElementById('report-date').textContent = new Date().toLocaleDateString('pt-BR');
-
-    const snapshot = await db.collection(C_COMPLETED).get();
-    const completedServices = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-
-    const todayServices = completedServices.filter(s => isToday(new Date(s.endTime).getTime()));
-    
-    if (todayServices.length === 0) {
-        reportList.innerHTML = '<p style="text-align: center; color: #777; padding: 20px;">Nenhum serviço finalizado hoje.</p>';
-        return;
-    }
-
-    // Agrupa por funcionário
-    const servicesByMechanic = todayServices.reduce((acc, service) => {
-        if (!acc[service.mechanicId]) {
-            acc[service.mechanicId] = {
-                name: service.mechanicName,
-                totalDuration: 0,
-                services: []
+        <script>
+            // ****************************************************
+            // *** CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
+            // ****************************************************
+            const firebaseConfig = {
+                apiKey: "AIzaSyB6XbdcQyKiZYtVXXwAxRI8cv90GhT-bD8",
+                authDomain: "painelprodutividade-dd513.firebaseapp.com",
+                projectId: "painelprodutividade-dd513",
+                storageBucket: "painelprodutividade-dd513.firebaseapp.com",
+                messagingSenderId: "535369536853",
+                appId: "1:535369536853:web:4d0755d7470b026fa64bdc"
             };
-        }
-        acc[service.mechanicId].totalDuration += service.durationSeconds;
-        acc[service.mechanicId].services.push(service);
-        return acc;
-    }, {});
+            const app = firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            const auth = firebase.auth();
 
-    reportList.innerHTML = '';
-    for (const mechanicId in servicesByMechanic) {
-        const group = servicesByMechanic[mechanicId];
-        
-        const groupDiv = document.createElement('div');
-        groupDiv.className = 'mechanic-report-group';
-        
-        const totalTime = formatTime(group.totalDuration);
-        
-        groupDiv.innerHTML = `
-            <h3>${group.name}</h3>
-            <div style="font-weight: bold; margin-bottom: 10px; display: grid; grid-template-columns: 3fr 1fr 1fr 1fr;">
-                <span>Serviço</span>
-                <span style="text-align: right;">Duração</span>
-                <span style="text-align: center;">Início</span>
-                <span style="text-align: center;">Fim</span>
-            </div>
-            <div id="services-list-${mechanicId}"></div>
-            <p class="report-summary">Tempo Total Trabalhado Hoje: <span>${totalTime}</span></p>
-        `;
+            // ELEMENTOS DOM
+            const loginScreen = document.getElementById('login-screen');
+            const appContent = document.getElementById('app-content');
+            const loginForm = document.getElementById('login-form');
+            const loginEmail = document.getElementById('login-email');
+            const loginPassword = document.getElementById('login-password');
+            const loginError = document.getElementById('login-error');
 
-        const servicesListDiv = groupDiv.querySelector(`#services-list-${mechanicId}`);
-        group.services.sort((a, b) => new Date(a.startTime) - new Date(b.startTime)); // Ordena por tempo de início
+            // Coleções
+            const C_MECHANICS = 'mechanics';
+            const C_SERVICES = 'services';
+            const C_QUEUE_SERVICES = 'queue_services';
+            const C_ACTIVE = 'activeServices';
+            const C_COMPLETED = 'completedServices';
 
-        group.services.forEach(s => {
-            const startTime = new Date(s.startTime).toLocaleTimeString('pt-BR');
-            const endTime = new Date(s.endTime).toLocaleTimeString('pt-BR');
-            const duration = formatTime(s.durationSeconds);
+            // ESTADO
+            let activeTimers = {};
+            let ALL_MECHANICS = [];
+            let ALL_SERVICES = [];
+            let CURRENT_USER = null;
+            let ALL_QUEUE = [];
+            window.ACTIVE_SERVICES = [];
 
-            const serviceRow = document.createElement('div');
-            serviceRow.className = 'service-report-row';
-            serviceRow.innerHTML = `
-                <span>${s.serviceName} (${s.carPlate})</span>
-                <span style="text-align: right;">${duration}</span>
-                <span style="text-align: center;"><small>${startTime}</small></span>
-                <span style="text-align: center;"><small>${endTime}</small></span>
-            `;
-            servicesListDiv.appendChild(serviceRow);
-        });
+            const ROLES = {
+                MECHANIC: 'Mecânico Geral',
+                ALIGNER: 'Alinhador',
+                BALANCER: 'Balanceador'
+            };
 
-        reportList.appendChild(groupDiv);
-    }
-}
+            // ELEMENTOS DOM - VIEWS (ATUALIZADOS)
+            const viewQueue = document.getElementById('view-queue');
+            const viewProduction = document.getElementById('view-production');
+            const viewReport = document.getElementById('view-report');
+            const viewTimeclock = document.getElementById('view-timeclock');
+            const viewConfig = document.getElementById('view-config');
+            const navQueue = document.getElementById('nav-queue');
+            const navProduction = document.getElementById('nav-production');
+            const navReport = document.getElementById('nav-report');
+            const navTimeclock = document.getElementById('nav-timeclock');
+            const navConfig = document.getElementById('nav-config');
 
-async function handleClearReport() {
-    if (!confirm("ATENÇÃO: Isso limpará TODOS os registros de serviços finalizados (relatórios). ESTA AÇÃO É IRREVERSÍVEL!")) return;
+            // ELEMENTOS DA FILA (NOVOS/REINTRODUZIDOS)
+            const queueForm = document.getElementById('new-queue-form');
+            const queueCarPlateInput = document.getElementById('queue-car-plate');
+            const queueCarModelInput = document.getElementById('queue-car-model');
+            const queueListMechanic = document.getElementById('queue-list-mechanic');
+            const queueListAligner = document.getElementById('queue-list-aligner');
+            const queueListBalancer = document.getElementById('queue-list-balancer');
 
-    try {
-        const batch = db.batch();
-        const snapshot = await db.collection(C_COMPLETED).get();
-        snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-        await batch.commit();
-        alert("Histórico de relatórios limpo com sucesso!");
-        renderDailyReport();
-    } catch (error) {
-        console.error("Erro ao limpar histórico:", error);
-        alert("Erro ao limpar histórico. Verifique o console.");
-    }
-}
+            // ELEMENTOS DE PRODUÇÃO (REINTRODUZIDOS)
+            const mechanicSelect = document.getElementById('mechanic-select');
+            const queueServiceToStartSelect = document.getElementById('queue-service-to-start-select');
+            const hiddenQueueItemId = document.getElementById('hidden-queue-item-id');
+            const carPlateInput = document.getElementById('car-plate');
+            const carModelInput = document.getElementById('car-model');
+            const playButton = document.getElementById('play-button');
+            const inProgressList = document.getElementById('in-progress-list');
+            const availableMechanicsList = document.getElementById('mechanic-list-general');
+            const availableAlignersList = document.getElementById('mechanic-list-aligner');
+            const availableBalancersList = document.getElementById('mechanic-list-balancer');
+            const newServiceForm = document.getElementById('new-service-form');
 
-
-// ===============================================
-// === PONTO ===
-// ===============================================
-
-async function handleStartBreak(mechanicId) {
-    await updateInDB(C_MECHANICS, mechanicId, { isAvailable: false, queueTime: 0, lastActiveTime: new Date().toISOString() });
-}
-
-async function handleEndBreak(mechanicId) {
-    await updateInDB(C_MECHANICS, mechanicId, { isAvailable: true, queueTime: Date.now() });
-}
-
-function renderTimeclockCards() {
-    const timeclockList = document.getElementById('timeclock-list');
-    timeclockList.innerHTML = '';
-
-    ALL_MECHANICS.forEach(m => {
-        const status = getMechanicStatus(m);
-        const isBusyInService = (window.ACTIVE_SERVICES || []).some(s => s.mechanicId === m.fbId);
-
-        const card = document.createElement('div');
-        card.className = 'timeclock-card';
-
-        card.innerHTML = `
-            <h3>${m.name}</h3>
-            <p><small>Cargo: ${getRoleDisplayName(m.role)}</small></p>
-            <div class="timeclock-status ${status.class}">
-                ${status.text}
-            </div>
-            <div class="timeclock-buttons">
-                <button
-                    class="btn-clock-in"
-                    onclick="handleEndBreak('${m.fbId}')"
-                    ${m.isAvailable ? 'disabled' : ''}
-                >Entrar (Disponível)</button>
-                <button
-                    class="btn-clock-out"
-                    onclick="handleStartBreak('${m.fbId}')"
-                    ${!m.isAvailable || isBusyInService ? 'disabled' : ''}
-                >Sair / Pausa</button>
-            </div>
-        `;
-
-        timeclockList.appendChild(card);
-    });
-}
+            // ELEMENTOS DE ADMIN (MANTIDOS)
+            const inputMechanicName = document.getElementById('input-mechanic-name');
+            const selectMechanicRole = document.getElementById('select-mechanic-role');
+            const formMechanics = document.getElementById('new-mechanic-form');
+            const adminMechanicsList = document.getElementById('admin-mechanics-list');
+            const inputServiceName = document.getElementById('input-service-name');
+            const selectServiceRole = document.getElementById('select-service-role');
+            const formServices = document.getElementById('new-service-config-form');
+            const adminServicesList = document.getElementById('admin-services-list');
+            const btnClearReport = document.getElementById('btn-clear-report');
 
 
-// ===============================================
-// === INICIALIZAÇÃO ===
-// ===============================================
+            // ===============================================
+            // === FUNÇÕES AUXILIARES ===
+            // ===============================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Listeners de Navegação
-    navQueue.addEventListener('click', () => showView('queue'));
-    navProduction.addEventListener('click', () => showView('production'));
-    navReport.addEventListener('click', () => showView('report'));
-    navTimeclock.addEventListener('click', () => showView('timeclock'));
-    navConfig.addEventListener('click', () => showView('config'));
-    document.getElementById('btn-logout').addEventListener('click', handleLogout);
-    
-    // Listeners de Formulário/Controle
-    newServiceForm.addEventListener('submit', handleStartService);
-    queueForm.addEventListener('submit', handleAddToQueue);
-    mechanicSelect.addEventListener('change', validateForm);
-    queueServiceToStartSelect.addEventListener('change', validateForm);
-    formMechanics.addEventListener('submit', handleAddMechanic);
-    formServices.addEventListener('submit', handleAddService);
-    loginForm.addEventListener('submit', handleLogin);
-    document.getElementById('btn-clear-report').addEventListener('click', handleClearReport); // Listener para limpar relatório
+            function getRoleDisplayName(roleKey) {
+                return ROLES[roleKey] || roleKey;
+            }
+            
+            function isToday(timestamp) {
+                const date = new Date(timestamp);
+                const today = new Date();
+                return date.getDate() === today.getDate() &&
+                    date.getMonth() === today.getMonth() &&
+                    date.getFullYear() === today.getFullYear();
+            }
 
-    // Inicia a autenticação e listeners do Firebase
-    initializeApp();
-});
+            function formatTime(totalSeconds) {
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                return [hours, minutes, seconds].map(unit => String(unit).padStart(2, '0')).join(':');
+            }
 
-// Tornar funções globais para onclick nos botões
-window.handleStartBreak = handleStartBreak;
-window.handleEndBreak = handleEndBreak;
-window.showView = showView;
-window.handleLogout = handleLogout;
+            function getMechanicStatus(mechanic) {
+                if (mechanic.isAvailable === true) {
+                    return { text: "DISPONÍVEL", class: "status-on" };
+                }
+                if (mechanic.isAvailable === false && mechanic.queueTime) {
+                    return { text: "FORA / PAUSA", class: "status-break" };
+                }
+                return { text: "FORA DE EXPEDIENTE", class: "status-off" };
+            }
+            
+            // Funções de CRUD básicas
+            async function addToDB(collectionName, data) {
+                return db.collection(collectionName).add(data);
+            }
 
-</script>
+            async function updateInDB(collectionName, docId, data) {
+                return db.collection(collectionName).doc(docId).update(data);
+            }
+
+            async function deleteFromDB(collectionName, docId) {
+                return db.collection(collectionName).doc(docId).delete();
+            }
+
+            // ===============================================
+            // === AUTENTICAÇÃO E NAVEGAÇÃO ===
+            // ===============================================
+
+            function showAppContent() {
+                loginScreen.style.display = 'none';
+                appContent.style.display = 'block';
+                showView('queue'); // Padrão
+            }
+
+            function showLoginScreen() {
+                loginScreen.style.display = 'block';
+                appContent.style.display = 'none';
+            }
+
+            async function handleLogin(event) {
+                event.preventDefault();
+                loginError.style.display = 'none';
+                try {
+                    await auth.signInWithEmailAndPassword(loginEmail.value, loginPassword.value);
+                } catch (error) {
+                    loginError.textContent = "Erro de login: " + (error.message || 'Credenciais inválidas.');
+                    loginError.style.display = 'block';
+                }
+            }
+
+            function handleLogout() {
+                if (confirm("Deseja realmente sair?")) {
+                    auth.signOut();
+                }
+            }
+
+            function initializeApp() {
+                auth.onAuthStateChanged(user => {
+                    if (user) {
+                        CURRENT_USER = user.email;
+                        showAppContent();
+                        setupFirebaseListeners();
+                    } else {
+                        CURRENT_USER = null;
+                        showLoginScreen();
+                    }
+                });
+            }
+
+            function showView(viewId) {
+                [viewQueue, viewProduction, viewReport, viewTimeclock, viewConfig].forEach(v => v.style.display = 'none');
+                [navQueue, navProduction, navReport, navTimeclock, navConfig].forEach(n => n.classList.remove('active'));
+
+                if (viewId === 'queue') {
+                    viewQueue.style.display = 'block';
+                    navQueue.classList.add('active');
+                } else if (viewId === 'production') {
+                    viewProduction.style.display = 'block';
+                    navProduction.classList.add('active');
+                } else if (viewId === 'report') {
+                    viewReport.style.display = 'block';
+                    navReport.classList.add('active');
+                    renderDailyReport(); // Chamado apenas ao entrar na view
+                } else if (viewId === 'timeclock') {
+                    viewTimeclock.style.display = 'block';
+                    navTimeclock.classList.add('active');
+                    renderTimeclockCards(); // Chamado apenas ao entrar na view
+                } else {
+                    viewConfig.style.display = 'block';
+                    navConfig.classList.add('active');
+                    renderAdminLists(); // Chamado apenas ao entrar na view
+                }
+            }
+
+            // ===============================================
+            // === FIREBASE LISTENERS ===
+            // ===============================================
+
+            function setupFirebaseListeners() {
+                // Mecânicos
+                db.collection(C_MECHANICS).orderBy('name').onSnapshot(snapshot => {
+                    ALL_MECHANICS = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+                    updateAvailableMechanics(window.ACTIVE_SERVICES);
+                    if (navTimeclock.classList.contains('active')) renderTimeclockCards();
+                    if (navConfig.classList.contains('active')) renderAdminMechanics();
+                }, error => {
+                    console.error("Erro ao carregar mecânicos:", error);
+                });
+
+                // Serviços (Configuração)
+                db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
+                    ALL_SERVICES = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+                    if (navConfig.classList.contains('active')) renderAdminServices();
+                }, error => {
+                    console.error("Erro ao carregar serviços:", error);
+                });
+
+                // Fila (CONTROLE DE ENTRADA E FILA)
+                db.collection(C_QUEUE_SERVICES).onSnapshot(snapshot => {
+                    ALL_QUEUE = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return { fbId: doc.id, ...data };
+                    });
+                    // ORDENAÇÃO NUMÉRICA: Ordena cronologicamente por 'queuedAt' (o mais antigo é o 1º)
+                    ALL_QUEUE.sort((a, b) => (a.queuedAt || 0) - (b.queuedAt || 0));
+                    renderCategorizedQueueList();
+                }, error => {
+                    console.error("Erro ao carregar fila:", error);
+                    alert("Erro ao carregar a fila. Verifique as permissões do Firestore.");
+                });
+
+                // Serviços Ativos
+                db.collection(C_ACTIVE).onSnapshot(snapshot => {
+                    window.ACTIVE_SERVICES = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+                    renderActiveServices(window.ACTIVE_SERVICES);
+                    updateAvailableMechanics(window.ACTIVE_SERVICES);
+                }, error => {
+                    console.error("Erro ao carregar serviços ativos:", error);
+                });
+            }
+
+            // ===============================================
+            // === LÓGICA DA FILA (IMPLEMENTAÇÃO) ===
+            // ===============================================
+
+            async function handleAddToQueue(event) {
+                event.preventDefault();
+                const carPlate = queueCarPlateInput.value.trim().toUpperCase();
+                const carModel = queueCarModelInput.value.trim();
+                const checkedCheckboxes = document.querySelectorAll('input[name="queue-category"]:checked');
+                const requiredRoles = Array.from(checkedCheckboxes).map(cb => cb.value);
+
+                if (requiredRoles.length === 0) {
+                    alert("Selecione ao menos uma categoria de serviço.");
+                    return;
+                }
+                
+                // Pega todos os serviços cadastrados que correspondem aos papéis selecionados.
+                const serviceIds = ALL_SERVICES
+                    .filter(s => requiredRoles.includes(s.role))
+                    .map(s => s.fbId);
+
+                if (serviceIds.length === 0) {
+                    alert("Nenhum serviço cadastrado corresponde às categorias selecionadas. Cadastre serviços na tela Administração.");
+                    return;
+                }
+
+                const queueData = {
+                    carPlate: carPlate,
+                    carModel: carModel,
+                    serviceIds: serviceIds,
+                    requiredRoles: requiredRoles,
+                    queuedAt: Date.now(),
+                    addedBy: CURRENT_USER
+                };
+
+                try {
+                    await addToDB(C_QUEUE_SERVICES, queueData);
+                    queueCarPlateInput.value = '';
+                    queueCarModelInput.value = '';
+                    checkedCheckboxes.forEach(cb => cb.checked = false);
+                    document.querySelector('input[name="queue-category"]').focus(); // Volta o foco para o primeiro checkbox
+                } catch (error) {
+                    alert("Erro ao adicionar à fila.");
+                    console.error("Erro:", error);
+                }
+            }
+            
+            // Renderiza as 3 listas da fila com ORDENAÇÃO NUMÉRICA (cronológica)
+            function renderCategorizedQueueList() {
+                const emptyMessage = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>';
+                queueListMechanic.innerHTML = emptyMessage;
+                queueListAligner.innerHTML = emptyMessage;
+                queueListBalancer.innerHTML = emptyMessage;
+
+                if (ALL_QUEUE.length === 0) return;
+
+                const queueMaps = {
+                    'MECHANIC': { element: queueListMechanic, items: [] },
+                    'ALIGNER': { element: queueListAligner, items: [] },
+                    'BALANCER': { element: queueListBalancer, items: [] }
+                };
+
+                // Distribui os itens da fila pelos "mapas" de categorias
+                ALL_QUEUE.forEach(item => {
+                    if (item.requiredRoles && Array.isArray(item.requiredRoles)) {
+                        item.requiredRoles.forEach(role => {
+                            if (queueMaps[role]) {
+                                queueMaps[role].items.push(item);
+                            }
+                        });
+                    }
+                });
+
+                for (const role in queueMaps) {
+                    const map = queueMaps[role];
+                    
+                    map.element.innerHTML = ''; // Limpa a lista antes de renderizar
+                    
+                    if (map.items.length === 0) {
+                        map.element.innerHTML = emptyMessage;
+                        continue;
+                    }
+                    
+                    // Ordenação garantida pelo listener (ALL_QUEUE.sort()), 
+                    // a ordem de iteração garante o número sequencial.
+                    map.items.forEach((item, index) => {
+                        const queueNumber = index + 1; // ORDEM NUMÉRICA
+                        
+                        // Lista de serviços relevantes para exibição
+                        const roleServices = ALL_SERVICES.filter(s => s.role === role);
+                        const serviceNames = roleServices
+                            .filter(s => item.serviceIds.includes(s.fbId))
+                            .map(s => s.name)
+                            .join(', ');
+
+                        const queueDate = new Date(item.queuedAt || Date.now());
+                        
+                        const queueItemDiv = document.createElement('div');
+                        queueItemDiv.className = 'queue-item';
+                        queueItemDiv.dataset.fbid = item.fbId;
+
+                        queueItemDiv.innerHTML = `
+                            <span class="queue-number">${queueNumber}</span>
+                            <p><strong>Placa:</strong> ${item.carPlate || 'N/A'}</p>
+                            <p><strong>Modelo:</strong> ${item.carModel || 'N/A'}</p>
+                            <p><strong>Serviços:</strong> <small>${serviceNames || 'Nenhum cadastrado'}</small></p>
+                            <p class="queue-time">Em fila desde: ${queueDate.toLocaleTimeString('pt-BR')}</p>
+                            <button class="btn-primary btn-start-queue" data-fbid="${item.fbId}">Iniciar Serviço</button>
+                        `;
+
+                        map.element.appendChild(queueItemDiv);
+                    });
+
+                    // Adiciona listeners para os botões "Iniciar Serviço" após a renderização
+                    map.element.querySelectorAll('.btn-start-queue').forEach(btn => {
+                        btn.addEventListener('click', (e) => handleStartFromQueue(e.target.dataset.fbid));
+                    });
+                }
+            }
+
+
+            // ===============================================
+            // === LÓGICA DE PRODUÇÃO (INTEGRAÇÃO COM A FILA) ===
+            // ===============================================
+
+            async function handleStartFromQueue(queueFbId) {
+                const queueItem = ALL_QUEUE.find(item => item.fbId === queueFbId);
+
+                if (!queueItem) {
+                    alert("Item da fila não encontrado.");
+                    return;
+                }
+
+                // Preenche os campos do formulário de Produção (que está hidden no HTML, mas existe)
+                carPlateInput.value = queueItem.carPlate;
+                carModelInput.value = queueItem.carModel;
+                hiddenQueueItemId.value = queueFbId;
+
+                // Popula a lista de serviços possíveis com base nas categorias da fila
+                queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
+
+                const serviceIds = queueItem.serviceIds || [];
+                
+                serviceIds.forEach(serviceId => {
+                    const service = ALL_SERVICES.find(s => s.fbId === serviceId);
+                    if (service) {
+                        const option = document.createElement('option');
+                        option.value = service.fbId;
+                        option.dataset.name = service.name;
+                        option.dataset.role = service.role;
+                        option.textContent = `${service.name} (${getRoleDisplayName(service.role)})`;
+                        queueServiceToStartSelect.appendChild(option);
+                    }
+                });
+
+                if (serviceIds.length > 0) {
+                    queueServiceToStartSelect.value = serviceIds[0]; // Seleciona o primeiro por padrão
+                }
+
+                // Muda para a tela de Produção para que o usuário escolha o mecânico e inicie
+                showView('production');
+                mechanicSelect.focus();
+                validateForm();
+            }
+
+            function validateForm() {
+                // Validação mínima para o formulário de Produção
+                const isReady = carPlateInput.value && mechanicSelect.value && queueServiceToStartSelect.value;
+                playButton.disabled = !isReady;
+            }
+
+            async function handleStartService(event) {
+                event.preventDefault();
+
+                const mechanicId = mechanicSelect.value;
+                const serviceId = queueServiceToStartSelect.value;
+                const mechanicName = mechanicSelect.options[mechanicSelect.selectedIndex].dataset.name;
+                const serviceName = queueServiceToStartSelect.options[queueServiceToStartSelect.selectedIndex].dataset.name;
+                const queueId = hiddenQueueItemId.value; // ID do item da fila
+
+                if (!mechanicId || !serviceId) {
+                    alert("Selecione o Funcionário e o Serviço.");
+                    return;
+                }
+
+                const serviceData = {
+                    mechanicId: mechanicId,
+                    mechanicName: mechanicName,
+                    serviceId: serviceId,
+                    serviceName: serviceName,
+                    carPlate: carPlateInput.value,
+                    carModel: carModelInput.value,
+                    startTime: new Date().toISOString(),
+                    startQueueId: queueId,
+                    active: true
+                };
+
+                await addToDB(C_ACTIVE, serviceData);
+                await updateInDB(C_MECHANICS, mechanicId, { isAvailable: false, lastActiveTime: new Date().toISOString() });
+
+                // Deleta da fila original
+                if (queueId) {
+                    await deleteFromDB(C_QUEUE_SERVICES, queueId);
+                }
+
+                // Limpa e volta para a Fila
+                carPlateInput.value = '';
+                carModelInput.value = '';
+                mechanicSelect.value = '';
+                queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um carro da fila --</option>';
+                hiddenQueueItemId.value = '';
+                validateForm();
+                showView('queue'); // Volta para a fila
+            }
+
+            // Lógica de Parada de Serviço (para Produção)
+            async function handleStopService(fbId, mechanicId) {
+                if (!confirm("Tem certeza que deseja finalizar este serviço?")) return;
+
+                const activeService = window.ACTIVE_SERVICES.find(s => s.fbId === fbId);
+                if (!activeService) return;
+
+                const finishTime = new Date();
+                const startTime = new Date(activeService.startTime);
+                const durationMs = finishTime.getTime() - startTime.getTime();
+                const durationSeconds = Math.round(durationMs / 1000);
+
+                const completedData = {
+                    ...activeService,
+                    endTime: finishTime.toISOString(),
+                    durationSeconds: durationSeconds,
+                    active: false
+                };
+
+                await addToDB(C_COMPLETED, completedData);
+                await deleteFromDB(C_ACTIVE, fbId);
+                
+                const mechanic = ALL_MECHANICS.find(m => m.fbId === mechanicId);
+                if (mechanic && mechanic.isAvailable === false) {
+                    await updateInDB(C_MECHANICS, mechanicId, {
+                        isAvailable: true,
+                        queueTime: finishTime.getTime() // Entra no rodízio
+                    });
+                }
+            }
+
+            function formatDuration(startTime) {
+                const now = new Date().getTime();
+                const elapsed = Math.round((now - new Date(startTime).getTime()) / 1000);
+                return formatTime(elapsed);
+            }
+
+            function renderActiveServices(activeServices) {
+                inProgressList.innerHTML = '';
+                if (window.timerInterval) clearInterval(window.timerInterval);
+
+                if (activeServices.length === 0) {
+                    inProgressList.innerHTML = '<p style="text-align: center; color: #777; padding: 20px;">Nenhum serviço em andamento.</p>';
+                    return;
+                }
+                
+                // Mapeia os serviços ativos em um formato de card/linha
+                const serviceCards = activeServices.map(service => {
+                    const mechanicName = ALL_MECHANICS.find(m => m.fbId === service.mechanicId)?.name || 'Mecânico Desconhecido';
+                    
+                    return `
+                        <div class="service-row" style="padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; background-color: #fff;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong>${mechanicName}</strong> | ${service.serviceName}
+                                    <span style="display: block; font-size: 12px; color: #555;">Placa: ${service.carPlate} / Modelo: ${service.carModel}</span>
+                                </div>
+                                <div>
+                                    <span class="time-display" id="timer-${service.fbId}">${formatDuration(service.startTime)}</span>
+                                    <button class="btn-stop btn-secondary" style="background-color: #dc3545;" data-fbid="${service.fbId}" data-mechanicid="${service.mechanicId}">◼ Finalizar</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                inProgressList.innerHTML = serviceCards;
+
+                // Configura o timer de atualização
+                window.timerInterval = setInterval(() => {
+                    activeServices.forEach(service => {
+                        const timerElement = document.getElementById(`timer-${service.fbId}`);
+                        if (timerElement) {
+                            timerElement.textContent = formatDuration(service.startTime);
+                        }
+                    });
+                }, 1000);
+
+                // Adiciona listeners para o botão de finalizar
+                inProgressList.querySelectorAll('.btn-stop').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const fbId = e.target.dataset.fbid;
+                        const mechanicId = e.target.dataset.mechanicid;
+                        handleStopService(fbId, mechanicId);
+                    });
+                });
+            }
+
+            // Atualiza a lista de mecânicos disponíveis e o <select>
+            function updateAvailableMechanics(activeServices) {
+                const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
+                let availableMechanics = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
+
+                // Agrupamento por função
+                const mechanicsGroup = availableMechanics.filter(m => m.role === 'MECHANIC');
+                const alignersGroup = availableMechanics.filter(m => m.role === 'ALIGNER');
+                const balancersGroup = availableMechanics.filter(m => m.role === 'BALANCER');
+
+                // Ordena pelo tempo de fila (rodízio: o menor queueTime é o primeiro)
+                const rodizioSort = (a, b) => (a.queueTime || 0) - (b.queueTime || 0);
+                mechanicsGroup.sort(rodizioSort);
+                alignersGroup.sort(rodizioSort);
+                balancersGroup.sort(rodizioSort);
+
+                // 1. Popula o select de funcionários (para o formulário de Produção)
+                mechanicSelect.innerHTML = '<option value="">-- Selecione um Funcionário --</option>';
+                [...mechanicsGroup, ...alignersGroup, ...balancersGroup].forEach(m => {
+                    const roleName = getRoleDisplayName(m.role);
+                    const option = document.createElement('option');
+                    option.value = m.fbId;
+                    option.dataset.name = m.name;
+                    option.textContent = `${m.name} (${roleName})`;
+                    mechanicSelect.appendChild(option);
+                });
+
+                // 2. Popula a lista de disponíveis (para a visualização no Painel de Serviço)
+                renderMechanicGroup(availableMechanicsList, mechanicsGroup, 'Geral');
+                renderMechanicGroup(availableAlignersList, alignersGroup, 'Alinhador');
+                renderMechanicGroup(availableBalancersList, balancersGroup, 'Balanceador');
+
+                validateForm();
+            }
+
+            function renderMechanicGroup(element, group, title) {
+                element.innerHTML = `<h4>${title} (${group.length} disponível)</h4>`;
+                group.forEach((m, index) => {
+                    const tag = document.createElement('div');
+                    tag.className = 'mechanic-tag';
+                    tag.style.padding = '8px';
+                    tag.style.border = '1px solid #ccc';
+                    tag.style.marginBottom = '5px';
+                    tag.style.backgroundColor = '#e9f7ef';
+                    
+                    tag.innerHTML = `<span style="font-weight: bold; color: #155724;">${index + 1}º</span> ${m.name}`;
+                    element.appendChild(tag);
+                });
+            }
+
+            // ===============================================
+            // === RELATÓRIO DIÁRIO (BÁSICO) ===
+            // ===============================================
+
+            async function renderDailyReport() {
+                const reportList = document.getElementById('report-list');
+                reportList.innerHTML = '<p style="text-align: center; color: #777; padding: 20px;">Carregando relatório...</p>';
+                document.getElementById('report-date').textContent = "Data: " + new Date().toLocaleDateString('pt-BR');
+
+                const snapshot = await db.collection(C_COMPLETED).get();
+                const completedServices = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
+
+                const todayServices = completedServices.filter(s => isToday(new Date(s.endTime).getTime()));
+                
+                if (todayServices.length === 0) {
+                    reportList.innerHTML = '<p style="text-align: center; color: #777; padding: 20px;">Nenhum serviço finalizado hoje.</p>';
+                    return;
+                }
+
+                // Agrupa e renderiza (lógica simplificada)
+                reportList.innerHTML = `<p>Total de Serviços Concluídos Hoje: <strong>${todayServices.length}</strong></p>`;
+                // A lógica completa de agrupamento e formatação de tempo deve ser adicionada depois, se necessário.
+            }
+
+            async function handleClearReport() {
+                if (!confirm("ATENÇÃO: Isso limpará TODOS os registros de serviços finalizados (relatórios). ESTA AÇÃO É IRREVERSÍVEL!")) return;
+                try {
+                    const batch = db.batch();
+                    const snapshot = await db.collection(C_COMPLETED).get();
+                    snapshot.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                    alert("Histórico de relatórios limpo com sucesso!");
+                    renderDailyReport();
+                } catch (error) {
+                    console.error("Erro ao limpar histórico:", error);
+                    alert("Erro ao limpar histórico. Verifique o console.");
+                }
+            }
+
+
+            // ===============================================
+            // === PONTO (MANTIDO) ===
+            // ===============================================
+
+            async function handleStartBreak(mechanicId) {
+                await updateInDB(C_MECHANICS, mechanicId, { isAvailable: false, queueTime: 0, lastActiveTime: new Date().toISOString() });
+            }
+
+            async function handleEndBreak(mechanicId) {
+                await updateInDB(C_MECHANICS, mechanicId, { isAvailable: true, queueTime: Date.now() });
+            }
+
+            function renderTimeclockCards() {
+                const timeclockList = document.getElementById('timeclock-list');
+                timeclockList.innerHTML = '';
+
+                ALL_MECHANICS.forEach(m => {
+                    const status = getMechanicStatus(m);
+                    const isBusyInService = (window.ACTIVE_SERVICES || []).some(s => s.mechanicId === m.fbId);
+
+                    const card = document.createElement('div');
+                    card.className = 'timeclock-card';
+                    card.innerHTML = `
+                        <h3>${m.name}</h3>
+                        <p><small>Cargo: ${getRoleDisplayName(m.role)}</small></p>
+                        <div class="timeclock-status ${status.class}">
+                            ${status.text}
+                            ${isBusyInService ? ' (EM SERVIÇO)' : ''}
+                        </div>
+                        <div class="timeclock-buttons">
+                            <button
+                                class="btn-clock-in"
+                                onclick="handleEndBreak('${m.fbId}')"
+                                ${m.isAvailable ? 'disabled' : ''}
+                            >Entrar (Disponível)</button>
+                            <button
+                                class="btn-clock-out"
+                                onclick="handleStartBreak('${m.fbId}')"
+                                ${!m.isAvailable || isBusyInService ? 'disabled' : ''}
+                            >Sair / Pausa</button>
+                        </div>
+                    `;
+                    timeclockList.appendChild(card);
+                });
+            }
+            
+            // ===============================================
+            // === ADMINISTRAÇÃO (MANTIDO) ===
+            // ===============================================
+
+            async function handleAddMechanic(event) {
+                event.preventDefault();
+                const name = inputMechanicName.value.trim();
+                const role = selectMechanicRole.value;
+
+                if (!name) return;
+
+                if (ALL_MECHANICS.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+                    alert("Este funcionário já está cadastrado.");
+                    return;
+                }
+
+                const mechanicData = {
+                    name: name,
+                    role: role,
+                    isAvailable: false,
+                    lastActiveTime: new Date().toISOString(),
+                    queueTime: 0
+                };
+
+                await addToDB(C_MECHANICS, mechanicData);
+                inputMechanicName.value = '';
+            }
+
+            function renderAdminMechanics() {
+                const ul = adminMechanicsList.querySelector('ul') || document.createElement('ul');
+                adminMechanicsList.innerHTML = '';
+                adminMechanicsList.appendChild(ul);
+                ul.innerHTML = '';
+
+                ALL_MECHANICS.forEach(m => {
+                    const li = document.createElement('li');
+                    const roleName = getRoleDisplayName(m.role || 'N/A');
+                    
+                    li.innerHTML = `
+                        <span>${m.name} <small>(${roleName})</small></span>
+                        <button class="btn-delete" data-fbid="${m.fbId}">Excluir</button>
+                    `;
+                    ul.appendChild(li);
+                });
+
+                ul.querySelectorAll('.btn-delete').forEach(btn => {
+                    btn.addEventListener('click', (e) => handleDeleteMechanic(e.target.dataset.fbid));
+                });
+            }
+
+            async function handleDeleteMechanic(fbId) {
+                if (confirm("ATENÇÃO: Excluir funcionário pode impactar relatórios. Tem certeza?")) {
+                    await deleteFromDB(C_MECHANICS, fbId);
+                }
+            }
+
+            async function handleAddService(event) {
+                event.preventDefault();
+                const name = inputServiceName.value.trim();
+                const role = selectServiceRole.value;
+
+                if (!name || !role) return;
+
+                if (ALL_SERVICES.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+                    alert("Este serviço já existe.");
+                    return;
+                }
+
+                await addToDB(C_SERVICES, { name: name, role: role });
+                inputServiceName.value = '';
+                selectServiceRole.value = 'MECHANIC';
+            }
+
+            function renderAdminServices() {
+                const ul = adminServicesList.querySelector('ul') || document.createElement('ul');
+                adminServicesList.innerHTML = '';
+                adminServicesList.appendChild(ul);
+                ul.innerHTML = '';
+
+                ALL_SERVICES.forEach(s => {
+                    const li = document.createElement('li');
+                    const roleName = getRoleDisplayName(s.role || 'N/A');
+
+                    li.innerHTML = `
+                        <span>${s.name} <small>(${roleName})</small></span>
+                        <button class="btn-delete" data-fbid="${s.fbId}">Excluir</button>
+                    `;
+                    ul.appendChild(li);
+                });
+
+                ul.querySelectorAll('.btn-delete').forEach(btn => {
+                    btn.addEventListener('click', (e) => handleDeleteService(e.target.dataset.fbid));
+                });
+            }
+
+            async function handleDeleteService(fbId) {
+                if (confirm("Tem certeza que deseja excluir este serviço?")) {
+                    await deleteFromDB(C_SERVICES, fbId);
+                }
+            }
+
+            function renderAdminLists() {
+                renderAdminMechanics();
+                renderAdminServices();
+            }
+
+            // ===============================================
+            // === INICIALIZAÇÃO ===
+            // ===============================================
+
+            document.addEventListener('DOMContentLoaded', () => {
+                // Listeners de Navegação
+                navQueue.addEventListener('click', () => showView('queue'));
+                navProduction.addEventListener('click', () => showView('production'));
+                navReport.addEventListener('click', () => showView('report'));
+                navTimeclock.addEventListener('click', () => showView('timeclock'));
+                navConfig.addEventListener('click', () => showView('config'));
+                document.getElementById('btn-logout').addEventListener('click', handleLogout);
+                
+                // Listeners de Formulário/Controle
+                newServiceForm.addEventListener('submit', handleStartService);
+                queueForm.addEventListener('submit', handleAddToQueue);
+                mechanicSelect.addEventListener('change', validateForm);
+                queueServiceToStartSelect.addEventListener('change', validateForm);
+                formMechanics.addEventListener('submit', handleAddMechanic);
+                formServices.addEventListener('submit', handleAddService);
+                playButton.addEventListener('click', handleStartService); // Botão "Iniciar" do formulário de Produção
+                btnClearReport.addEventListener('click', handleClearReport);
+
+                // Listener de Login
+                loginForm.addEventListener('submit', handleLogin);
+
+                // Inicia a aplicação
+                initializeApp();
+            });
+
+            // Tornar funções globais para onclick nos botões
+            window.handleStartBreak = handleStartBreak;
+            window.handleEndBreak = handleEndBreak;
+            window.showView = showView;
+            window.handleLogout = handleLogout;
+        </script>
+    </div>
 </body>
 </html>
