@@ -578,6 +578,7 @@ return `
 }
 // CORRIGIDO: Filtra a fila em 3 listas e renderiza (Req. 1)
 // CORRIGIDO: Filtra a fila em 3 listas e renderiza (Req. 1)
+// CORRIGIDO: Filtra a fila em 3 listas e renderiza (Req. 1)
 function renderCategorizedQueueList() {
     // Limpa todas as listas primeiro
     [queueListMechanic, queueListAligner, queueListBalancer].forEach(el => el.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>');
@@ -592,6 +593,7 @@ function renderCategorizedQueueList() {
     
     ALL_QUEUE.forEach(item => {
         const itemHtml = createQueueItemHtml(item);
+        
         // Um item aparece em todas as filas para as quais ele tem um role requerido
         if (item.requiredRoles && Array.isArray(item.requiredRoles)) {
             item.requiredRoles.forEach(role => {
@@ -616,16 +618,21 @@ function renderCategorizedQueueList() {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = itemData.html;
             
-            // *** LINHA CORRIGIDA AQUI ***
-            const itemElement = tempDiv.firstElementChild; // Trocado de .firstChild para .firstElementChild
+            // *** AQUI ESTÁ A LINHA DE CORREÇÃO ESSENCIAL ***
+            // Pega o primeiro ELEMENTO FILHO (ignora espaços e quebras de linha)
+            const itemElement = tempDiv.firstElementChild; 
+            
+            // *** LINHA DE DEBUG (OPCIONAL) ***
+            // Se esta linha imprimir "null", o problema é no HTML gerado.
+            // console.log("Tipo de itemElement:", itemElement ? itemElement.tagName : 'null/Texto');
             
             // Anexa o listener ao botão
-            // Esta linha agora deve funcionar, pois itemElement é o <div>
-            if (itemElement) { // Adicionando uma verificação extra por segurança
+            if (itemElement) { 
+                // Esta é a linha que estava dando erro, mas agora itemElement é um DIV
                 itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
                 map.element.appendChild(itemElement);
             } else {
-                console.warn("Falha ao criar itemElement para:", itemData.html);
+                console.warn("Falha ao criar itemElement: HTML do item de fila pode estar vazio ou malformado.");
             }
         });
     }
