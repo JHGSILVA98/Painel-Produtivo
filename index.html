@@ -608,12 +608,27 @@
                 renderTrackingView();
             }
         });
-        
-        db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
-            ALL_SERVICES = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-            populateServiceSelect();
+
+                db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
+            // 1. ATUALIZA O ARRAY GLOBAL
+            ALL_SERVICES.length = 0; // Limpa o array (ou use map, como você já faz)
+            snapshot.forEach(doc => {
+                ALL_SERVICES.push({ fbId: doc.id, ...doc.data() });
+            });
+
+            // 2. ATUALIZA OS ELEMENTOS VISUAIS
+            
+            // Para o formulário "Iniciar Novo Serviço"
+            populateServiceSelect(); 
+            
+            // NOVO: Chama para preencher o select de serviços da Fila
+            populateQueueServicesSelect(); // <--- COLOQUE AQUI!
+            
+            // Se você tiver a renderização da tela de admin, também fica aqui:
             if (document.getElementById('nav-config').classList.contains('active')) renderAdminServices();
         });
+        
+        
         
         // 2. LISTENER DE SERVIÇOS ATIVOS (Tempo Real)
         db.collection(C_ACTIVE).onSnapshot(snapshot => {
@@ -1221,6 +1236,22 @@
             btn.addEventListener('click', (e) => handleDeleteService(e.target.dataset.fbid));
         });
     }
+
+    function populateQueueServicesSelect() {
+    // 1. Limpa o select antes de popular
+    queueServicesSelect.innerHTML = '';
+    
+    // 2. Loop no array ALL_SERVICES
+    ALL_SERVICES.forEach(service => {
+        const option = document.createElement('option');
+        option.value = service.fbId; // O ID do Firebase é importante
+        option.textContent = service.name;
+        queueServicesSelect.appendChild(option);
+    });
+    
+    // O select de serviços da fila permite seleção MÚLTIPLA
+    // Então, não precisamos de uma opção "Selecione".
+}
 
         function renderQueueList() {
         queueList.innerHTML = '';
