@@ -533,9 +533,8 @@ snapshot.forEach(doc => {
 ALL_SERVICES.push({ fbId: doc.id, ...doc.data() });
 });
     
-    // *** MUDANÇA 2 (APLICADA): CHAMA A NOVA FUNÇÃO ***
-    // Isso irá popular os checkboxes na tela de Fila
-    renderQueueServiceCheckboxes(); 
+// Isso irá popular os checkboxes na tela de Fila
+renderQueueServiceCheckboxes(); 
 
 if (document.getElementById('view-config').style.display === 'block') renderAdminServices();
 });
@@ -551,34 +550,28 @@ updateAvailableMechanics(activeServices);
 // ===============================================
 // === LÓGICA DA FILA E PRODUÇÃO ===
 // ===============================================
-// NOVO: Cria o HTML para um item da fila com base nos dados.
+
+// *** VERIFICAÇÃO DE HTML PARA EVITAR NODES DE TEXTO (CORREÇÃO 2) ***
 function createQueueItemHtml(item) {
-// CORREÇÃO: Usa uma verificação defensiva para requiredRoles
-const roles = (item.requiredRoles && Array.isArray(item.requiredRoles)) ? item.requiredRoles : [];
+    // CORREÇÃO: Usa uma verificação defensiva para requiredRoles
+    const roles = (item.requiredRoles && Array.isArray(item.requiredRoles)) ? item.requiredRoles : [];
 
-    // *** ALTERADO ***: Pega a lista de serviços que ESTÃO no item da fila (baseado nos IDs)
-const serviceNames = (item.serviceIds && Array.isArray(item.serviceIds))
-        ? item.serviceIds.map(id => {
-            const service = ALL_SERVICES.find(s => s.fbId === id);
-            return service ? service.name : 'Serviço ID:' + id;
-          }).join(', ')
-        : 'Nenhum serviço especificado';
+    // Pega a lista de nomes dos serviços
+    const serviceNames = (item.serviceIds && Array.isArray(item.serviceIds))
+            ? item.serviceIds.map(id => {
+                const service = ALL_SERVICES.find(s => s.fbId === id);
+                return service ? service.name : 'Serviço Desconhecido';
+              }).join(', ')
+            : 'Nenhum serviço especificado';
 
-// Se queuedAt for um number (getTime()), usa new Date(number). Se for string (toISOString()), new Date(string).
-const queueDate = new Date(item.queuedAt);
-return `
-<div class="queue-item" data-fbid="${item.fbId}">
-<p><strong>Placa:</strong> ${item.carPlate}</p>
-<p><strong>Modelo:</strong> ${item.carModel}</p>
-<p><strong>Serviços:</strong> <small>${serviceNames || 'Nenhum serviço correspondente'}</small></p>
-<p><small>Em fila desde: ${queueDate.toLocaleTimeString('pt-BR')}</small></p>
-<button class="btn-primary start-queue-item-btn">Iniciar Serviço</button>
-</div>
-`;
+    // Se queuedAt for um number (getTime()), usa new Date(number). Se for string (toISOString()), new Date(string).
+    const queueDate = new Date(item.queuedAt);
+    
+    // *** CORREÇÃO: HTML COMPACTO SEM QUEBRA DE LINHA NO INÍCIO/FIM PARA EVITAR TEXT NODE ***
+    return `<div class="queue-item" data-fbid="${item.fbId}"><p><strong>Placa:</strong> ${item.carPlate}</p><p><strong>Modelo:</strong> ${item.carModel}</p><p><strong>Serviços:</strong> <small>${serviceNames}</small></p><p><small>Em fila desde: ${queueDate.toLocaleTimeString('pt-BR')}</small></p><button class="btn-primary start-queue-item-btn">Iniciar Serviço</button></div>`;
 }
-// CORRIGIDO: Filtra a fila em 3 listas e renderiza (Req. 1)
-// CORRIGIDO: Filtra a fila em 3 listas e renderiza (Req. 1)
-// CORRIGIDO: Filtra a fila em 3 listas e renderiza (Req. 1)
+
+// *** FUNÇÃO COM CORREÇÃO FINAL DE TypeError (CORREÇÃO 1) ***
 function renderCategorizedQueueList() {
     // Limpa todas as listas primeiro
     [queueListMechanic, queueListAligner, queueListBalancer].forEach(el => el.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>');
@@ -598,7 +591,7 @@ function renderCategorizedQueueList() {
         if (item.requiredRoles && Array.isArray(item.requiredRoles)) {
             item.requiredRoles.forEach(role => {
                 if (queueMaps[role]) {
-                    queueMaps[role].items.push({ html: itemHtml, fbId: item.fbId }); // Guarda o fbId junto
+                    queueMaps[role].items.push({ html: itemHtml, fbId: item.fbId }); 
                 }
             });
         }
@@ -607,7 +600,7 @@ function renderCategorizedQueueList() {
     // Renderiza e anexa os listeners
     for (const role in queueMaps) {
         const map = queueMaps[role];
-        map.element.innerHTML = ''; // Limpa novamente
+        map.element.innerHTML = ''; 
         
         if (map.items.length === 0) {
             map.element.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>';
@@ -618,34 +611,25 @@ function renderCategorizedQueueList() {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = itemData.html;
             
-            // *** AQUI ESTÁ A LINHA DE CORREÇÃO ESSENCIAL ***
-            // Pega o primeiro ELEMENTO FILHO (ignora espaços e quebras de linha)
+            // CORREÇÃO FINAL: Usar firstElementChild para pegar o elemento DIV e ignorar texto
             const itemElement = tempDiv.firstElementChild; 
             
-            // *** LINHA DE DEBUG (OPCIONAL) ***
-            // Se esta linha imprimir "null", o problema é no HTML gerado.
-            // console.log("Tipo de itemElement:", itemElement ? itemElement.tagName : 'null/Texto');
-            
-            // Anexa o listener ao botão
             if (itemElement) { 
-                // Esta é a linha que estava dando erro, mas agora itemElement é um DIV
                 itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
                 map.element.appendChild(itemElement);
             } else {
-                console.warn("Falha ao criar itemElement: HTML do item de fila pode estar vazio ou malformado.");
+                console.warn("Falha ao criar itemElement: HTML malformado.");
             }
         });
     }
 }
 
-// *** MUDANÇA 1 (APLICADA): NOVA FUNÇÃO INSERIDA AQUI ***
 // NOVA FUNÇÃO: Renderiza os checkboxes de serviço dinamicamente
 function renderQueueServiceCheckboxes() {
-    // Pega o container que antes tinha os checkboxes estáticos
     const container = document.getElementById('queue-category-selection'); 
-    if (!container) return; // Medida de segurança
+    if (!container) return;
     
-    container.innerHTML = ''; // Limpa os checkboxes estáticos
+    container.innerHTML = ''; 
     
     if (ALL_SERVICES.length === 0) {
         container.innerHTML = '<p style="font-size: 14px; color: #777; font-style: italic;">Nenhum serviço cadastrado. Adicione serviços na tela de Administração.</p>';
@@ -655,7 +639,6 @@ function renderQueueServiceCheckboxes() {
     // Cria um checkbox para cada serviço cadastrado
     ALL_SERVICES.forEach(service => {
         const div = document.createElement('div');
-        // Note que guardamos o ID do serviço no 'value' e o 'role' (categoria) no 'data-role'
         div.innerHTML = `
             <div>
                 <input type="checkbox" 
@@ -671,88 +654,97 @@ function renderQueueServiceCheckboxes() {
     });
 }
 
-// *** MUDANÇA 3 (APLICADA): FUNÇÃO 'handleAddToQueue' SUBSTITUÍDA ***
-// MODIFICADA: Lida com a entrada de veículo usando os checkboxes de SERVIÇO
+// FUNÇÃO 'handleAddToQueue'
 async function handleAddToQueue(event) {
-    event.preventDefault(); //
+    event.preventDefault(); 
     
-    const carPlate = queueCarPlateInput.value.trim().toUpperCase(); //
-    const carModel = queueCarModelInput.value.trim(); //
+    const carPlate = queueCarPlateInput.value.trim().toUpperCase(); 
+    const carModel = queueCarModelInput.value.trim(); 
     
-    // 1. Pega os checkboxes de *serviços* marcados (NÃO mais de categoria)
+    // 1. Pega os checkboxes de *serviços* marcados
     const checkedCheckboxes = document.querySelectorAll('input[name="queue-service-item"]:checked');
     
-    // 2. Extrai os IDs dos serviços diretamente do 'value'
-    const selectedServiceIds = Array.from(checkedCheckboxes).map(cb => cb.value); //
+    // 2. Extrai os IDs dos serviços
+    const selectedServiceIds = Array.from(checkedCheckboxes).map(cb => cb.value); 
     
-    // 3. Extrai os 'roles' (categorias) do 'data-role' e remove duplicatas
+    // 3. Extrai os 'roles' (categorias) e remove duplicatas
     const roles = Array.from(checkedCheckboxes).map(cb => cb.dataset.role);
-    const requiredRoles = [...new Set(roles)]; //
+    const requiredRoles = [...new Set(roles)]; 
 
-    if (selectedServiceIds.length === 0) { //
-        alert("Selecione ao menos um serviço para adicionar à fila."); //
-        return; //
+    if (selectedServiceIds.length === 0) { 
+        alert("Selecione ao menos um serviço para adicionar à fila."); 
+        return; 
     }
     
-    // A lógica anterior (linhas 625-632) para encontrar 'selectedServiceIds' não é mais necessária.
-    
-    const queueData = { //
-        carPlate: carPlate, //
-        carModel: carModel, //
-        serviceIds: selectedServiceIds, // (Agora vem direto dos checkboxes)
-        requiredRoles: requiredRoles, // (Agora vem do 'data-role' dos checkboxes)
-        queuedAt: new Date().getTime(), //
-        addedBy: CURRENT_USER //
+    const queueData = { 
+        carPlate: carPlate, 
+        carModel: carModel, 
+        serviceIds: selectedServiceIds, 
+        requiredRoles: requiredRoles, 
+        queuedAt: new Date().getTime(), 
+        addedBy: CURRENT_USER 
     };
 
     try {
-        await addToDB(C_QUEUE_SERVICES, queueData); //
+        await addToDB(C_QUEUE_SERVICES, queueData); 
         
         // Limpa o formulário
-        queueCarPlateInput.value = ''; //
-        queueCarModelInput.value = ''; //
-        checkedCheckboxes.forEach(cb => cb.checked = false); //
+        queueCarPlateInput.value = ''; 
+        queueCarModelInput.value = ''; 
+        checkedCheckboxes.forEach(cb => cb.checked = false); 
     } catch (error) {
-        alert("Erro ao adicionar o veículo à fila. Verifique a conexão com o Firebase."); //
-        console.error("Erro ao adicionar à fila:", error); //
+        alert("Erro ao adicionar o veículo à fila. Verifique a conexão com o Firebase."); 
+        console.error("Erro ao adicionar à fila:", error); 
     }
 }
-// *** FIM DA SUBSTITUIÇÃO ***
 
-// MANTIDA: Lógica de Carregamento de Formulário de Início
+// Lógica de Carregamento de Formulário de Início
 async function handleStartFromQueue(queueFbId) {
-const queueItem = ALL_QUEUE.find(item => item.fbId === queueFbId);
-if (!queueItem) {
-alert("Item da fila não encontrado.");
-return;
+    const queueItem = ALL_QUEUE.find(item => item.fbId === queueFbId);
+    if (!queueItem) {
+        alert("Item da fila não encontrado.");
+        return;
+    }
+    
+    // 1. Redireciona para o painel de produção imediatamente
+    showView('production'); 
+
+    // 2. Copia os dados para o formulário de Iniciar Novo Serviço
+    carPlateInput.value = queueItem.carPlate;
+    carModelInput.value = queueItem.carModel;
+    hiddenQueueItemId.value = queueFbId; // Guarda o ID
+
+    // 3. Popula o select SÓ com os serviços que fazem parte daquele item da fila (CORREÇÃO 3)
+    queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
+    
+    const serviceIds = (queueItem.serviceIds && Array.isArray(queueItem.serviceIds)) ? queueItem.serviceIds : [];
+    
+    if (serviceIds.length === 0) {
+        queueServiceToStartSelect.innerHTML = '<option value="">-- Carro sem serviços restantes --</option>';
+        playButton.disabled = true;
+    }
+
+    serviceIds.forEach(serviceId => {
+        // Encontra os detalhes do serviço usando o ALL_SERVICES em memória
+        const service = ALL_SERVICES.find(s => s.fbId === serviceId); 
+        if (service) {
+            queueServiceToStartSelect.innerHTML += `<option value="${service.fbId}" data-name="${service.name}" data-role="${service.role}">${service.name}</option>`;
+        }
+    });
+
+    // 4. (Opcional) Tenta pré-selecionar o primeiro
+    if (serviceIds.length > 0) {
+        queueServiceToStartSelect.value = serviceIds[0];
+    }
+
+    // 5. Garante que os mecânicos e o botão sejam validados
+    validateForm();
+    document.getElementById('mechanic-select').focus();
 }
-// 2. Copia os dados para o formulário de Iniciar Novo Serviço
-carPlateInput.value = queueItem.carPlate;
-carModelInput.value = queueItem.carModel;
-hiddenQueueItemId.value = queueFbId; // Guarda o ID
-// 3. Popula o select SÓ com os serviços que fazem parte daquele item da fila
-queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
-// Verificação defensiva para serviceIds
-const serviceIds = (queueItem.serviceIds && Array.isArray(queueItem.serviceIds)) ? queueItem.serviceIds : [];
-serviceIds.forEach(serviceId => {
-const service = ALL_SERVICES.find(s => s.fbId === serviceId);
-if (service) {
-queueServiceToStartSelect.innerHTML += `<option value="${service.fbId}" data-name="${service.name}" data-role="${service.role}">${service.name}</option>`;
-}
-});
-// 4. (Opcional) Tenta pré-selecionar o primeiro
-if (serviceIds.length > 0) {
-queueServiceToStartSelect.value = serviceIds[0];
-}
-// 5. Valida o formulário
-validateForm();
-// 6. Redireciona para o painel de produção e foca
-showView('production');
-document.getElementById('mechanic-select').focus();
-}
+
 function validateForm() {
-const isReady = carPlateInput.value && mechanicSelect.value && queueServiceToStartSelect.value;
-playButton.disabled = !isReady;
+    const isReady = carPlateInput.value && mechanicSelect.value && queueServiceToStartSelect.value;
+    playButton.disabled = !isReady;
 }
 async function handleStartService(event) {
 event.preventDefault();
@@ -779,9 +771,8 @@ active: true
 await addToDB(C_ACTIVE, serviceData);
 await updateInDB(C_MECHANICS, mechanicId, { isAvailable: false, lastActiveTime: new Date().toISOString() });
     
-    // *** LÓGICA DE REMOÇÃO DA FILA ATUALIZADA ***
+    // LÓGICA DE REMOÇÃO DA FILA ATUALIZADA
     // Em vez de deletar o item inteiro, vamos apenas remover o serviço que foi iniciado.
-    // Se não houver mais serviços, aí sim deletamos o item da fila.
 if (queueId) {
         const queueItem = ALL_QUEUE.find(item => item.fbId === queueId);
         if (queueItem) {
