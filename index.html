@@ -232,9 +232,10 @@
                         <label for="queue-car-model">Modelo do Carro:</label>
                         <input type="text" id="queue-car-model" required>
 
-                        <label for="queue-services">Serviços a Realizar:</label>
-                        <select id="queue-services" multiple required style="min-height: 100px;">
-                            </select>
+                        <label for="queue-services-container">Serviços a Realizar:</label>
+                        <div id="queue-services-container" class="checkbox-container">
+                            </div>
+                        <input type="hidden" id="queue-services-hidden" required>
 
                         <button type="submit" class="btn-primary" style="margin-top: 15px;">Adicionar à Fila</button>
                     </form>
@@ -392,6 +393,8 @@
     const queueCarPlateInput = document.getElementById('queue-car-plate');
     const queueCarModelInput = document.getElementById('queue-car-model');
     const queueServicesSelect = document.getElementById('queue-services');
+    // Local: Junto com as outras declarações DOM
+    const queueServicesContainer = document.getElementById('queue-services-container');
     const queueList = document.getElementById('queue-list');
 
     
@@ -943,11 +946,13 @@
 
     const carPlate = queueCarPlateInput.value.trim().toUpperCase();
     const carModel = queueCarModelInput.value.trim();
+
     
-    // Pega todos os IDs dos serviços selecionados no select múltiplo
-    const selectedServiceIds = Array.from(queueServicesSelect.options)
-        .filter(option => option.selected)
-        .map(option => option.value);
+    
+    // NOVO: Pega todos os checkboxes de serviço marcados
+    const checkedCheckboxes = document.querySelectorAll('input[name="queue-service"]:checked');
+
+    const selectedServiceIds = Array.from(checkedCheckboxes).map(cb => cb.value);
 
     if (selectedServiceIds.length === 0) {
         alert("Selecione ao menos um serviço para adicionar à fila.");
@@ -968,6 +973,10 @@
     queueCarPlateInput.value = '';
     queueCarModelInput.value = '';
     Array.from(queueServicesSelect.options).forEach(option => option.selected = false);
+
+    // Limpa os checkboxes após adicionar à fila
+    checkedCheckboxes.forEach(cb => cb.checked = false);
+
     }
 
     async function handleStopService(serviceFbId, mechanicFbId) {
@@ -1237,21 +1246,30 @@
         });
     }
 
-    function populateQueueServicesSelect() {
-    // 1. Limpa o select antes de popular
-    queueServicesSelect.innerHTML = '';
-    
-    // 2. Loop no array ALL_SERVICES
-    ALL_SERVICES.forEach(service => {
-        const option = document.createElement('option');
-        option.value = service.fbId; // O ID do Firebase é importante
-        option.textContent = service.name;
-        queueServicesSelect.appendChild(option);
-    });
-    
-    // O select de serviços da fila permite seleção MÚLTIPLA
-    // Então, não precisamos de uma opção "Selecione".
-}
+            function populateQueueServicesSelect() {
+            queueServicesContainer.innerHTML = ''; // Limpa a div
+            
+            ALL_SERVICES.forEach(service => {
+                const checkboxId = 'service-' + service.fbId;
+                
+                const div = document.createElement('div');
+                div.className = 'checkbox-item'; // Para estilização opcional
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = checkboxId;
+                checkbox.value = service.fbId;
+                checkbox.name = 'queue-service'; // Nome comum para agrupar
+
+                const label = document.createElement('label');
+                label.htmlFor = checkboxId;
+                label.textContent = service.name;
+
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                queueServicesContainer.appendChild(div);
+            });
+        }
 
         function renderQueueList() {
         queueList.innerHTML = '';
