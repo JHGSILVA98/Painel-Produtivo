@@ -583,7 +583,32 @@
             navConfig.classList.add('active');
             renderAdminLists(); 
         }
-    }
+    }  
+
+    function populateQueueServicesSelect() {
+            queueServicesContainer.innerHTML = ''; // Limpa a div
+            
+            ALL_SERVICES.forEach(service => {
+                const checkboxId = 'service-' + service.fbId;
+                
+                const div = document.createElement('div');
+                div.className = 'checkbox-item'; // Para estilização opcional
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = checkboxId;
+                checkbox.value = service.fbId;
+                checkbox.name = 'queue-service'; // Nome comum para agrupar
+
+                const label = document.createElement('label');
+                label.htmlFor = checkboxId;
+                label.textContent = service.name;
+
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                queueServicesContainer.appendChild(div);
+            });
+        }
     
     function setupFirebaseListeners() {
         // 1. LISTENERS MASTER (Funcionários e Serviços)
@@ -1246,30 +1271,7 @@
         });
     }
 
-            function populateQueueServicesSelect() {
-            queueServicesContainer.innerHTML = ''; // Limpa a div
             
-            ALL_SERVICES.forEach(service => {
-                const checkboxId = 'service-' + service.fbId;
-                
-                const div = document.createElement('div');
-                div.className = 'checkbox-item'; // Para estilização opcional
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = checkboxId;
-                checkbox.value = service.fbId;
-                checkbox.name = 'queue-service'; // Nome comum para agrupar
-
-                const label = document.createElement('label');
-                label.htmlFor = checkboxId;
-                label.textContent = service.name;
-
-                div.appendChild(checkbox);
-                div.appendChild(label);
-                queueServicesContainer.appendChild(div);
-            });
-        }
 
         function renderQueueList() {
         queueList.innerHTML = '';
