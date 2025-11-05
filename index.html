@@ -611,13 +611,16 @@ function renderCategorizedQueueList() {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = itemData.html;
             
-            // CORREÇÃO FINAL: Usar firstElementChild para pegar o elemento DIV e ignorar texto
+            // MANTENHA ESTA LINHA COM firstElementChild
             const itemElement = tempDiv.firstElementChild; 
             
-            if (itemElement) { 
-                itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
-                map.element.appendChild(itemElement);
-            } else {
+            // >>> INSIRA ESTAS DUAS LINHAS DE DEBUG: <<<
+            console.log("itemElement é:", itemElement);
+            console.log("Tipo do itemElement é:", itemElement ? itemElement.constructor.name : 'TEXT_NODE/NULL'); 
+            // ------------------------------------------
+
+            if (itemElement) { // Aqui é a linha 617 que está dando o erro se você não tiver o IF
+                itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));} else {
                 console.warn("Falha ao criar itemElement: HTML malformado.");
             }
         });
