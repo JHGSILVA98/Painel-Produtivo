@@ -586,10 +586,17 @@
     }  
 
     function populateQueueServicesSelect() {
-            queueServicesContainer.innerHTML = ''; // Limpa a div
-            
-            ALL_SERVICES.forEach(service => {
-                const checkboxId = 'service-' + service.fbId;
+            // Se o elemento não foi encontrado, saia da função sem quebrar
+    if (!queueServicesContainer) {
+        console.error("Erro: Container de serviços da fila não inicializado ou não encontrado.");
+        return; 
+    }
+    
+    // AQUI O ERRO NÃO OCORRERÁ, POIS queueServicesContainer NÃO É NULL
+    queueServicesContainer.innerHTML = ''; 
+    
+    ALL_SERVICES.forEach(service => {
+        const checkboxId = 'service-' + service.fbId;
                 
                 const div = document.createElement('div');
                 div.className = 'checkbox-item'; // Para estilização opcional
