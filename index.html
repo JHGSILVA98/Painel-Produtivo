@@ -690,14 +690,13 @@ function renderCategorizedQueueList() {
         }
 
         map.items.forEach(itemData => {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = itemData.html;
-            
-            // CORREÇÃO CRÍTICA DO ERRO
-            const itemElement = tempDiv.firstElementChild; 
+            // ✅ CORREÇÃO DEFINITIVA USANDO DOMParser (Linha 616/617)
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(itemData.html, 'text/html');
+            const itemElement = doc.body.firstElementChild; // Garante que é um elemento, ignorando texto/DOCTYPE
 
             if (itemElement) {
-                // Anexa o listener ao botão
+                // Anexa o listener ao botão (Isto agora funcionará sem erro)
                 itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
                 map.element.appendChild(itemElement);
             } else {
@@ -706,6 +705,7 @@ function renderCategorizedQueueList() {
         });
     }
 }
+
 
 // Lida com a entrada de veículo e usa as categorias para definir requiredRoles e serviceIds
 async function handleAddToQueue(event) {
