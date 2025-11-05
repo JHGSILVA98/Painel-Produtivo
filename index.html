@@ -581,28 +581,6 @@ console.error("Erro ao carregar serviços ativos:", error);
 // === LÓGICA DA FILA E PRODUÇÃO ===
 // ===============================================
 
-// Cria o HTML para um item da fila
-function createQueueItemHtml(item) {
-const roles = (item.requiredRoles && Array.isArray(item.requiredRoles)) ? item.requiredRoles : [];
-
-const serviceNames = ALL_SERVICES
-.filter(s => roles.includes(s.role))
-.map(s => s.name)
-.join(', ');
-
-const queueDate = new Date(item.queuedAt || Date.now());
-
-return `
-<div class="queue-item" data-fbid="${item.fbId}">
-<p><strong>Placa:</strong> ${item.carPlate || 'N/A'}</p>
-<p><strong>Modelo:</strong> ${item.carModel || 'N/A'}</p>
-<p><strong>Serviços (Potenciais):</strong> <small>${serviceNames || 'Nenhum serviço correspondente'}</small></p>
-<p><small>Em fila desde: ${queueDate.toLocaleTimeString('pt-BR')}</small></p>
-<button class="btn-primary start-queue-item-btn">Iniciar Serviço</button>
-</div>
-`;
-}
-
 // CORRIGIDO: Renderiza a fila categorizada
 function renderCategorizedQueueList() {
 // Limpa todas as listas
@@ -622,13 +600,11 @@ const queueMaps = {
 };
 
 ALL_QUEUE.forEach(item => {
-const itemHtml = createQueueItemHtml(item);
-
 // Verifica se requiredRoles existe e é um array
 if (item.requiredRoles && Array.isArray(item.requiredRoles)) {
 item.requiredRoles.forEach(role => {
 if (queueMaps[role]) {
-queueMaps[role].items.push({ html: itemHtml, fbId: item.fbId });
+queueMaps[role].items.push(item);
 }
 });
 }
@@ -644,19 +620,35 @@ map.element.innerHTML = '<p style="font-style: italic; color: #777; padding: 10p
 continue;
 }
 
-map.items.forEach(itemData => {
-const tempDiv = document.createElement('div');
-tempDiv.innerHTML = itemData.html.trim();
-const itemElement = tempDiv.firstElementChild;
+map.items.forEach(item => {
+// Cria o elemento diretamente
+const queueItemDiv = document.createElement('div');
+queueItemDiv.className = 'queue-item';
+queueItemDiv.dataset.fbid = item.fbId;
 
-// Verifica se o elemento foi criado corretamente
-if (itemElement) {
-const button = itemElement.querySelector('.start-queue-item-btn');
+const roles = (item.requiredRoles && Array.isArray(item.requiredRoles)) ? item.requiredRoles : [];
+const serviceNames = ALL_SERVICES
+.filter(s => roles.includes(s.role))
+.map(s => s.name)
+.join(', ');
+
+const queueDate = new Date(item.queuedAt || Date.now());
+
+queueItemDiv.innerHTML = `
+<p><strong>Placa:</strong> ${item.carPlate || 'N/A'}</p>
+<p><strong>Modelo:</strong> ${item.carModel || 'N/A'}</p>
+<p><strong>Serviços (Potenciais):</strong> <small>${serviceNames || 'Nenhum serviço correspondente'}</small></p>
+<p><small>Em fila desde: ${queueDate.toLocaleTimeString('pt-BR')}</small></p>
+<button class="btn-primary start-queue-item-btn">Iniciar Serviço</button>
+`;
+
+// Adiciona o evento ao botão
+const button = queueItemDiv.querySelector('.start-queue-item-btn');
 if (button) {
-button.addEventListener('click', () => handleStartFromQueue(itemData.fbId));
+button.addEventListener('click', () => handleStartFromQueue(item.fbId));
 }
-map.element.appendChild(itemElement);
-}
+
+map.element.appendChild(queueItemDiv);
 });
 }
 }
