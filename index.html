@@ -1262,7 +1262,7 @@
                 return service ? service.name : 'Serviço Desconhecido';
             }).join(', ');
             
-            const html = 
+            const html = `
                 <div class="queue-item">
                     <p><strong>Placa:</strong> ${item.carPlate} | <strong>Modelo:</strong> ${item.carModel}</p>
                     <p><strong>Serviços:</strong> ${serviceNames}</p>
@@ -1271,9 +1271,8 @@
                     <button onclick="handleStartFromQueue('${item.fbId}')" class="btn-secondary" style="margin-top: 10px;">
                         Iniciar Serviço
                     </button>
-                </div>
-            ;
-            queueList.innerHTML = html;
+                `; // Certifique-se de que a crase está fechada corretamente
+            queueList.innerHTML += html;
         });
     }
 
