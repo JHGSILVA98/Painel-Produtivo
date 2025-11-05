@@ -577,47 +577,58 @@ return `
 `;
 }
 // CORRIGIDO: Filtra a fila em 3 listas e renderiza (Req. 1)
+// CORRIGIDO: Filtra a fila em 3 listas e renderiza (Req. 1)
 function renderCategorizedQueueList() {
-// Limpa todas as listas primeiro
-[queueListMechanic, queueListAligner, queueListBalancer].forEach(el => el.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>');
-if (ALL_QUEUE.length === 0) return;
-// Mapeamento de Filas
-const queueMaps = {
-'MECHANIC': { element: queueListMechanic, items: [] },
-'ALIGNER': { element: queueListAligner, items: [] },
-'BALANCER': { element: queueListBalancer, items: [] }
-};
-ALL_QUEUE.forEach(item => {
-const itemHtml = createQueueItemHtml(item);
-// Um item aparece em todas as filas para as quais ele tem um role requerido
-// **********************************************
-// *** CORREÇÃO DO ERRO 'forEach of undefined' ***
-// **********************************************
-if (item.requiredRoles && Array.isArray(item.requiredRoles)) {
-item.requiredRoles.forEach(role => {
-if (queueMaps[role]) {
-queueMaps[role].items.push({ html: itemHtml, fbId: item.fbId }); // Guarda o fbId junto
-}
-});
-}
-});
-// Renderiza e anexa os listeners
-for (const role in queueMaps) {
-const map = queueMaps[role];
-map.element.innerHTML = ''; // Limpa novamente
-if (map.items.length === 0) {
-map.element.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>';
-continue;
-}
-map.items.forEach(itemData => {
-const tempDiv = document.createElement('div');
-tempDiv.innerHTML = itemData.html;
-const itemElement = tempDiv.firstChild;
-// Anexa o listener ao botão
-itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
-map.element.appendChild(itemElement);
-});
-}
+    // Limpa todas as listas primeiro
+    [queueListMechanic, queueListAligner, queueListBalancer].forEach(el => el.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>');
+    if (ALL_QUEUE.length === 0) return;
+    
+    // Mapeamento de Filas
+    const queueMaps = {
+        'MECHANIC': { element: queueListMechanic, items: [] },
+        'ALIGNER': { element: queueListAligner, items: [] },
+        'BALANCER': { element: queueListBalancer, items: [] }
+    };
+    
+    ALL_QUEUE.forEach(item => {
+        const itemHtml = createQueueItemHtml(item);
+        // Um item aparece em todas as filas para as quais ele tem um role requerido
+        if (item.requiredRoles && Array.isArray(item.requiredRoles)) {
+            item.requiredRoles.forEach(role => {
+                if (queueMaps[role]) {
+                    queueMaps[role].items.push({ html: itemHtml, fbId: item.fbId }); // Guarda o fbId junto
+                }
+            });
+        }
+    });
+
+    // Renderiza e anexa os listeners
+    for (const role in queueMaps) {
+        const map = queueMaps[role];
+        map.element.innerHTML = ''; // Limpa novamente
+        
+        if (map.items.length === 0) {
+            map.element.innerHTML = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>';
+            continue;
+        }
+        
+        map.items.forEach(itemData => {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = itemData.html;
+            
+            // *** LINHA CORRIGIDA AQUI ***
+            const itemElement = tempDiv.firstElementChild; // Trocado de .firstChild para .firstElementChild
+            
+            // Anexa o listener ao botão
+            // Esta linha agora deve funcionar, pois itemElement é o <div>
+            if (itemElement) { // Adicionando uma verificação extra por segurança
+                itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
+                map.element.appendChild(itemElement);
+            } else {
+                console.warn("Falha ao criar itemElement para:", itemData.html);
+            }
+        });
+    }
 }
 
 // *** MUDANÇA 1 (APLICADA): NOVA FUNÇÃO INSERIDA AQUI ***
