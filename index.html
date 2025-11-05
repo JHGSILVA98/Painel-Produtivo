@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel de Produtividade V16 (Fila Corrigida - Final)</title>
+<title>Painel de Produtividade V16 (Final Completo)</title>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -661,17 +661,23 @@ map.element.innerHTML = '<p style="font-style: italic; color: #777; padding: 10p
 continue;
 }
 map.items.forEach(itemData => {
-// CORREÇÃO DEFINITIVA DO TYPERROR (usando DOMParser)
-const parser = new DOMParser();
-const doc = parser.parseFromString(itemData.html, 'text/html');
-const itemElement = doc.body.firstElementChild; 
-if (itemElement) {
-// Anexa o listener ao botão
-itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
-map.element.appendChild(itemElement);
-} else {
-console.warn("Falha ao processar HTML do item de fila:", itemData.html);
-}
+    // 1. Cria um elemento temporário
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = itemData.html;
+
+    // 2. Tenta obter o primeiro elemento HTML (que deve ser o .queue-item)
+    let itemElement = tempDiv.firstElementChild; 
+
+    // 3. Checagem Defensiva (A CORREÇÃO FINAL PARA O TYPERROR)
+    // Garante que itemElement existe e que possui a função querySelector (ou seja, é um Elemento DOM)
+    if (itemElement && typeof itemElement.querySelector === 'function') {
+        // Anexa o listener ao botão
+        itemElement.querySelector('.start-queue-item-btn').addEventListener('click', () => handleStartFromQueue(itemData.fbId));
+        map.element.appendChild(itemElement);
+    } else {
+        // O itemElement não é um elemento DOM (provavelmente um Nó de Texto). Ignora e loga.
+        console.warn("Falha ao processar HTML do item de fila. Objeto capturado:", itemElement ? itemElement.constructor.name : 'NULO');
+    }
 });
 }
 }
@@ -687,12 +693,9 @@ if (requiredRoles.length === 0) {
 alert("Selecione ao menos uma categoria de serviço para adicionar à fila.");
 return;
 }
-// Nesta versão, não precisamos de serviceIds no objeto da fila, apenas dos roles.
-// O serviceIds será filtrado na hora de iniciar o serviço.
 const queueData = {
 carPlate: carPlate,
 carModel: carModel,
-// serviceIds: selectedServiceIds, // Removido para simplificar
 requiredRoles: requiredRoles,
 queuedAt: new Date().getTime(), // Usando Timestamp em milissegundos (number)
 addedBy: CURRENT_USER
@@ -743,10 +746,9 @@ validateForm(); // Valida o formulário de início
 populateMechanicSelect(); 
 }
 // Adiciona um listener para o select de serviço para que o select de mecânico seja atualizado
-queueServiceToStartSelect.addEventListener('change', () => {
-populateMechanicSelect();
-validateForm();
-});
+// Este listener é configurado no final do arquivo, em 'DOMContentLoaded'
+// queueServiceToStartSelect.addEventListener('change', () => { populateMechanicSelect(); validateForm(); }); 
+
 // Popula o select de Funcionário Disponível com base no Serviço Selecionado
 function populateMechanicSelect() {
 const selectedOption = queueServiceToStartSelect.options[queueServiceToStartSelect.selectedIndex];
@@ -1141,7 +1143,10 @@ document.addEventListener('DOMContentLoaded', () => {
 document.getElementById('new-service-form').addEventListener('submit', handleStartService);
 queueForm.addEventListener('submit', handleAddToQueue); // Listener do formulário de fila
 mechanicSelect.addEventListener('change', validateForm);
-queueServiceToStartSelect.addEventListener('change', validateForm);
+queueServiceToStartSelect.addEventListener('change', () => {
+    populateMechanicSelect();
+    validateForm();
+}); // Listener do select de serviço
 formMechanics.addEventListener('submit', handleAddMechanic);
 formServices.addEventListener('submit', handleAddService);
 loginForm.addEventListener('submit', handleLogin);
