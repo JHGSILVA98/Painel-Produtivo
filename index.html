@@ -3,12 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel de Produtividade V16 (Fila Corrigida - Final)</title>
+<title>Painel de Produtividade (Layout V16 Modificado)</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 <style>
-/* NOVO ESTILO: TELA DE LOGIN */
+/* ---------------------------------------------------------------------- */
+/* === ESTILOS VISUAIS (Baseado no 'Inicial.odt') === */
+/* ---------------------------------------------------------------------- */
+html, body {
+height: 100%;
+margin: 0;
+padding: 0;
+overflow: hidden;
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+background-color: #f0f2f5;
+}
+/* === TELA DE LOGIN (Estilo 'Inicial.odt') === */
 #login-screen {
 max-width: 400px;
 margin: 100px auto;
@@ -18,23 +30,122 @@ border-radius: 8px;
 box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 text-align: center;
 }
+#login-screen h2 {
+border-bottom: 2px solid #007bff;
+padding-bottom: 8px;
+color: #333;
+}
 #login-screen input {
 width: 100%;
 margin-bottom: 15px;
 box-sizing: border-box;
+padding: 12px;
+height: auto;
+border: 1px solid #ccc;
+border-radius: 4px;
+font-size: 16px;
+}
+#login-screen button {
+width: 100%;
+margin-top: 10px;
 }
 #app-content {
 display: none;
+flex-direction: column;
+height: 100%;
+overflow-y: hidden;
 }
-/* --- ESTILOS GERAIS --- */
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; }
-h2, h3 { border-bottom: 2px solid #007bff; padding-bottom: 8px; color: #333; }
-button { padding: 10px 15px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
-button:disabled { background-color: #6c757d; cursor: not-allowed; }
-input[type="text"],
-input[type="email"],
-input[type="password"],
-select {
+/* --- NAV BAR (Estilo 'Inicial.odt') --- */
+nav {
+background-color: #343a40;
+padding: 15px 24px;
+display: flex;
+gap: 15px;
+flex-wrap: wrap;
+justify-content: space-between;
+align-items: center;
+/* Altura fixa para cálculo de 100vh */
+height: 40px; /* 15+15 padding + 40 height = 70px total */
+flex-shrink: 0;
+}
+.nav-buttons {
+display: flex;
+gap: 15px;
+flex-wrap: wrap;
+}
+/* Botões da Nav (Estilo 'Inicial.odt') */
+.nav-buttons button {
+background-color: #6c757d;
+font-size: 14px;
+padding: 10px 15px;
+border: none;
+border-radius: 4px;
+color: white;
+font-weight: bold;
+cursor: pointer;
+}
+.nav-buttons button.active,
+.nav-buttons button:hover {
+background-color: #007bff;
+box-shadow: 0 0 0 2px rgba(0,123,255,.5);
+}
+.user-info {
+display: flex;
+align-items: center;
+gap: 10px;
+font-size: 14px;
+color: white;
+}
+.user-info button {
+background-color: #dc3545;
+color: white;
+border: none;
+padding: 8px 12px;
+border-radius: 4px;
+cursor: pointer;
+font-size: 13px;
+font-weight: bold;
+}
+.user-info button:hover {
+background-color: #c82333;
+}
+/* --- VIEW CONTAINER (Contêiner principal para as telas) --- */
+.view {
+display: none; /* <-- Esconde todas as views por padrão */
+flex: 1;
+overflow-y: auto;
+padding: 24px; /* Padding do 'Inicial.odt' */
+background-color: #f0f2f5;
+/* Altura para preencher o restante da tela */
+height: calc(100vh - 70px - 48px); /* 70px nav, 48px padding (24+24) */
+box-sizing: border-box;
+}
+.view.active {
+display: block; /* <-- Mostra APENAS a view ativa */
+}
+.view h2 {
+border-bottom: 2px solid #007bff;
+padding-bottom: 8px;
+color: #333;
+margin-top: 0;
+margin-bottom: 20px;
+}
+/* --- FORMULÁRIOS E BOTÕES GERAIS (Estilo 'Inicial.odt') --- */
+.production-section, .queue-column, .timeclock-card, .admin-section {
+background: #fff;
+padding: 20px;
+border-radius: 8px;
+box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+margin-bottom: 20px;
+}
+label {
+display: block;
+margin-bottom: 5px;
+font-weight: 600;
+color: #333;
+font-size: 0.9em;
+}
+input[type="text"], input[type="email"], input[type="password"], select {
 padding: 12px;
 height: auto;
 border: 1px solid #ccc;
@@ -42,1226 +153,2306 @@ border-radius: 4px;
 font-size: 16px;
 width: 100%;
 box-sizing: border-box;
+margin-bottom: 10px;
 }
-.btn-play { background-color: #28a745; }
-.btn-stop { background-color: #dc3545; }
+button {
+padding: 10px 15px;
+border: none;
+border-radius: 4px;
+color: white;
+font-weight: bold;
+cursor: pointer;
+font-size: 16px;
+}
+button:disabled { background-color: #6c757d; cursor: not-allowed; }
 .btn-primary { background-color: #007bff; }
-.btn-delete { background-color: #7a7a7a; font-size: 14px; padding: 5px 10px; }
+.btn-primary:hover { background-color: #0056b3; }
 .btn-secondary { background-color: #6c757d; }
-.btn-clock-in { background-color: #17a2b8; }
+.btn-secondary:hover { background-color: #5a6268; }
+.btn-stop { background-color: #dc3545; }
+.btn-stop:hover { background-color: #c82333; }
+.btn-play, .btn-clock-in { background-color: #28a745; } /* Verde do 'Inicial.odt' */
+.btn-play:hover, .btn-clock-in:hover { background-color: #218838; }
 .btn-clock-out { background-color: #ffc107; color: #333; }
-/* --- NAVEGAÇÃO --- */
-nav { background-color: #343a40; padding: 15px 24px; display: flex; gap: 15px; flex-wrap: wrap; }
-nav button { background-color: #6c757d; font-size: 14px; }
-nav button.active { background-color: #007bff; box-shadow: 0 0 0 2px rgba(0,123,255,.5); }
-.view-container { padding: 24px; display: none; }
-#view-queue { display: block; } /* Default view set to the new queue screen */
-/* === LAYOUTS DE PAINEL (GRID - DESKTOP - NO SCROLL) === */
-@media (min-width: 1200px) {
-/* Layout base para as views de produção e fila */
-.view-container .container {
+.btn-clock-out:hover { background-color: #e0a800; }
+.btn-delete { background-color: #dc3545; font-size: 14px; padding: 5px 10px; } /* MUDANÇA: Delete agora é vermelho */
+.btn-edit { background-color: #17a2b8; }
+.btn-edit:hover { background-color: #138496; }
+/* ---------------------------------------------------------------------- */
+/* === [NOVO] LAYOUTS DE PAINEL (GRID - DESKTOP) === */
+/* ---------------------------------------------------------------------- */
+.view .container {
 display: grid;
 gap: 24px;
-height: calc(100vh - 80px - 48px - 60px); /* Altura total da tela menos header/nav/padding */
-min-height: 550px;
+height: 100%; /* Ocupa a altura da .view */
+box-sizing: border-box;
 }
-/* Layout da Nova Tela de Fila/Entrada */
-#view-queue .container {
-grid-template-columns: 370px 1fr; /* Coluna de Formulário (fixa) e Coluna de Filas (flexível) */
+/* Layout da Tela de Fila/Registro (Imagem 1) */
+#view-queue.active .container {
+grid-template-columns: 370px 1fr; /* Coluna de Formulário (fixa) e Fila (flexível) */
 }
-/* *NOVO* Layout da Tela de Produção: 3 Colunas Iguais */
-#view-production .container {
-grid-template-columns: 1fr 1fr 1fr;
+/* Layout da Tela de Produção (Imagem 2) */
+#view-production.active .container {
+grid-template-columns: 1fr 1fr 1fr; /* 3 Colunas */
 }
+/* Coluna de Painel (comum a ambas) */
 .panel-column {
 display: flex;
 flex-direction: column;
-gap: 15px;
-overflow-y: hidden; /* Coluna não rola */
+gap: 20px; /* Gap entre os cartões na coluna */
+overflow-y: hidden; /* A coluna em si não rola */
 }
-/* Seção do formulário/disponíveis (não rola) */
-.panel-column .admin-section {
-flex-shrink: 0;
-background: #fff;
+/* Cartões (production-section) dentro de uma panel-column */
+.panel-column .production-section {
+margin-bottom: 0; /* Remove a margem padrão */
+}
+/* Cartão que deve crescer e ter scroll interno */
+.panel-column .card-flex-grow {
+flex-grow: 1;
+display: flex;
+flex-direction: column;
+overflow-y: hidden; /* O cartão não rola */
+}
+/* Div de conteúdo com scroll interno */
+.card-flex-grow .scroll-content {
+flex-grow: 1;
+overflow-y: auto;
+min-height: 150px;
+}
+/* Ajuste para o formulário de Iniciar Serviço crescer */
+#new-service-form {
+display: flex;
+flex-direction: column;
+flex-grow: 1;
+}
+#new-service-form .form-content {
+flex-grow: 1;
+}
+/* ---------------------------------------------------------------------- */
+/* === VIEW PRODUCTION (Estilo 'Inicial.odt') === */
+/* ---------------------------------------------------------------------- */
+.service-row {
+background-color: #ffffff;
 padding: 20px;
 border-radius: 8px;
 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-flex-grow: 1; /* Garante que o formulário de Iniciar Serviço preencha a altura da coluna */
-overflow-y: auto; /* Permite scroll no formulário, se necessário */
-}
-/* Container das 3 Filas */
-#categorized-queues-container {
-flex-grow: 1; /* Ocupa o restante da coluna */
 display: grid;
-grid-template-columns: 1fr 1fr 1fr; /* 3 colunas iguais para as 3 filas */
-gap: 15px;
-overflow-y: hidden; /* Container de Filas não rola */
+/* MUDANÇA B: Removido o espaço para o cronômetro (coluna 3) */
+grid-template-columns: 1.5fr 3fr 1fr;
+align-items: center;
+gap: 12px;
+margin-bottom: 15px;
 }
-/* Listas Internas (Em Andamento, Disponíveis, Filas Categorizadas) */
-.inner-scroll-list {
+.service-row .mechanic-info-container { grid-column: 1 / 2; font-weight: bold; }
+.service-row .service-info-container { grid-column: 2 / 3; }
+/* .service-row .time-display { grid-column: 3 / 4; REMOVIDO } */
+.service-row .service-row-buttons { grid-column: 3 / 4; display: flex; flex-direction: column; gap: 5px;
+} /* MUDANÇA B: Botões na coluna 3 */
+.service-row .service-row-buttons button { width: 100%; padding: 5px; font-size: 14px; }
+/* Lista de Disponíveis (Estilo 'Inicial.odt') */
+.available-list-group {
+display: flex;
+flex-direction: column;
+gap: 4px;
+}
+.mechanic-tag {
+display: flex;
+justify-content: space-between;
+align-items: center;
+background-color: #e9ecef;
+color: #333;
+padding: 8px 12px;
+border-radius: 4px;
+font-size: 16px;
+font-weight: 500;
+}
+.mechanic-tag .position {
+background-color: #007bff;
+color: white;
+padding: 4px 8px;
+border-radius: 4px;
+font-weight: bold;
+font-size: 14px;
+margin-right: 10px;
+}
+.mechanic-tag:first-child {
+border: 2px solid #28a745;
+background-color: #d4edda;
+}
+.available-list-group:empty::after {
+content: "Nenhum disponível nesta função.";
+color: #777;
+font-style: italic;
+padding: 5px 0;
+}
+/* ---------------------------------------------------------------------- */
+/* === VIEW QUEUE (FILA - Estilo 'Inicial.odt') === */
+/* ---------------------------------------------------------------------- */
+.queue-grid {
+display: grid;
+grid-template-columns: 1fr 1fr 1fr;
+gap: 24px;
+}
+.queue-column h3 {
+border-bottom: 2px solid #007bff;
+padding-bottom: 8px;
+color: #333;
+margin-top: 0;
+text-align: left;
+font-size: 1.2em;
+}
+/* Ajuste para scroll interno da coluna da fila */
+.queue-column {
+display: flex;
+flex-direction: column;
+overflow-y: hidden;
+margin-bottom: 0; /* Remover margem de .queue-column */
+}
+.queue-column div { /* Container da lista */
 flex-grow: 1;
-overflow-y: auto; /* ROLAGEM INTERNA */
-min-height: 200px; /* Garante que listas vazias têm altura */
-background: #ffffff;
-padding: 15px;
-border-radius: 8px;
-box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+overflow-y: auto;
+padding-top: 10px;
 }
-/* Ajuste para a seção de Funcionários Disponíveis */
-#available-mechanics-section {
-flex-grow: 1;
-padding: 15px;
-background: #ffffff;
-border-radius: 8px;
-box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-overflow-y: auto; /* Rolagem interna */
-}
-/* Ajuste para garantir que o formulário de Fila se expanda */
-#new-queue-form { display: flex; flex-direction: column; gap: 15px; height: 100%;} /* Ajuste de altura */
-#queue-services-container { overflow-y: auto; max-height: 200px; padding: 5px; border: 1px solid #eee; border-radius: 4px; }
-}
-/* FIM DO NOVO LAYOUT PAINEL */
-.sidebar { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-#new-service-form { display: flex; flex-direction: column; gap: 15px; height: 100%; } /* Garante que o form preencha o admin-section */
-#available-mechanics-section h3 { border-bottom: 1px dashed #007bff; padding-bottom: 4px; margin-top: 15px; margin-bottom: 10px; }
-.available-list-group { display: flex; flex-direction: column; gap: 4px; }
-.mechanic-tag { display: flex; justify-content: space-between; align-items: center; background-color: #e9ecef; color: #333; padding: 8px 12px; border-radius: 4px; font-size: 16px;
-font-weight: 500; }
-.mechanic-tag .position { background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 14px; margin-right: 10px; }
-.mechanic-tag:first-child { border: 2px solid #28a745; background-color: #d4edda; }
-.available-list-group:empty::after { content: "Nenhum disponível nesta função."; color: #777; font-style: italic; padding: 5px 0;}
-.main-content { display: flex; flex-direction: column; gap: 15px; }
-@media (min-width: 900px) { .service-row { display: grid; grid-template-columns: 1.5fr 3fr 1fr 1fr 1fr; align-items: center; gap: 12px; } }
-.service-row { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.time-display { font-family: 'Courier New', Courier, monospace; font-size: 16px; background-color: #e9ecef; padding: 10px; border-radius: 4px; text-align: center; }
-/* Estilos para o item da fila */
+/* Estilo do item da fila (V16) aplicado ao item (V22) */
 .queue-item {
 background-color: #f8f8f8;
 padding: 10px;
 border-radius: 6px;
 margin-bottom: 8px;
-border-left: 4px solid #007bff;
 font-size: 14px;
-transition: all 0.3s ease; /* Adicionado para transição suave */
-}
-/* NOVO: Estilo para item com prioridade */
-.queue-item.priority-item {
-border-left-color: #28a745; /* Verde */
-background-color: #e6ffed;
-}
-/* NOVO: Estilo para item bloqueado/aguardando */
-.queue-item.locked-item {
-border-left-color: #6c757d; /* Cinza */
-background-color: #f8f9fa;
-opacity: 0.7;
-}
-.queue-item.locked-item p {
-color: #6c757d;
+transition: all 0.3s ease;
 }
 .queue-item p { margin: 3px 0; }
-.queue-item button {
-width: 100%;
-margin-top: 8px;
-padding: 8px;
-font-size: 14px;
+.queue-item.ready-item {
+border-left: 4px solid #28a745; /* Verde do 'Inicial' */
+background-color: #e6ffed;
+font-weight: bold;
 }
-/* === OUTROS ESTILOS MANTIDOS === */
-/* ... (estilos para view-report, view-timeclock, view-config) ... */
-/* === TELA 2: RELATÓRIO DIÁRIO === */
-#report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 0; }
-.mechanic-report-group { background-color: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.mechanic-report-group h3 { border-bottom: 2px solid #28a745; color: #28a745; }
-.service-report-row { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr; border-bottom: 1px dashed #eee; padding: 10px 0; font-size: 15px; }
-.report-summary { font-weight: bold; margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc; }
-/* === TELA 3: REGISTRO DE PONTO === */
-#view-timeclock .timeclock-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-.timeclock-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
-.timeclock-card h3 { margin-top: 0; border-bottom: 1px solid #ccc; padding-bottom: 10px; font-size: 18px; }
+.queue-item.locked-item {
+border-left: 4px solid #6c757d; /* Cinza do 'Inicial' */
+background-color: #f8f9fa;
+opacity: 0.8; /* Diminui a opacidade para parecer inativo */
+}
+.queue-item.locked-item p { color: #6c757d; }
+.queue-item-actions { margin-top: 8px; display: flex; gap: 5px; }
+.queue-item-actions button { padding: 8px; font-size: 14px; width: auto; }
+/* ---------------------------------------------------------------------- */
+/* === [CORREÇÃO] VIEW PUBLIC (TELÃO) === */
+/* ---------------------------------------------------------------------- */
+#view-public {
+padding: 0;
+/* display: grid; <-- REMOVIDO DAQUI. A classe .view (display: none) agora funciona */
+grid-template-columns: 2fr 1fr;
+height: 100vh; /* Ocupa a tela toda */
+overflow: hidden;
+gap: 1px;
+background-color: #f0f2f5;
+}
+/* ADICIONADO: Esta regra aplica o grid SÓ quando a view estiver ativa */
+#view-public.active {
+display: grid;
+}
+.public-queue-section {
+background-color: #fff;
+padding: 15px;
+overflow-y: auto;
+border-radius: 8px;
+box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+margin: 15px; /* Adiciona margem para separar */
+}
+.public-mechanics-section {
+background-color: #fff; /* Fundo branco como V16 */
+color: #333; /* Texto escuro */
+padding: 15px;
+overflow-y: auto;
+border-radius: 8px;
+box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+margin: 15px 15px 15px 0;
+}
+.public-queue-section h2 {
+text-align: center;
+color: #007bff;
+margin-top: 0;
+font-size: 1.8em;
+border-bottom: 2px solid #007bff;
+padding-bottom: 10px;
+}
+.public-queue-column h3 {
+color: #555;
+font-size: 1.2em;
+border-bottom: 2px solid #007bff;
+padding-bottom: 8px;
+}
+.public-mechanics-section h3 {
+color: #333; /* Texto escuro */
+font-size: 1.2em;
+border-bottom: 2px solid #28a745; /* Verde V16 */
+padding-bottom: 5px;
+margin-top: 10px;
+}
+/* Item da fila pública (Estilo V16) */
+.public-queue-item {
+background-color: #f8f8f8;
+padding: 15px;
+border-radius: 6px;
+margin-bottom: 10px;
+font-size: 1.1em;
+}
+.public-queue-item.ready-item {
+border-left: 5px solid #28a745;
+background-color: #e6ffed;
+font-weight: bold;
+}
+.public-queue-item.locked-item {
+border-left: 5px solid #6c757d;
+background-color: #f8f9fa;
+opacity: 0.8;
+}
+.public-queue-item p { margin: 4px 0; }
+/* Mecânico público (Estilo V16) */
+.public-mechanic-tag {
+display: flex;
+justify-content: space-between;
+align-items: center;
+background-color: #e9ecef;
+color: #333;
+padding: 10px 14px;
+border-radius: 4px;
+font-size: 1.1em;
+font-weight: 500;
+margin-bottom: 8px;
+}
+.role-badge {
+background-color: #007bff;
+color: white;
+padding: 2px 6px;
+border-radius: 4px;
+font-size: 0.7em;
+font-weight: bold;
+}
+.public-mechanic-tag:first-child {
+border: 2px solid #28a745;
+background-color: #d4edda;
+}
+/* ---------------------------------------------------------------------- */
+/* === VIEW TIMECLOCK & ADMIN (Estilo 'Inicial.odt') === */
+/* ---------------------------------------------------------------------- */
+#timeclock-list {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+gap: 20px;
+}
+.timeclock-card h3 {
+margin-top: 0;
+border-bottom: 1px solid #ccc;
+padding-bottom: 10px;
+font-size: 18px;
+}
 .timeclock-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .timeclock-status { font-weight: bold; text-align: center; padding: 5px; border-radius: 4px; }
 .status-on { background-color: #d4edda; color: #155724; }
 .status-off { background-color: #f8d7da; color: #721c24; }
 .status-break { background-color: #fff3cd; color: #856404; }
-/* === TELA 4: ADMINISTRAÇÃO === */
-#view-config .config-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.admin-section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.admin-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-.admin-list ul { list-style: none; padding: 0; }
-.admin-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-/* === AJUSTES PARA MOBILE === */
-@media (max-width: 1199px) {
-.sidebar { position: static; }
-nav { flex-wrap: wrap; padding: 10px; }
-nav button { width: calc(50% - 7.5px); margin-bottom: 5px; }
-.service-row { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "mech mech" "desc desc" "inicio duracao" "btn btn"; gap: 8px; padding: 15px;
+.admin-list-container li {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 10px;
+border-bottom: 1px solid #eee;
 }
-.service-row strong { grid-area: mech; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-.service-row .service-desc { grid-area: desc; font-size: 18px; font-weight: bold; }
-.service-row > *:nth-child(3) { grid-area: inicio; text-align: left; }
-.service-row > *:nth-child(4) { grid-area: duracao; text-align: right; }
-.service-row > *:nth-child(3) span, .service-row > *:nth-child(4) span { background-color: #e9ecef; padding: 8px; border-radius: 4px; }
-.service-row .btn-stop { grid-area: btn; }
-#view-config .config-container { grid-template-columns: 1fr; }
-.service-report-row { grid-template-columns: 1fr 1fr; grid-template-areas: "servico duracao" "inicio fim"; gap: 5px 10px; padding: 8px 0; }
-.service-report-row span:nth-child(1) { grid-area: servico; font-weight: bold; }
-.service-report-row span:nth-child(4) { grid-area: duracao; color: #dc3545; text-align: right; }
-.admin-list li { flex-direction: column; align-items: flex-start; gap: 5px; }
-/* Ajustes para as 3 colunas de fila em mobile */
-#categorized-queues-container { grid-template-columns: 1fr; }
-.inner-scroll-list { max-height: 400px; }
+/* ---------------------------------------------------------------------- */
+/* === NOVO: MODAL DE MENSAGEM/CONFIRMAÇÃO === */
+/* ---------------------------------------------------------------------- */
+.modal-overlay {
+display: none;
+position: fixed;
+z-index: 1000;
+left: 0;
+top: 0;
+width: 100%;
+height: 100%;
+overflow: auto;
+background-color: rgba(0,0,0,0.4);
 }
-.logo-container {
+.modal-content-wrapper {
+background-color: #fefefe;
+margin: 15% auto;
+padding: 20px;
+border: 1px solid #888;
+width: 90%;
+max-width: 400px;
+border-radius: 8px;
+box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 text-align: center;
-padding: 6px 0;
-background-color: #ffffff;
-border-bottom: 1px solid #ddd;
 }
-.app-logo {
-max-width: 100px;
-height: auto;
-display: block;
-margin: 0 auto;
+.modal-content-wrapper h3 {
+margin-top: 0;
+border-bottom: 1px solid #ccc;
+padding-bottom: 10px;
+}
+.modal-content-wrapper p {
+font-size: 1.1em;
+margin-bottom: 20px;
+}
+.modal-buttons {
+display: flex;
+justify-content: center;
+gap: 10px;
+}
+.modal-buttons button {
+padding: 10px 20px;
+font-size: 16px;
+}
+/* === MODAL DE EDIÇÃO (V22.1) === */
+.modal {
+display: none; /* Oculto por padrão */
+position: fixed;
+z-index: 100;
+left: 0;
+top: 0;
+width: 100%;
+height: 100%;
+overflow: auto;
+background-color: rgba(0,0,0,0.4);
+}
+.modal-content {
+background-color: #fefefe;
+margin: 10% auto;
+padding: 20px;
+border: 1px solid #888;
+width: 80%;
+max-width: 500px;
+border-radius: 8px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* === [NOVO] ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS (RESPONSIVO) === */
+/* ---------------------------------------------------------------------- */
+@media (max-width: 768px) {
+	html, body {
+		overflow: auto; /* Permite rolar a página inteira em telas pequenas */
+		height: auto;
+	}
+	#app-content {
+		height: auto;
+		min-height: 100vh;
+	}
+	.view {
+		padding: 15px; /* Menos padding */
+		height: auto; /* Altura automática */
+	}
+
+	/* 1. LOGIN */
+	#login-screen {
+		margin: 20px auto;
+		width: auto;
+		max-width: 90%;
+	}
+
+	/* 2. NAVEGAÇÃO (NAV) */
+	nav {
+		height: auto; /* Altura flexível */
+		padding: 10px;
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.nav-buttons {
+		justify-content: space-around;
+		gap: 5px;
+		margin-bottom: 5px;
+		/* Permite que os botões quebrem a linha */
+		flex-wrap: wrap; 
+	}
+	.nav-buttons button {
+		flex-grow: 1; /* Faz os botões dividirem o espaço */
+		font-size: 12px;
+		padding: 8px 5px;
+	}
+	.user-info {
+		justify-content: space-between;
+		font-size: 12px;
+	}
+	.user-info button {
+		padding: 5px 8px;
+		font-size: 12px;
+	}
+	
+	/* 3. LAYOUTS DE GRID (Todos empilhados) */
+	#view-queue.active .container,
+	#view-production.active .container,
+	#view-public.active,
+	#view-config > div[style*="grid"] {
+		grid-template-columns: 1fr; /* Coluna única */
+	}
+	
+	/* 4. VIEW QUEUE (FILA / REGISTRO) */
+	.queue-grid {
+		grid-template-columns: 1fr;
+	}
+
+	/* 5. VIEW PRODUCTION (PRODUÇÃO) */
+	.service-row {
+		grid-template-columns: 1fr; /* Empilha as colunas */
+		padding: 15px;
+		gap: 8px;
+	}
+	/* Centraliza e separa as informações na tela móvel */
+	.service-row .mechanic-info-container { grid-column: 1 / 2; text-align: center; margin-bottom: 5px; }
+	.service-row .service-info-container { grid-column: 1 / 2; text-align: center; border-top: 1px solid #eee; padding-top: 5px; margin-bottom: 10px; }
+	.service-row .service-row-buttons { 
+		grid-column: 1 / 2; 
+		flex-direction: row; /* Coloca botões lado a lado */
+		justify-content: space-between;
+	}
+	.service-row .service-row-buttons button { width: 48%; }
+
+	/* 6. VIEW PUBLIC (TELÃO) */
+	#view-public {
+		height: auto;
+		min-height: 100vh;
+		padding: 0;
+	}
+	/* Corrige a margem da segunda coluna no celular */
+	.public-mechanics-section {
+		margin: 15px; 
+	}
+	.public-queue-section > div[style*="grid"] {
+		grid-template-columns: 1fr;
+	}
+	
+	/* 7. MODAIS */
+	.modal-content-wrapper, .modal-content {
+		width: 90%;
+		margin: 15% auto;
+		padding: 15px;
+	}
 }
 </style>
 </head>
 <body>
-<div id="login-screen" style="display: block;">
-<h2>Acesso ao Painel</h2>
+<div id="custom-modal" class="modal-overlay">
+<div class="modal-content-wrapper">
+<h3 id="custom-modal-title">Atenção</h3>
+<p id="custom-modal-message">Mensagem de exemplo.</p>
+<div class="modal-buttons">
+<button id="custom-modal-cancel" class="btn-secondary" style="display: none;">Cancelar</button>
+<button id="custom-modal-ok" class="btn-primary">OK</button>
+</div>
+</div>
+</div>
+<div id="edit-queue-modal" class="modal">
+<div class="modal-content">
+<h3>Editar Item da Fila</h3>
+<form id="edit-queue-form">
+<input type="hidden" id="edit-queue-id">
+<label for="edit-queue-car-plate">Placa:</label>
+<input type="text" id="edit-queue-car-plate" placeholder="Ex: ABC1234" required style="text-transform: uppercase;">
+<label for="edit-queue-car-model">Modelo do Veículo:</label>
+<input type="text" id="edit-queue-car-model" placeholder="Ex: Onix 2021" required>
+<label for="edit-queue-salesperson-select">Vendedor:</label>
+<select id="edit-queue-salesperson-select" required>
+</select>
+<label for="edit-queue-service-select">Serviço:</label>
+<select id="edit-queue-service-select" required>
+</select>
+<div style="display: flex; gap: 10px; margin-top: 20px;">
+<button type="submit" class="btn-primary" style="flex-grow: 1;">Atualizar</button>
+<button type="button" class="btn-secondary" onclick="closeEditQueueModal()">Cancelar</button>
+</div>
+</form>
+</div>
+</div>
+<div id="edit-active-modal" class="modal">
+<div class="modal-content">
+<h3>Re-atribuir Serviço Ativo</h3>
+<form id="edit-active-form">
+<input type="hidden" id="edit-active-fbid">
+<input type="hidden" id="edit-active-old-mechanic-id">
+<p style="font-size: 1.1em; font-weight: bold;">Serviço: <span id="edit-active-service-name"></span></p>
+<p>Veículo: <span id="edit-active-car-plate"></span> (<span id="edit-active-car-model"></span>)</p>
+<p>Mecânico Atual: <span id="edit-active-mechanic-name"></span></p>
+<p>Função Requerida: <span id="edit-active-service-role"></span></p>
+<label for="edit-active-mechanic-select">Novo Funcionário:</label>
+<select id="edit-active-mechanic-select" required>
+<option value="">-- Selecione o Novo Funcionário --</option>
+</select>
+<div style="display: flex; gap: 10px; margin-top: 20px;">
+<button type="submit" class="btn-primary" style="flex-grow: 1;">Re-atribuir</button>
+<button type="button" class="btn-secondary" onclick="closeEditActiveModal()">Cancelar</button>
+</div>
+</form>
+</div>
+</div>
+<div id="login-screen">
+<h2>Login do Painel de Produtividade</h2>
 <form id="login-form">
-<input type="text" id="login-email" placeholder="E-mail" required>
-<input type="password" id="login-password" placeholder="Senha" required>
-<button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Entrar</button>
-<p id="login-error" style="color: red; margin-top: 10px; display: none;"></p>
+<label for="login-email">Email:</label>
+<input type="email" id="login-email" required>
+<label for="login-password">Senha:</label>
+<input type="password" id="login-password" required>
+<button type="submit" class="btn-primary">Entrar</button>
 </form>
 </div>
 <div id="app-content">
 <nav>
-<button id="nav-queue" class="active" onclick="showView('queue')">Fila e Entrada</button>
-<button id="nav-production" onclick="showView('production')">Painel de Serviço</button>
-<button id="nav-report" onclick="showView('report')">Relatório Diário</button>
-<button id="nav-timeclock" onclick="showView('timeclock')">Registro de Ponto</button>
-<button id="nav-config" onclick="showView('config')">Administração</button>
-<button class="btn-secondary" onclick="handleLogout()" style="margin-left: auto;">Sair</button>
+<div class="nav-buttons">
+<button id="nav-queue" onclick="showView('queue')">Fila / Registro</button>
+<button id="nav-production" onclick="showView('production')">Produção</button>
+<button id="nav-public" onclick="showView('public')">Telão</button>
+<button id="nav-report" onclick="showView('report')">Relatório</button>
+<button id="nav-timeclock" onclick="showView('timeclock')">Ponto</button>
+<button id="nav-config" onclick="showView('config')">Admin</button>
+</div>
+<div class="user-info">
+<span id="user-email-display"></span>
+<button onclick="handleLogout()">Sair</button>
+</div>
 </nav>
-<div class="logo-container">
-<img src="https://caa-al.org.br/img/convenios/446_logo.jpg?w=250&fit=crop&ud=1760605299" alt="Logo da Clínica" class="app-logo">
-</div>
-<div id="view-queue" class="view-container">
+<div id="view-queue" class="view">
 <div class="container">
 <div class="panel-column">
-<div class="admin-section">
-<h3>Registrar Entrada do Veículo (Fila)</h3>
-<form id="new-queue-form">
-<label for="queue-car-plate">Placa do Carro:</label>
-<input type="text" id="queue-car-plate" required>
-<label for="queue-car-model">Modelo do Carro:</label>
-<input type="text" id="queue-car-model" required>
-<label>Serviços a Realizar:</label>
-<div id="queue-category-selection" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; border: 1px solid #eee; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+<div class="production-section">
+<h3>1. Registrar/Atualizar Veículo</h3>
+<form id="vehicle-registration-form">
+<label for="reg-car-plate">Veículo (Placa):</label>
+<input type="text" id="reg-car-plate" placeholder="Ex: ABC1234" required style="text-transform: uppercase;">
+<label for="reg-car-model">Modelo do Veículo:</label>
+<input type="text" id="reg-car-model" placeholder="Ex: Onix 2021" required>
+<button type="submit" class="btn-primary" style="width: 100%;">Registrar / Atualizar</button>
+</form>
 </div>
-<button type="submit" class="btn-primary" style="margin-top: 15px;">Adicionar à Fila</button>
+<div class="production-section card-flex-grow">
+<h3>2. Atribuição de Serviço</h3>
+<form id="service-assignment-form" class="form-content">
+<label for="assign-car-plate-select">Veículo (Placa e Modelo):</label>
+<select id="assign-car-plate-select" required>
+<option value="">-- Selecione o Veículo --</option>
+</select>
+<label for="assign-salesperson-select">Vendedor:</label>
+<select id="assign-salesperson-select" required>
+<option value="">-- Selecione o Vendedor --</option>
+</select>
+<label for="assign-service-select">Serviço:</label>
+<select id="assign-service-select" required>
+<option value="">-- Selecione o Serviço --</option>
+</select>
+<button type="submit" class="btn-primary" style="width: 100%; margin-top: 15px;">Adicionar à Fila</button>
 </form>
 </div>
 </div>
-<div class="panel-column">
-<h3 style="margin-top: 0; margin-bottom: 10px; border-bottom: none;">Fila de Espera Categorizada</h3>
-<div id="categorized-queues-container">
-<div>
-<h4 style="color: #007bff; border-bottom: 1px dashed #007bff; padding-bottom: 5px;">Serviço Mecânico</h4>
-<div id="queue-list-mechanic" class="inner-scroll-list"></div>
+<div class="queue-grid">
+<div class="queue-column production-section">
+<h3>Fila: Mecânica Geral</h3>
+<div id="queue-list-mechanic"></div>
 </div>
-<div>
-<h4 style="color: #28a745; border-bottom: 1px dashed #28a745; padding-bottom: 5px;">Alinhamento</h4>
-<div id="queue-list-aligner" class="inner-scroll-list"></div>
+<div class="queue-column production-section">
+<h3>Fila: Alinhamento</h3>
+<div id="queue-list-aligner"></div>
 </div>
-<div>
-<h4 style="color: #ffc107; border-bottom: 1px dashed #ffc107; padding-bottom: 5px;">Balanceamento</h4>
-<div id="queue-list-balancer" class="inner-scroll-list"></div>
+<div class="queue-column production-section">
+<h3>Fila: Balanceamento</h3>
+<div id="queue-list-balancer"></div>
 </div>
 </div>
 </div>
 </div>
-</div>
-<div id="view-production" class="view-container">
+<div id="view-production" class="view">
 <div class="container">
-<div class="panel-column">
-<div class="admin-section">
-<h3>Iniciar Serviço (da Fila)</h3>
-<p style="font-style: italic; font-size: 14px; margin-top: -10px; margin-bottom: 15px;">
-Selecione um carro da Fila para carregar os dados.
-</p>
-<form id="new-service-form">
-<label for="car-plate">Placa do Carro:</label>
-<input type="text" id="car-plate" required readonly style="background: #eee;">
-<label for="car-model">Modelo do Carro:</label>
-<input type="text" id="car-model" required readonly style="background: #eee;">
-<label for="queue-service-to-start-select">Serviço a Iniciar:</label>
+<div class="panel-column card-flex-grow">
+<div class="production-section">
+<h3>Iniciar Serviço</h3>
+<form id="start-service-form" class="form-content">
+<label for="queue-service-to-start-select">Serviço PRONTO para Iniciar:</label>
 <select id="queue-service-to-start-select" required>
-<option value="">-- Selecione um carro da fila --</option>
+<option value="">-- Selecione o Serviço --</option>
 </select>
-<label for="mechanic-select">Funcionário Disponível:</label>
+<label for="mechanic-select">Funcionário (Apto e Disponível):</label>
 <select id="mechanic-select" required>
-<option value="">-- Selecione um Funcionário --</option>
+<option value="">-- Selecione o Funcionário --</option>
 </select>
-<button type="submit" id="play-button" class="btn-play" disabled>▶ Iniciar Serviço</button>
-<input type="hidden" id="hidden-queue-item-id">
+<button type="submit" id="btn-start-service" class="btn-play" style="width: 100%; margin-top: 15px;" disabled>Iniciar Produção</button>
 </form>
 </div>
 </div>
-<div class="panel-column">
-<h3 style="margin-top: 0; margin-bottom: 0;">Funcionários Disponíveis</h3>
-<div id="available-mechanics-section">
-<h4>Mecânicos Gerais</h4>
-<div id="mechanic-list-general" class="available-list-group"></div>
-<h4>Alinhadores</h4>
-<div id="mechanic-list-aligner" class="available-list-group"></div>
-<h4>Balanceadores</h4>
-<div id="mechanic-list-balancer" class="available-list-group"></div>
+<div class="panel-column card-flex-grow">
+<div class="production-section card-flex-grow">
+<h3>Serviços em Andamento</h3>
+<div id="in-progress-list" class="scroll-content">
+</div>
 </div>
 </div>
 <div class="panel-column">
-<h3 style="margin-top: 0; margin-bottom: 0;">Serviços em Andamento</h3>
-<div id="in-progress-list" class="service-list inner-scroll-list">
+<div class="production-section">
+<h3>Mecânicos Disponíveis</h3>
+<div id="available-mechanic-list" class="available-list-group"></div>
+</div>
+<div class="production-section">
+<h3>Alinhadores Disponíveis</h3>
+<div id="available-aligner-list" class="available-list-group"></div>
+</div>
+<div class="production-section">
+<h3>Balanceadores Disponíveis</h3>
+<div id="available-balancer-list" class="available-list-group"></div>
 </div>
 </div>
 </div>
 </div>
-<div id="view-report" class="view-container">
+<div id="view-public" class="view">
+<div class="public-queue-section">
+<h2>Fila de Serviços Aguardando Produção</h2>
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+<div class="public-queue-column">
+<h3>Mecânica Geral</h3>
+<div id="public-queue-list-mechanic"></div>
+</div>
+<div class="public-queue-column">
+<h3>Alinhamento</h3>
+<div id="public-queue-list-aligner"></div>
+</div>
+<div class="public-queue-column">
+<h3>Balanceamento</h3>
+<div id="public-queue-list-balancer"></div>
+</div>
+</div>
+</div>
+<div class="public-mechanics-section">
+<h3>Funcionários Disponíveis</h3>
+<div id="public-mechanic-mechanic-list"></div>
+<h3>Alinhadores Disponíveis</h3>
+<div id="public-mechanic-aligner-list"></div>
+<h3>Balanceadores Disponíveis</h3>
+<div id="public-mechanic-balancer-list"></div>
+</div>
+</div>
+<div id="view-report" class="view">
 <div id="report-header">
-<h2>Relatório Diário: <span id="report-date"></span></h2>
-<button id="btn-clear-report" class="btn-delete">Limpar Histórico Completo</button>
+<h2>Relatório de Produtividade do Dia (<span id="report-date"></span>)</h2>
+<button id="btn-clear-report" class="btn-stop">Limpar Histórico (Admin)</button>
 </div>
 <div id="report-list">
 </div>
 </div>
-<div id="view-timeclock" class="view-container">
-<h2>Registro de Ponto</h2>
-<div id="timeclock-list" class="timeclock-list">
+<div id="view-timeclock" class="view">
+<h2>Registro de Ponto Eletrônico (Timeclock)</h2>
+<div id="timeclock-list">
 </div>
 </div>
-<div id="view-config" class="view-container">
-<h2>Administração</h2>
-<div class="config-container">
+<div id="view-config" class="view">
+<h2>Configurações e Administração</h2>
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
 <div class="admin-section">
-<h3>Gerenciar Funcionários</h3>
-<form id="new-mechanic-form" class="admin-form">
-<input type="text" id="input-mechanic-name" placeholder="Nome do Funcionário" required>
+<h3>Adicionar Funcionário</h3>
+<form id="new-mechanic-form">
+<label for="input-mechanic-name">Nome do Funcionário:</label>
+<input type="text" id="input-mechanic-name" required>
+<label for="select-mechanic-role">Função:</label>
 <select id="select-mechanic-role" required>
-<option value="MECHANIC">Mecânico Geral</option>
-<option value="ALIGNER">Alinhador</option>
-<option value="BALANCER">Balanceador</option>
+<option value="MECHANIC">Mecânica Geral</option>
+<option value="ALIGNER">Alinhamento</option>
+<option value="BALANCER">Balanceamento</option>
 </select>
-<button type="submit" class="btn-primary">Adicionar Funcionário</button>
+<button type="submit" class="btn-primary">Adicionar</button>
 </form>
-<div class="admin-list" id="admin-mechanics-list">
-<ul></ul>
+<hr style="margin: 20px 0;">
+<h3>Funcionários Cadastrados</h3>
+<div id="admin-mechanics-list" class="admin-list-container">
+<ul style="list-style: none; padding: 0;">
+</ul>
 </div>
 </div>
 <div class="admin-section">
-<h3>Gerenciar Serviços</h3>
-<form id="new-service-config-form" class="admin-form">
-<input type="text" id="input-service-name" placeholder="Nome do Serviço (Ex: Troca de Pneu)" required>
-<select id="select-service-role" required>
-<option value="MECHANIC">Requer Mecânico Geral</option>
-<option value="ALIGNER">Requer Alinhador</option>
-<option value="BALANCER">Requer Balanceador</option>
-</select>
-<button type="submit" class="btn-primary">Adicionar Serviço</button>
+<h3>Adicionar Vendedor</h3>
+<form id="new-salesperson-form">
+<label for="input-salesperson-name">Nome do Vendedor:</label>
+<input type="text" id="input-salesperson-name" required>
+<button type="submit" class="btn-primary">Adicionar</button>
 </form>
-<div class="admin-list" id="admin-services-list">
-<ul></ul>
+<hr style="margin: 20px 0;">
+<h3>Vendedores Cadastrados</h3>
+<div id="admin-salespeople-list" class="admin-list-container">
+<ul style="list-style: none; padding: 0;">
+</ul>
+</div>
+</div>
+<div class="admin-section">
+<h3>Adicionar Tipo de Serviço</h3>
+<form id="new-service-form-admin">
+<label for="input-service-name">Nome do Serviço:</label>
+<input type="text" id="input-service-name" required>
+<label for="select-service-role">Função Requerida:</label>
+<select id="select-service-role" required>
+<option value="MECHANIC">Mecânica Geral</option>
+<option value="ALIGNER">Alinhamento</option>
+<option value="BALANCER">Balanceamento</option>
+<option value="GENERAL">Troca de Óleo</option>
+</select>
+<button type="submit" class="btn-primary">Adicionar</button>
+</form>
+<hr style="margin: 20px 0;">
+<h3>Serviços Cadastrados</h3>
+<div id="admin-services-list" class="admin-list-container">
+<ul style="list-style: none; padding: 0;">
+</ul>
 </div>
 </div>
 </div>
 </div>
-<script>
-// ******************************************************
-// *** 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE ***
-// ******************************************************
-// Seu web app's Firebase configuration
+</div> <script>
+// ===============================================
+// === CONFIGURAÇÃO DO FIREBASE ===
+// ===============================================
 const firebaseConfig = {
-apiKey: "AIzaSyB6XbdcQyKiZYtVXXwAxRI8cv90GhT-bD8",
-authDomain: "painelprodutividade-dd513.firebaseapp.com",
-projectId: "painelprodutividade-dd513",
-storageBucket: "painelprodutividade-dd513.firebaseapp.com",
-messagingSenderId: "535369536853",
-appId: "1:535369536853:web:4d0755d7470b026fa64bdc",
-// measurementId: "G-NRZ55SHKN7" // REMOVIDO
+apiKey: "AIzaSyD25irRMAoLhTdIgd4KtFN1jcUGvF4HYbQ",
+authDomain: "acompanhamento-a2c2f.firebaseapp.com",
+projectId: "acompanhamento-a2c2f",
+storageBucket: "acompanhamento-a2c2f.firebasestorage.app",
+messagingSenderId: "71903622561",
+appId: "1:71903622561:web:5fba8ea92e082e0f4f07e0"
 };
-// Inicializa o Firebase (v9.6.1 de Compatibilidade)
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-// const analytics = firebase.analytics(); // REMOVIDO
-// NOVOS ELEMENTOS DOM PARA LOGIN
-const loginScreen = document.getElementById('login-screen');
-const appContent = document.getElementById('app-content');
-const loginForm = document.getElementById('login-form');
-const loginEmail = document.getElementById('login-email');
-const loginPassword = document.getElementById('login-password');
-const loginError = document.getElementById('login-error');
-// Nomes das "Coleções" no Firestore
-const C_MECHANICS = 'mechanics';
-const C_SERVICES = 'services';
-const C_QUEUE_SERVICES = 'queue_services';
-const C_ACTIVE = 'activeServices';
-const C_COMPLETED = 'completedServices';
-// === ESTADO DA APLICAÇÃO (Dados em memória para uso no frontend) ===
-let activeTimers = {};
-let ALL_MECHANICS = [];
-let ALL_SERVICES = [];
-let CURRENT_USER = null;
-const ALL_QUEUE = [];
-// === CONSTANTES E ELEMENTOS DO DOM ===
-const ROLES = {
-MECHANIC: 'Mecânico Geral',
-ALIGNER: 'Alinhador',
-BALANCER: 'Balanceador'
-};
-// *** NOVO: Ordem de prioridade sequencial ***
+let app, auth, db, firestore;
+function initializeApp() {
+try {
+// Inicializa o app Firebase. O bloco "if (!window.firebase.apps.length)" foi removido
+// para garantir a inicialização caso o script seja reexecutado ou haja problemas de cache.
+app = window.firebase.initializeApp(firebaseConfig);
+auth = app.auth();
+firestore = app.firestore();
+db = firestore; // Alias
+// === MUDANÇA CRÍTICA: Inicializar Listener de Autenticação APÓS a inicialização do 'auth' ===
+auth.onAuthStateChanged(user => {
+if (user) {
+loginScreen.style.display = 'none';
+appContent.style.display = 'flex';
+userEmailDisplay.textContent = user.email;
+showView('queue'); // Tela inicial
+// Só inicializa os listeners de dados se o usuário estiver logado
+setupFirebaseListeners();
+} else {
+appContent.style.display = 'none';
+loginScreen.style.display = 'block';
+}
+});
+} catch (error) {
+console.error("Erro ao inicializar Firebase. Verifique suas credenciais:", error);
+// Exibe um alerta de erro crítico de inicialização para o usuário
+showCustomAlert("Erro Crítico", "Falha ao conectar ao Firebase. Verifique suas chaves de configuração no código.");
+}
+}
+// ===============================================
+// === CONSTANTES DE COLEÇÃO ===
+// ===============================================
+const C_MECHANICS = 'MECHANICS';
+const C_SALESPEOPLE = 'SALESPEOPLE';
+const C_SERVICES = 'SERVICES';
+const C_QUEUE_SERVICES = 'QUEUE_SERVICES';
+const C_ACTIVE = 'ACTIVE';
+const C_COMPLETED = 'COMPLETED';
+const C_TIMECLOCK = 'TIMECLOCK';
+const C_REGISTERED_VEHICLES = 'REGISTERED_VEHICLES';
+// ===============================================
+// === Variáveis de Cache e Utilidade ===
+// ===============================================
+// Listas de Cache
+window.ALL_MECHANICS = [];
+window.ALL_SALESPEOPLE = [];
+window.ALL_SERVICES = [];
+window.ALL_QUEUE = [];
+window.ACTIVE_SERVICES = [];
+window.ALL_COMPLETED = [];
+window.ALL_TIMECLOCK = [];
+window.ALL_REGISTERED_VEHICLES = [];
+// ===============================================
+// === CONSTANTES DE ORDEM DE SERVIÇO ===
+// ===============================================
+// Ordem de prioridade: Mecânica > Balanceamento > Alinhamento
 const SERVICE_ORDER = ['MECHANIC', 'BALANCER', 'ALIGNER'];
-
-// VIEWS
-const viewQueue = document.getElementById('view-queue');
-const viewProduction = document.getElementById('view-production');
-const viewReport = document.getElementById('view-report');
-const viewTimeclock = document.getElementById('view-timeclock');
-const viewConfig = document.getElementById('view-config');
-// BOTÕES
-const navQueue = document.getElementById('nav-queue');
-const navProduction = document.getElementById('nav-production');
-const navReport = document.getElementById('nav-report');
-const navTimeclock = document.getElementById('nav-timeclock');
-const navConfig = document.getElementById('nav-config');
-// ELEMENTOS DA FILA
-const queueForm = document.getElementById('new-queue-form');
-const queueCarPlateInput = document.getElementById('queue-car-plate');
-const queueCarModelInput = document.getElementById('queue-car-model');
-// Filas Categorizadas
-const queueListMechanic = document.getElementById('queue-list-mechanic');
-const queueListAligner = document.getElementById('queue-list-aligner');
-const queueListBalancer = document.getElementById('queue-list-balancer');
-// ELEMENTOS DE PRODUÇÃO
-const mechanicSelect = document.getElementById('mechanic-select');
-const queueServiceToStartSelect = document.getElementById('queue-service-to-start-select');
-const hiddenQueueItemId = document.getElementById('hidden-queue-item-id');
-const carPlateInput = document.getElementById('car-plate');
-const carModelInput = document.getElementById('car-model');
-const playButton = document.getElementById('play-button');
-const inProgressList = document.getElementById('in-progress-list');
-const availableMechanicsList = document.getElementById('mechanic-list-general');
-const availableAlignersList = document.getElementById('mechanic-list-aligner');
-const availableBalancersList = document.getElementById('mechanic-list-balancer');
-const newServiceForm = document.getElementById('new-service-form');
-// ELEMENTOS DE ADMIN
-const inputMechanicName = document.getElementById('input-mechanic-name');
-const selectMechanicRole = document.getElementById('select-mechanic-role');
-const formMechanics = document.getElementById('new-mechanic-form');
-const adminMechanicsList = document.getElementById('admin-mechanics-list');
-const inputServiceName = document.getElementById('input-service-name');
-const selectServiceRole = document.getElementById('select-service-role');
-const formServices = document.getElementById('new-service-config-form');
-const adminServicesList = document.getElementById('admin-services-list');
+// *** NOVO: Constante para o Papel Geral ***
+const ROLE_GENERAL = 'GENERAL';
+const ROLE_PRIORITY = SERVICE_ORDER.reduce((acc, role, index) => {
+acc[role] = index; // 0 (Maior Prioridade) a 2 (Menor Prioridade)
+return acc;
+}, {});
 // ===============================================
-// === FUNÇÕES DE UTILIDADE E AUXILIARES ===
+// === MODAL CUSTOMIZADO (SUBSTITUI ALERT/CONFIRM) ===
+// =========================================================
+const customModal = document.getElementById('custom-modal');
+const modalTitle = document.getElementById('custom-modal-title');
+const modalMessage = document.getElementById('custom-modal-message');
+const modalOkBtn = document.getElementById('custom-modal-ok');
+const modalCancelBtn = document.getElementById('custom-modal-cancel');
+let confirmCallback = null;
+// Mostra uma mensagem simples (substitui alert)
+function showCustomAlert(title, message) {
+modalTitle.textContent = title;
+modalMessage.textContent = message;
+modalCancelBtn.style.display = 'none';
+modalOkBtn.textContent = 'OK';
+modalOkBtn.onclick = () => { customModal.style.display = 'none'; };
+customModal.style.display = 'block';
+}
+// Mostra uma confirmação (substitui confirm)
+function showCustomConfirm(title, message, callback) {
+confirmCallback = callback;
+modalTitle.textContent = title;
+modalMessage.textContent = message;
+modalCancelBtn.style.display = 'inline-block';
+modalOkBtn.textContent = 'Confirmar';
+modalOkBtn.onclick = () => {
+customModal.style.display = 'none';
+if (confirmCallback) confirmCallback();
+confirmCallback = null;
+};
+modalCancelBtn.onclick = () => {
+customModal.style.display = 'none';
+confirmCallback = null;
+};
+customModal.style.display = 'block';
+}
 // ===============================================
-function getRoleDisplayName(roleKey) {
-if (!roleKey) return 'N/A';
-return ROLES[roleKey] || roleKey;
+// === UTILIDADES DE BANCO DE DADOS (CRUD) ===
+// ===============================================
+async function addToDB(collectionName, data) {
+// Verifica se o firestore está definido antes de usar
+if (!firestore) {
+console.error("Firestore não inicializado.");
+return;
 }
-function isToday(timestamp) {
-const date = new Date(timestamp);
-const today = new Date();
-return date.getDate() === today.getDate() &&
-date.getMonth() === today.getMonth() &&
-date.getFullYear() === today.getFullYear();
+return firestore.collection(collectionName).add(data);
 }
+/**
+* Realiza uma operação de 'upsert' (cria ou atualiza) no Firestore.
+* Utiliza o método .set() com { merge: true } para criar o documento
+* se não existir (evitando o erro 'No document to update') ou atualizar.
+* * @param {string} collectionName - Nome da coleção.
+* @param {string} docId - ID do documento (e.g., a placa do veículo).
+* @param {object} data - Dados a serem gravados/mesclados.
+*/
+async function upsertInDB(collectionName, docId, data) {
+try {
+const db = firebase.firestore();
+// **CORREÇÃO PRINCIPAL:** // 1. Sanitização para evitar o Erro 400 (Bad Request)
+const sanitizedData = {};
+Object.keys(data).forEach(key => {
+// Firestore não aceita 'undefined'. Se o valor for 'undefined', removemos o campo.
+if (data[key] !== undefined) {
+sanitizedData[key] = data[key];
+}
+});
+// 2. Cria OU Atualiza o documento
+await db.collection(collectionName).doc(docId).set(sanitizedData, { merge: true });
+console.log(`Documento ${docId} em ${collectionName} criado/atualizado com sucesso.`);
+} catch (error) {
+console.error("Erro ao realizar upsert no DB:", error);
+throw error; // Propagar o erro para o handler
+}
+}
+// Se a sua função anterior se chamava updateInDB, renomeie-a ou use o novo nome:
+// window.updateInDB = upsertInDB;
+async function deleteFromDB(collectionName, docId) {
+if (!firestore) {
+console.error("Firestore não inicializado.");
+return;
+}
+return firestore.collection(collectionName).doc(docId).delete();
+}
+// ===============================================
+// === UTILIDADES DE FORMATO E RENDERIZAÇÃO ===
+// ===============================================
 function formatTime(totalSeconds) {
 const hours = Math.floor(totalSeconds / 3600);
 const minutes = Math.floor((totalSeconds % 3600) / 60);
 const seconds = totalSeconds % 60;
-return [hours, minutes, seconds].map(unit => String(unit).padStart(2, '0')).join(':');
+const h = String(hours).padStart(2, '0');
+const m = String(minutes).padStart(2, '0');
+const s = String(seconds).padStart(2, '0');
+if (hours > 0) {
+return `${h}:${m}:${s}`;
 }
-function getMechanicStatus(mechanic) {
-if (mechanic.isAvailable === true) {
-return { text: "DISPONÍVEL", class: "status-on" };
+return `${m}:${s}`;
 }
-if (mechanic.isAvailable === false && mechanic.queueTime) {
-return { text: "FORA / PAUSA", class: "status-break" };
+function getRoleDisplayName(role) {
+switch (role) {
+case 'MECHANIC': return 'Mecânica Geral';
+case 'ALIGNER': return 'Alinhamento';
+case 'BALANCER': return 'Balanceamento';
+// *** NOVO: Reconhece o Papel Geral ***
+case ROLE_GENERAL: return 'Troca de Óleo';
+default: return 'Desconhecido';
 }
-return { text: "FORA DE EXPEDIENTE", class: "status-off" };
 }
-function getServiceDetails(serviceId) {
-const service = ALL_SERVICES.find(s => s.fbId === serviceId);
-return {
-name: service ? service.name : 'Serviço Desconhecido',
-role: service ? service.role : 'MECHANIC' // Default para Mecânico
+// ===============================================
+// === REFERÊNCIAS DE ELEMENTOS (DOM) ===
+// ===============================================
+// VIEW: GERAL
+const appContent = document.getElementById('app-content');
+const loginScreen = document.getElementById('login-screen');
+const navButtons = document.querySelectorAll('.nav-buttons button');
+const userEmailDisplay = document.getElementById('user-email-display');
+const views = document.querySelectorAll('.view');
+// VIEW: QUEUE
+const viewQueue = document.getElementById('view-queue');
+const vehicleRegistrationForm = document.getElementById('vehicle-registration-form');
+const regCarPlateInput = document.getElementById('reg-car-plate');
+const regCarModelInput = document.getElementById('reg-car-model');
+const serviceAssignmentForm = document.getElementById('service-assignment-form');
+const assignCarPlateSelect = document.getElementById('assign-car-plate-select');
+const assignSalespersonSelect = document.getElementById('assign-salesperson-select');
+const assignServiceSelect = document.getElementById('assign-service-select');
+// IDs dos elementos de destino para a fila (interna)
+const targetElementsInternal = {
+'MECHANIC': document.getElementById('queue-list-mechanic'),
+'ALIGNER': document.getElementById('queue-list-aligner'),
+'BALANCER': document.getElementById('queue-list-balancer')
 };
-}
-// ===============================================
-// === LÓGICA DE NAVEGAÇÃO E LISTENERS ===
-// ===============================================
-function showView(viewId) {
-// 1. Esconder todas as views
-[viewQueue, viewProduction, viewReport, viewTimeclock, viewConfig].forEach(v => v.style.display = 'none');
-// 2. Remover a classe 'active' de todos os botões
-[navQueue, navProduction, navReport, navTimeclock, navConfig].forEach(n => n.classList.remove('active'));
-if (viewId === 'queue') {
-viewQueue.style.display = 'block';
-navQueue.classList.add('active');
-} else if (viewId === 'production') {
-viewProduction.style.display = 'block';
-navProduction.classList.add('active');
-} else if (viewId === 'report') {
-viewReport.style.display = 'block';
-navReport.classList.add('active');
-renderDailyReport();
-} else if (viewId === 'timeclock') {
-viewTimeclock.style.display = 'block';
-navTimeclock.classList.add('active');
-renderTimeclockCards();
-} else {
-viewConfig.style.display = 'block';
-navConfig.classList.add('active');
-renderAdminLists();
-}
-}
-function setupFirebaseListeners() {
-// 1. LISTENERS MASTER (Funcionários e Serviços)
-db.collection(C_MECHANICS).orderBy('name').onSnapshot(snapshot => {
-ALL_MECHANICS = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-// Atualiza a visualização do Painel, Ponto e Admin
-updateAvailableMechanics(window.ACTIVE_SERVICES || []);
-if (document.getElementById('view-timeclock').style.display === 'block') renderTimeclockCards();
-if (document.getElementById('view-config').style.display === 'block') renderAdminMechanics();
-});
-// NOVO: Listener para a FILA DE SERVIÇOS (C_QUEUE_SERVICES)
-// Ordena pelo novo formato de timestamp (number)
-db.collection(C_QUEUE_SERVICES).orderBy('queuedAt').onSnapshot(snapshot => {
-ALL_QUEUE.length = 0; // Limpa o array
-snapshot.forEach(doc => {
-ALL_QUEUE.push({ fbId: doc.id, ...doc.data() });
-});
-// Renderiza a fila CATEGORIZADA (ordenada por queuedAt por padrão do Firestore)
-renderCategorizedQueueList();
-});
-db.collection(C_SERVICES).orderBy('name').onSnapshot(snapshot => {
-ALL_SERVICES.length = 0; // Limpa o array
-snapshot.forEach(doc => {
-ALL_SERVICES.push({ fbId: doc.id, ...doc.data() });
-});
-// *** MUDANÇA 2 (APLICADA): CHAMA A NOVA FUNÇÃO ***
-// Isso irá popular os checkboxes na tela de Fila
-renderQueueServiceCheckboxes();
-if (document.getElementById('view-config').style.display === 'block') renderAdminServices();
-});
-// 2. LISTENER DE SERVIÇOS ATIVOS (Tempo Real)
-db.collection(C_ACTIVE).onSnapshot(snapshot => {
-const activeServices = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() }));
-window.ACTIVE_SERVICES = activeServices; // Salva na memória global
-renderActiveServices(activeServices);
-updateAvailableMechanics(activeServices);
-});
-}
-// ===============================================
-// === LÓGICA DA FILA E PRODUÇÃO ===
-// ===============================================
-// *** ATUALIZADO (NOVA LÓGICA DE PRIORIDADE) ***
-// Cria o HTML para um item da fila com base nos dados E no cargo da fila.
-function createQueueItemHtml(item, queueRole) {
-// CORREÇÃO: Usa uma verificação defensiva para requiredRoles
-const roles = (item.requiredRoles && Array.isArray(item.requiredRoles)) ? item.requiredRoles : [];
-// *** ALTERADO ***: Pega a lista de serviços que ESTÃO no item da fila (baseado nos IDs)
-const serviceNames = (item.serviceIds && Array.isArray(item.serviceIds))
-? item.serviceIds.map(id => {
-const service = ALL_SERVICES.find(s => s.fbId === id);
-return service ? service.name : 'Serviço ID:' + id;
-}).join(', ')
-: 'Nenhum serviço especificado';
-// Se queuedAt for um number (getTime()), usa new Date(number). Se for string (toISOString()), new Date(string).
-const queueDate = new Date(item.queuedAt);
-
-// *** LÓGICA DE PRIORIDADE E ESTADO ***
-const isPriority = (item.currentPriorityStep === queueRole);
-const isDisabled = !isPriority;
-let statusText = '';
-let priorityClass = '';
-
-if (isPriority) {
-statusText = 'Próximo (Aguardando)';
-priorityClass = 'priority-item';
-} else if (item.currentPriorityStep && item.currentPriorityStep.startsWith('IN_PROGRESS_')) {
-statusText = 'Em serviço...';
-priorityClass = 'locked-item';
-} else {
-statusText = `(Aguardando ${getRoleDisplayName(item.currentPriorityStep)})`;
-priorityClass = 'locked-item';
-}
-// *** FIM DA LÓGICA DE PRIORIDADE ***
-
-return `
-<div class="queue-item ${priorityClass}" data-fbid="${item.fbId}">
-<p><strong>Placa:</strong> ${item.carPlate}</p>
-<p><strong>Modelo:</strong> ${item.carModel}</p>
-<p><strong>Serviços:</strong> <small>${serviceNames || 'Nenhum serviço correspondente'}</small></p>
-<p><small>Status: ${statusText}</small></p>
-<button class="btn-primary start-queue-item-btn" ${isDisabled ? 'disabled' : ''}>Iniciar Serviço</button>
-</div>
-`;
-}
-// *** ATUALIZADO (NOVA LÓGICA DE PRIORIDADE) ***
-// Renderiza a fila categorizada, agora com ordenação de prioridade.
-function renderCategorizedQueueList() {
-// Limpa todas as listas primeiro
-const emptyMsg = '<p style="font-style: italic; color: #777; padding: 10px;">Nenhum veículo nesta fila.</p>';
-[queueListMechanic, queueListAligner, queueListBalancer].forEach(el => el.innerHTML = emptyMsg);
-if (ALL_QUEUE.length === 0) return;
-// Mapeamento de Filas
-const queueMaps = {
-'MECHANIC': { element: queueListMechanic, items: [] },
-'ALIGNER': { element: queueListAligner, items: [] },
-'BALANCER': { element: queueListBalancer, items: [] }
+// VIEW: PRODUCTION
+const viewProduction = document.getElementById('view-production');
+const startServiceForm = document.getElementById('start-service-form');
+const queueServiceToStartSelect = document.getElementById('queue-service-to-start-select');
+const mechanicSelect = document.getElementById('mechanic-select');
+const btnStartService = document.getElementById('btn-start-service');
+const inProgressList = document.getElementById('in-progress-list');
+const availableMechanicList = document.getElementById('available-mechanic-list');
+const availableAlignerList = document.getElementById('available-aligner-list');
+const availableBalancerList = document.getElementById('available-balancer-list');
+const availableMechanicElements = {
+'MECHANIC': availableMechanicList,
+'ALIGNER': availableAlignerList,
+'BALANCER': availableBalancerList
 };
-// 1. Popula os mapas com os OBJETOS 'item' completos
-ALL_QUEUE.forEach(item => {
-// Um item aparece em todas as filas para as quais ele tem um role requerido
-if (item.requiredRoles && Array.isArray(item.requiredRoles)) {
-item.requiredRoles.forEach(role => {
-if (queueMaps[role]) {
-queueMaps[role].items.push(item); // Adiciona o objeto 'item'
-}
-});
-}
-});
-// 2. Ordena e Renderiza cada fila
-for (const role in queueMaps) { // 'role' é 'MECHANIC', 'ALIGNER', ou 'BALANCER'
-const map = queueMaps[role];
-
-// *** NOVO: LÓGICA DE ORDENAÇÃO DE PRIORIDADE ***
-map.items.sort((a, b) => {
-const isAPriority = (a.currentPriorityStep === role);
-const isBPriority = (b.currentPriorityStep === role);
-
-if (isAPriority && !isBPriority) {
-return -1; // A (prioridade) vem primeiro
-}
-if (!isAPriority && isBPriority) {
-return 1; // B (prioridade) vem primeiro
-}
-
-// Se ambos são prioridade ou ambos não são, ordena pelo tempo de entrada
-return (a.queuedAt || 0) - (b.queuedAt || 0);
-});
-// *** FIM DA LÓGICA DE ORDENAÇÃO ***
-
-// 3. Renderiza os itens ordenados
-map.element.innerHTML = ''; // Limpa novamente
-if (map.items.length === 0) {
-map.element.innerHTML = emptyMsg;
-continue;
-}
-map.items.forEach(itemData => {
-// Passa o 'role' da fila atual para criar o HTML
-const itemHtml = createQueueItemHtml(itemData, role);
-const tempDiv = document.createElement('div');
-tempDiv.innerHTML = itemHtml;
-const itemElement = tempDiv.firstElementChild;
-
-if (itemElement) {
-// Anexa o listener APENAS se o botão não estiver desabilitado
-const startBtn = itemElement.querySelector('.start-queue-item-btn');
-if (startBtn && !startBtn.disabled) {
-startBtn.addEventListener('click', () => handleStartFromQueue(itemData.fbId));
-}
-map.element.appendChild(itemElement);
+// VIEW: PUBLIC (TELÃO)
+const viewPublic = document.getElementById('view-public');
+// IDs dos elementos de destino para a tela pública
+const targetElementsPublic = {
+'MECHANIC': document.getElementById('public-queue-list-mechanic'),
+'ALIGNER': document.getElementById('public-queue-list-aligner'),
+'BALANCER': document.getElementById('public-queue-list-balancer')
+};
+const publicMechanicElements = {
+'MECHANIC': document.getElementById('public-mechanic-mechanic-list'),
+'ALIGNER': document.getElementById('public-mechanic-aligner-list'),
+'BALANCER': document.getElementById('public-mechanic-balancer-list')
+};
+// VIEW: CONFIG (ADMIN)
+const viewConfig = document.getElementById('view-config');
+const formMechanics = document.getElementById('new-mechanic-form');
+const inputMechanicName = document.getElementById('input-mechanic-name');
+const selectMechanicRole = document.getElementById('select-mechanic-role');
+const adminMechanicsList = document.getElementById('admin-mechanics-list');
+const formSalespeople = document.getElementById('new-salesperson-form');
+const inputSalespersonName = document.getElementById('input-salesperson-name');
+const adminSalespeopleList = document.getElementById('admin-salespeople-list');
+const formServices = document.getElementById('new-service-form-admin');
+const inputServiceName = document.getElementById('input-service-name');
+const selectServiceRole = document.getElementById('select-service-role');
+const adminServicesList = document.getElementById('admin-services-list');
+// VIEW: REPORT
+const reportDate = document.getElementById('report-date');
+const reportList = document.getElementById('report-list');
+const btnClearReport = document.getElementById('btn-clear-report');
+// VIEW: TIMECLOCK
+// *** CORREÇÃO 1: Descomentada a linha 1045 para definir a variável 'viewTimeclock' ***
+const viewTimeclock = document.getElementById('view-timeclock');
+const timeclockList = document.getElementById('timeclock-list');
+// MODAL DE EDIÇÃO DA FILA
+const editQueueModal = document.getElementById('edit-queue-modal');
+const editQueueForm = document.getElementById('edit-queue-form');
+const editQueueId = document.getElementById('edit-queue-id');
+const editQueueCarPlate = document.getElementById('edit-queue-car-plate');
+const editQueueCarModel = document.getElementById('edit-queue-car-model');
+const editQueueSalespersonSelect = document.getElementById('edit-queue-salesperson-select');
+const editQueueServiceSelect = document.getElementById('edit-queue-service-select');
+// MODAL DE EDIÇÃO DE ATIVOS
+const editActiveModal = document.getElementById('edit-active-modal');
+const editActiveForm = document.getElementById('edit-active-form');
+const editActiveFbId = document.getElementById('edit-active-fbid');
+const editActiveOldMechanicId = document.getElementById('edit-active-old-mechanic-id');
+const editActiveServiceName = document.getElementById('edit-active-service-name');
+const editActiveCarPlate = document.getElementById('edit-active-car-plate');
+const editActiveCarModel = document.getElementById('edit-active-car-model');
+const editActiveMechanicName = document.getElementById('edit-active-mechanic-name');
+const editActiveServiceRole = document.getElementById('edit-active-service-role');
+const editActiveMechanicSelect = document.getElementById('edit-active-mechanic-select');
+// ===============================================
+// === LÓGICA DE NAVEGAÇÃO E UX ===
+// ===============================================
+function showView(viewName) {
+views.forEach(view => {
+if (view.id === `view-${viewName}`) {
+view.classList.add('active');
 } else {
-console.warn("Falha ao criar itemElement para:", itemHtml);
+view.classList.remove('active');
 }
 });
+navButtons.forEach(button => {
+if (button.id === `nav-${viewName}`) {
+button.classList.add('active');
+} else {
+button.classList.remove('active');
+}
+});
+// CORREÇÃO: Removida a função 'showView(viewId)' duplicada que estava aqui (linhas 1082-1094 originais)
+// RENDERIZAÇÃO ESPECÍFICA AO MUDAR DE TELA
+if (viewName === 'queue') {
+populateAssignmentSelects();
+renderQueue();
+} else if (viewName === 'production') {
+renderActiveServices(); // Chamado pelo listener, mas garante o primeiro render
+filterMechanicSelectByQueueRole();
+} else if (viewName === 'report') {
+renderReportView();
+} else if (viewName === 'config') {
+renderAdminMechanics();
+renderAdminSalespeople();
+renderAdminServices();
+} else if (viewName === 'timeclock') {
+renderTimeclockList();
 }
 }
-// *** MUDANÇA 1 (APLICADA): NOVA FUNÇÃO INSERIDA AQUI ***
-// NOVA FUNÇÃO: Renderiza os checkboxes de serviço dinamicamente
-function renderQueueServiceCheckboxes() {
-// Pega o container que antes tinha os checkboxes estáticos
-const container = document.getElementById('queue-category-selection');
-if (!container) return; // Medida de segurança
-container.innerHTML = ''; // Limpa os checkboxes estáticos
-if (ALL_SERVICES.length === 0) {
-container.innerHTML = '<p style="font-size: 14px; color: #777; font-style: italic;">Nenhum serviço cadastrado. Adicione serviços na tela de Administração.</p>';
+// ===============================================
+// === LÓGICA DE PRODUÇÃO - ETAPAS 3 e 4 ===
+// ===============================================
+// *** NOVO: Função filterMechanicSelectByQueueRole (MODIFICADA) ***
+// Valida se o funcionário selecionado é apto para o serviço (role)
+// ou se o serviço é "Geral"
+function filterMechanicSelectByQueueRole() {
+mechanicSelect.innerHTML = '<option value="">-- Selecione o Funcionário --</option>';
+const queueId = queueServiceToStartSelect.value;
+
+// Se nenhum serviço estiver selecionado, desativa o botão de Iniciar
+if (!queueId) {
+btnStartService.disabled = true;
 return;
 }
-// Cria um checkbox para cada serviço cadastrado
-ALL_SERVICES.forEach(service => {
-const div = document.createElement('div');
-// Note que guardamos o ID do serviço no 'value' e o 'role' (categoria) no 'data-role'
-div.innerHTML = `
-<div>
-<input type="checkbox"
-name="queue-service-item"
-value="${service.fbId}"
-data-role="${service.role}"
-id="q-serv-${service.fbId}"
-style="width: auto;">
-<label for="q-serv-${service.fbId}">${service.name}</label>
-</div>
-`;
-container.appendChild(div);
+
+const queueItem = window.ALL_QUEUE.find(item => item.fbId === queueId);
+if (!queueItem) {
+btnStartService.disabled = true;
+return;
+}
+
+const requiredRole = queueItem.serviceRole;
+
+// FILTRAGEM DOS MECÂNICOS DISPONÍVEIS
+window.ALL_MECHANICS
+// Filtra apenas ativos e disponíveis
+.filter(m => m.active !== false && m.isAvailable) 
+.sort((a, b) => a.queueTime - b.queueTime) // Ordena pelo mais tempo disponível
+.forEach(mechanic => {
+	const isApto = mechanic.role === requiredRole;
+	const isGeneralService = requiredRole === ROLE_GENERAL;
+	// Apenas Mecânico, Alinhador e Balanceador podem fazer serviços gerais
+	const isEligibleForGeneral = ['MECHANIC', 'ALIGNER', 'BALANCER'].includes(mechanic.role);
+
+	// Se for apto para a função OU se for um serviço geral (e o funcionário for elegível)
+	if (isApto || (isGeneralService && isEligibleForGeneral)) {
+		const option = document.createElement('option');
+		option.value = mechanic.fbId;
+		option.textContent = `${mechanic.name} (${getRoleDisplayName(mechanic.role)})`;
+		mechanicSelect.appendChild(option);
+	}
 });
-}
-// *** MUDANÇA 3 (APLICADA): FUNÇÃO 'handleAddToQueue' SUBSTITUÍDA ***
-// *** ATUALIZADO (NOVA LÓGICA DE PRIORIDADE) ***
-// MODIFICADA: Lida com a entrada de veículo usando os checkboxes de SERVIÇO
-async function handleAddToQueue(event) {
-event.preventDefault(); //
-const carPlate = queueCarPlateInput.value.trim().toUpperCase(); //
-const carModel = queueCarModelInput.value.trim(); //
-// 1. Pega os checkboxes de *serviços* marcados (NÃO mais de categoria)
-const checkedCheckboxes = document.querySelectorAll('input[name="queue-service-item"]:checked');
-// 2. Extrai os IDs dos serviços diretamente do 'value'
-const selectedServiceIds = Array.from(checkedCheckboxes).map(cb => cb.value); //
-// 3. Extrai os 'roles' (categorias) do 'data-role' e remove duplicatas
-const roles = Array.from(checkedCheckboxes).map(cb => cb.dataset.role);
-const requiredRoles = [...new Set(roles)]; //
-if (selectedServiceIds.length === 0) { //
-alert("Selecione ao menos um serviço para adicionar à fila."); //
-return; //
-}
 
-// *** NOVO: Define a primeira etapa de prioridade ***
-const firstStep = SERVICE_ORDER.find(role => requiredRoles.includes(role)) || (requiredRoles.length > 0 ? requiredRoles[0] : null);
-
-const queueData = { //
-carPlate: carPlate, //
-carModel: carModel, //
-serviceIds: selectedServiceIds, // (Agora vem direto dos checkboxes)
-requiredRoles: requiredRoles, // (Agora vem do 'data-role' dos checkboxes)
-queuedAt: new Date().getTime(), //
-addedBy: CURRENT_USER, //
-currentPriorityStep: firstStep // *** NOVO CAMPO DE PRIORIDADE ***
+// Habilita ou desabilita o botão 'Iniciar'
+mechanicSelect.onchange = () => {
+btnStartService.disabled = !mechanicSelect.value;
+};
+// Desabilita se o select de mecânico estiver vazio (ninguém apto) ou não selecionado
+btnStartService.disabled = !mechanicSelect.value;
+}
+// ===============================================
+// === LÓGICA DA FILA (QUEUE) - ETAPAS 1 e 2 ===
+// ===============================================
+async function handleRegisterVehicle(event) {
+event.preventDefault();
+// 1. Lógica para obter a placa e os dados do formulário
+// Usa as constantes globais 'regCarPlateInput' e 'regCarModelInput' (definidas nas linhas 986-987)
+// ao invés de buscar 'car-plate-input'
+if (!regCarPlateInput || !regCarModelInput) {
+console.error("Um ou mais inputs do formulário de veículo não foram encontrados.");
+showCustomAlert("Erro Interno", "Inputs do formulário não encontrados."); // Mensagem para o usuário
+return; // 'return' é legal aqui pois está dentro de uma função
+}
+const carPlate = regCarPlateInput.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); // Limpa e padroniza a placa
+const carModel = regCarModelInput.value;
+if (!carPlate || !carModel) {
+showCustomAlert("Erro", "A Placa e o Modelo do Veículo são obrigatórios.");
+return; // 'return' é legal aqui
+}
+// 2. Montar o objeto de dados do veículo
+const vehicleData = {
+carPlate: carPlate, // Usa a chave correta
+carModel: carModel, // Usa a chave correta
+lastUpdate: new Date().getTime() // Nome de campo atualizado
 };
 try {
-await addToDB(C_QUEUE_SERVICES, queueData); //
-// Limpa o formulário
-queueCarPlateInput.value = ''; //
-queueCarModelInput.value = ''; //
-checkedCheckboxes.forEach(cb => cb.checked = false); //
+// Usa a placa como ID do documento para o upsert
+await upsertInDB(C_REGISTERED_VEHICLES, carPlate, vehicleData);
+showCustomAlert("Sucesso", `Veículo ${carPlate} (${carModel}) registrado/atualizado com sucesso!`);
+vehicleRegistrationForm.reset(); // Limpa o formulário
 } catch (error) {
-alert("Erro ao adicionar o veículo à fila. Verifique a conexão com o Firebase."); //
-console.error("Erro ao adicionar à fila:", error); //
+console.error(`Erro ao registrar/atualizar veículo: ${error.name}: ${error.message}`, error);
+showCustomAlert("Erro", 'Erro ao registrar/atualizar veículo. Verifique o console para mais detalhes.');
 }
 }
-// *** FIM DA SUBSTITUIÇÃO ***
-// MANTIDA: Lógica de Carregamento de Formulário de Início
-async function handleStartFromQueue(queueFbId) {
-const queueItem = ALL_QUEUE.find(item => item.fbId === queueFbId);
-if (!queueItem) {
-alert("Item da fila não encontrado.");
+// // Popula os selects de Placa, Vendedor e Serviço
+function populateAssignmentSelects() {
+// 1. Popula a lista de Placas (Veículos Registrados)
+const selectPlate = assignCarPlateSelect;
+selectPlate.innerHTML = '<option value="">-- Selecione o Veículo --</option>';
+// Remove veículos duplicados, se houver, garantindo que o modelo mais recente seja usado
+const uniqueVehicles = {};
+window.ALL_REGISTERED_VEHICLES.forEach(v => {
+uniqueVehicles[v.fbId] = v; // fbId (ID do doc) é a placa
+});
+Object.values(uniqueVehicles).sort((a,b) => a.carPlate.localeCompare(b.carPlate)).forEach(vehicle => {
+const option = document.createElement('option');
+// ALTERAÇÃO A: Mostrar placa + modelo no texto. O valor continua sendo a placa.
+option.value = vehicle.carPlate;
+option.textContent = `${vehicle.carPlate} (${vehicle.carModel})`; // Ex: ABC1234 (Uno Mille)
+option.dataset.model = vehicle.carModel;
+selectPlate.appendChild(option);
+});
+// 2. Popula a lista de Vendedores
+const selectSalesperson = assignSalespersonSelect;
+selectSalesperson.innerHTML = '<option value="">-- Selecione o Vendedor --</option>';
+window.ALL_SALESPEOPLE.filter(s => s.active !== false).sort((a,b) => a.name.localeCompare(b.name)).forEach(s => {
+const option = document.createElement('option');
+option.value = s.fbId;
+option.textContent = s.name;
+selectSalesperson.appendChild(option);
+});
+// 3. Popula a lista de Serviços
+const selectService = assignServiceSelect;
+selectService.innerHTML = '<option value="">-- Selecione o Serviço --</option>';
+window.ALL_SERVICES.filter(s => s.active !== false).sort((a,b) => a.name.localeCompare(b.name)).forEach(s => {
+const option = document.createElement('option');
+option.value = s.fbId;
+option.textContent = `${s.name} (${getRoleDisplayName(s.role)})`;
+option.dataset.role = s.role;
+selectService.appendChild(option);
+});
+}
+async function handleAssignment(event) {
+event.preventDefault();
+const carPlate = assignCarPlateSelect.value;
+const salespersonId = assignSalespersonSelect.value;
+const serviceId = assignServiceSelect.value;
+if (!carPlate || !salespersonId || !serviceId) {
+showCustomAlert("Erro", "Por favor, preencha todos os campos obrigatórios.");
 return;
 }
-// 2. Copia os dados para o formulário de Iniciar Novo Serviço
-carPlateInput.value = queueItem.carPlate;
-carModelInput.value = queueItem.carModel;
-hiddenQueueItemId.value = queueFbId; // Guarda o ID
-// 3. Popula o select SÓ com os serviços que fazem parte daquele item da fila
-queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um Serviço --</option>';
-// Verificação defensiva para serviceIds
-const serviceIds = (queueItem.serviceIds && Array.isArray(queueItem.serviceIds)) ? queueItem.serviceIds : [];
+// *** CUIDADO: serviceName aqui é o "Nome (Função)" ***
+const serviceName = assignServiceSelect.options[assignServiceSelect.selectedIndex].textContent;
+const serviceRole = assignServiceSelect.options[assignServiceSelect.selectedIndex].dataset.role;
+const salespersonName = assignSalespersonSelect.options[assignSalespersonSelect.selectedIndex].textContent;
+const carModel = assignCarPlateSelect.options[assignCarPlateSelect.selectedIndex].dataset.model;
 
-// *** ATUALIZADO: Filtra serviços apenas para a ETAPA DE PRIORIDADE ATUAL ***
-const currentStep = queueItem.currentPriorityStep;
-let servicesForCurrentStep = [];
+// *** Pega o NOME REAL do serviço (Ex: "Troca de Óleo") ***
+const serviceObj = window.ALL_SERVICES.find(s => s.fbId === serviceId);
+const realServiceName = serviceObj ? serviceObj.name : serviceName.split(' (')[0];
 
-serviceIds.forEach(serviceId => {
-const service = ALL_SERVICES.find(s => s.fbId === serviceId);
-if (service && service.role === currentStep) {
-servicesForCurrentStep.push(service);
+const queueData = {
+carPlate: carPlate,
+carModel: carModel,
+salespersonId: salespersonId,
+salespersonName: salespersonName,
+serviceId: serviceId,
+serviceName: realServiceName, // *** Usa o nome real ***
+serviceRole: serviceRole,
+queuedAt: new Date().getTime(),
+active: true, // Flag indicando que está na fila (ainda não concluído)
+isUnlocked: false // Flag para permitir ignorar a ordem de prioridade
+};
+try {
+await addToDB(C_QUEUE_SERVICES, queueData);
+showCustomAlert("Sucesso", `Serviço '${realServiceName}' adicionado à fila para o veículo ${carPlate}.`);
+// Limpar apenas o Vendedor e Serviço para permitir adicionar mais serviços ao mesmo carro
+assignSalespersonSelect.value = '';
+assignServiceSelect.value = '';
+} catch (error) {
+console.error("Erro ao adicionar serviço à fila:", error);
+showCustomAlert("Erro", "Erro ao adicionar serviço à fila.");
+}
+}
+function closeEditQueueModal() {
+editQueueModal.style.display = 'none';
+editQueueForm.reset();
+}
+function populateEditQueueSalespersonSelect(selectedId) {
+editQueueSalespersonSelect.innerHTML = '';
+window.ALL_SALESPEOPLE.filter(s => s.active !== false).forEach(s => {
+const option = document.createElement('option');
+option.value = s.fbId;
+option.textContent = s.name;
+if (s.fbId === selectedId) option.selected = true;
+editQueueSalespersonSelect.appendChild(option);
+});
+}
+function populateEditQueueServiceSelect(selectedId) {
+editQueueServiceSelect.innerHTML = '';
+window.ALL_SERVICES.filter(s => s.active !== false).forEach(s => {
+const option = document.createElement('option');
+option.value = s.fbId;
+option.textContent = `${s.name} (${getRoleDisplayName(s.role)})`;
+option.dataset.role = s.role;
+if (s.fbId === selectedId) option.selected = true;
+editQueueServiceSelect.appendChild(option);
+});
+}
+function handleEditQueueItem(fbId) {
+const queueItem = window.ALL_QUEUE.find(item => item.fbId === fbId);
+if (!queueItem) return;
+editQueueId.value = fbId;
+editQueueCarPlate.value = queueItem.carPlate;
+editQueueCarModel.value = queueItem.carModel;
+// Popula selects e seleciona os valores atuais
+populateEditQueueSalespersonSelect(queueItem.salespersonId);
+populateEditQueueServiceSelect(queueItem.serviceId);
+editQueueModal.style.display = 'block';
+}
+async function handleUpdateQueueItem(event) {
+event.preventDefault();
+const fbId = editQueueId.value;
+const carPlate = editQueueCarPlate.value.trim().toUpperCase();
+const carModel = editQueueCarModel.value.trim();
+const salespersonId = editQueueSalespersonSelect.value;
+const serviceId = editQueueServiceSelect.value;
+if (!carPlate || !carModel || !salespersonId || !serviceId) {
+showCustomAlert("Erro", "Preencha todos os campos.");
+return;
+}
+const serviceSelectOption = editQueueServiceSelect.options[editQueueServiceSelect.selectedIndex];
+const salespersonSelectOption = editQueueSalespersonSelect.options[editQueueSalespersonSelect.selectedIndex];
+// *** Pega o NOME REAL do serviço (Ex: "Troca de Óleo") ***
+const serviceObj = window.ALL_SERVICES.find(s => s.fbId === serviceId);
+const realServiceName = serviceObj ? serviceObj.name : serviceSelectOption.textContent.split(' (')[0];
+
+const updatedData = {
+carPlate: carPlate,
+carModel: carModel,
+salespersonId: salespersonId,
+salespersonName: salespersonSelectOption.textContent,
+serviceId: serviceId,
+serviceName: realServiceName, // *** Usa o nome real ***
+serviceRole: serviceSelectOption.dataset.role,
+lastUpdated: new Date().getTime()
+};
+try {
+await upsertInDB(C_QUEUE_SERVICES, fbId, updatedData); // Usando upsert
+// Atualiza o veículo registrado também, se a placa ou modelo mudarem
+const registered = ALL_REGISTERED_VEHICLES.find(v => v.fbId === carPlate);
+if(registered) {
+await upsertInDB(C_REGISTERED_VEHICLES, carPlate, { carModel: carModel, lastUpdate: new Date().getTime() });
+} else {
+// Se o veículo não existe, cria (caso tenha mudado a placa)
+await upsertInDB(C_REGISTERED_VEHICLES, carPlate, { carPlate: carPlate, carModel: carModel, lastUpdate: new Date().getTime() });
+}
+showCustomAlert("Sucesso", "Item da fila atualizado com sucesso!");
+closeEditQueueModal();
+} catch (error) {
+console.error("Erro ao atualizar item da fila:", error);
+showCustomAlert("Erro", "Erro ao atualizar o item da fila.");
+}
+}
+function handleDeleteQueueItem(fbId) {
+showCustomConfirm("Excluir Serviço da Fila", "Tem certeza que deseja remover este serviço da fila?", async () => {
+try {
+await deleteFromDB(C_QUEUE_SERVICES, fbId);
+showCustomAlert("Sucesso", "Serviço removido da fila.");
+} catch (error) {
+console.error("Erro ao excluir serviço da fila:", error);
+showCustomAlert("Erro", "Erro ao excluir o serviço da fila.");
 }
 });
-
-// Se não houver serviços para a etapa atual (improvável, mas seguro), mostra todos os restantes
-if (servicesForCurrentStep.length === 0) {
-serviceIds.forEach(serviceId => {
-const service = ALL_SERVICES.find(s => s.fbId === serviceId);
-if (service) {
-servicesForCurrentStep.push(service);
+}
+// NOVA FUNÇÃO: Desbloqueia manually um item da fila
+async function handleUnlockQueueItem(fbId) {
+showCustomConfirm("Desbloqueio Manual", "Tem certeza que deseja desbloquear este serviço? Ele se tornará o próximo pronto para iniciar (status PRONTO).", async () => {
+try {
+await upsertInDB(C_QUEUE_SERVICES, fbId, { isUnlocked: true }); // Usando upsert
+showCustomAlert("Sucesso", "Serviço desbloqueado manualmente. Ele agora está pronto para iniciar.");
+} catch (error) {
+console.error("Erro ao desbloquear serviço:", error);
+showCustomAlert("Erro", "Erro ao desbloquear o serviço.");
 }
 });
 }
-
-// Popula o dropdown
-servicesForCurrentStep.forEach(service => {
-queueServiceToStartSelect.innerHTML += `<option value="${service.fbId}" data-name="${service.name}" data-role="${service.role}">${service.name}</option>`;
-});
-
-// 4. (Opcional) Tenta pré-selecionar o primeiro
-if (servicesForCurrentStep.length > 0) {
-queueServiceToStartSelect.value = servicesForCurrentStep[0].fbId;
-}
-// 5. Valida o formulário
-validateForm();
-// 6. Redireciona para o painel de produção e foca
+// NOVA FUNÇÃO: Move o item da fila para o formulário de início e muda a view
+function handleStartServiceFlow(queueId) {
+// 1. Muda a view para Produção
 showView('production');
-document.getElementById('mechanic-select').focus();
+// 2. Pré-seleciona o serviço na combobox
+queueServiceToStartSelect.value = queueId;
+// 3. Atualiza o select de mecânicos e valida o botão
+filterMechanicSelectByQueueRole();
 }
-function validateForm() {
-const isReady = carPlateInput.value && mechanicSelect.value && queueServiceToStartSelect.value;
-playButton.disabled = !isReady;
-}
-// *** ATUALIZADO (NOVA LÓGICA DE PRIORIDADE) ***
+// ===============================================
+// === LÓGICA DE SERVIÇOS ATIVOS (ACTIVE) ===
+// ===============================================
+// *** NOVO: Função handleStartService (MODIFICADA) ***
 async function handleStartService(event) {
 event.preventDefault();
+const queueId = queueServiceToStartSelect.value;
 const mechanicId = mechanicSelect.value;
-const serviceId = queueServiceToStartSelect.value;
-const mechanicName = mechanicSelect.options[mechanicSelect.selectedIndex].dataset.name;
-const serviceName = queueServiceToStartSelect.options[queueServiceToStartSelect.selectedIndex].dataset.name;
-// *** NOVO: Pega o 'role' do serviço que está começando ***
-const serviceRole = queueServiceToStartSelect.options[queueServiceToStartSelect.selectedIndex].dataset.role;
-const queueId = hiddenQueueItemId.value;
-
-if (!mechanicId || !serviceId) {
-alert("Selecione o Funcionário e o Serviço.");
+if (!queueId || !mechanicId) {
+showCustomAlert("Erro", "Selecione o serviço da fila e o funcionário.");
 return;
 }
-const serviceData = {
-mechanicId: mechanicId,
-mechanicName: mechanicName,
-serviceId: serviceId,
+const queueItem = window.ALL_QUEUE.find(item => item.fbId === queueId);
+const mechanic = window.ALL_MECHANICS.find(m => m.fbId === mechanicId);
+if (!queueItem || !mechanic) {
+showCustomAlert("Erro", "Item da fila ou funcionário não encontrado.");
+return;
+}
+// *** NOVO: Verifica se é Troca de Óleo e o Papel do Mecânico ***
+const serviceName = queueItem.serviceName;
+const serviceRole = queueItem.serviceRole;
+const isOilChange = serviceName === 'Troca de Óleo';
+const mechanicRole = mechanic.role;
+
+const activeData = {
+carPlate: queueItem.carPlate,
+carModel: queueItem.carModel,
+salespersonId: queueItem.salespersonId,
+salespersonName: queueItem.salespersonName,
+serviceId: queueItem.serviceId,
 serviceName: serviceName,
-carPlate: carPlateInput.value,
-carModel: carModelInput.value,
-startTime: new Date().toISOString(),
-startQueueId: queueId, // Linka ao item da fila
-active: true
+serviceRole: serviceRole,
+mechanicId: mechanicId,
+mechanicName: mechanic.name,
+startTime: new Date().getTime(),
+startQueueId: queueId, // Linka o serviço ativo ao item original da fila
+active: true,
 };
-// 1. Adiciona o serviço à lista de ativos
-await addToDB(C_ACTIVE, serviceData);
-// 2. Marca o mecânico como ocupado
-await updateInDB(C_MECHANICS, mechanicId, { isAvailable: false, lastActiveTime: new Date().toISOString() });
-// *** LÓGICA DE FILA MOVIDA PARA handleStopService ***
-// *** NOVO: Atualiza o item da fila para "Em Progresso" ***
-if (queueId) {
-// Define um estado "em progresso" para que o item fique "travado" em todas as filas
-await updateInDB(C_QUEUE_SERVICES, queueId, {
-currentPriorityStep: `IN_PROGRESS_${serviceRole}`
-});
+// Usar transação para garantir atomicidade
+const batch = firestore.batch();
+const activeRef = firestore.collection(C_ACTIVE).doc();
+const mechanicRef = firestore.collection(C_MECHANICS).doc(mechanicId);
+const queueRef = firestore.collection(C_QUEUE_SERVICES).doc(queueId);
+
+// *** LÓGICA CONDICIONAL PARA O MECÂNICO ***
+let mechanicUpdate = {
+isAvailable: false, // Padrão: Sai da disponibilidade
+queueTime: 0, // Padrão: Zera o tempo de fila
+activeServiceId: activeRef.id, // ID do serviço que ele está fazendo
+isDoingOilChange: firebase.firestore.FieldValue.delete() // Limpa flag antigo
+};
+
+// *** CASO ESPECIAL: Balanceador fazendo Troca de Óleo ***
+if (isOilChange && mechanicRole === 'BALANCER') {
+mechanicUpdate.isAvailable = false; // Ele fica ocupado (não disponível para outros)
+mechanicUpdate.queueTime = mechanic.queueTime; // *** PRESERVA O TEMPO DE FILA ORIGINAL ***
+mechanicUpdate.isDoingOilChange = true; // Flag especial
 }
-// Limpa o formulário após iniciar
-carPlateInput.value = '';
-carModelInput.value = '';
-mechanicSelect.value = '';
-queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione um carro da fila --</option>';
-hiddenQueueItemId.value = '';
-validateForm();
+
+try {
+// 1. Adiciona o serviço à coleção ACTIVE
+batch.set(activeRef, activeData);
+// 2. Altera status do mecânico (com a lógica condicional)
+batch.update(mechanicRef, mechanicUpdate);
+// 3. Remove o serviço da Fila (QUEUE_SERVICES)
+batch.delete(queueRef);
+await batch.commit();
+showCustomAlert("Sucesso", `Serviço '${serviceName}' iniciado por ${mechanic.name}.`);
+// Limpar o formulário e re-renderizar
+startServiceForm.reset();
+filterMechanicSelectByQueueRole();
+} catch (error) {
+console.error("Erro ao iniciar serviço (Transação):", error);
+showCustomAlert("Erro", "Erro ao iniciar o serviço.");
 }
-// *** ATUALIZADO (NOVA LÓGICA DE PRIORIDADE) ***
-async function handleStopService(fbId, mechanicId) {
-if (!confirm("Tem certeza que deseja finalizar este serviço?")) return;
-const activeService = window.ACTIVE_SERVICES.find(s => s.fbId === fbId);
+}
+// NOVO: Função para verificar e excluir veículo (Alteração A)
+async function checkAndDeleteVehicle(plate) {
+// 1. Verificar na fila (QUEUE_SERVICES)
+const queueQuery = firestore.collection(C_QUEUE_SERVICES).where('carPlate', '==', plate).where('active', '==', true);
+const queueSnapshot = await queueQuery.get();
+// 2. Verificar nos ativos (ACTIVE)
+const activeQuery = firestore.collection(C_ACTIVE).where('carPlate', '==', plate).where('active', '==', true);
+const activeSnapshot = await activeQuery.get();
+// Se não houver serviços na fila E não houver serviços ativos, exclui o veículo
+if (queueSnapshot.empty && activeSnapshot.empty) {
+console.log(`Veículo ${plate} sem serviços pendentes. Excluindo de REGISTERED_VEHICLES.`);
+try {
+await deleteFromDB(C_REGISTERED_VEHICLES, plate); // ID do doc é a placa
+} catch (error) {
+console.error("Erro ao excluir veículo:", error);
+}
+}
+}
+// *** NOVO: Função handleStopService (MODIFICADA) ***
+function handleStopService(activeFbId, mechanicId) {
+// *** CORREÇÃO 2: Alterado 'ALL_ACTIVE_SERVICES' para 'window.ACTIVE_SERVICES' ***
+const activeService = window.ACTIVE_SERVICES.find(s => s.fbId === activeFbId);
 if (!activeService) return;
-const finishTime = new Date();
-const startTime = new Date(activeService.startTime);
-const durationMs = finishTime.getTime() - startTime.getTime();
-const durationSeconds = Math.round(durationMs / 1000);
-// 1. Move para a coleção de concluídos (C_COMPLETED)
+showCustomConfirm("Finalizar Serviço", `Tem certeza que deseja finalizar o serviço '${activeService.serviceName}'?`, async () => {
+const endTime = new Date().getTime();
+const durationSeconds = Math.round((endTime - activeService.startTime) / 1000);
 const completedData = {
 ...activeService,
-endTime: finishTime.toISOString(),
+endTime: endTime,
 durationSeconds: durationSeconds,
-active: false
+active: false,
+completedAt: endTime
 };
-await addToDB(C_COMPLETED, completedData);
-// 2. Remove da coleção de ativos (C_ACTIVE)
-await deleteFromDB(C_ACTIVE, fbId);
-// 3. Atualiza a disponibilidade do mecânico
-const mechanic = ALL_MECHANICS.find(m => m.fbId === mechanicId);
-if (mechanic && mechanic.isAvailable === false) {
-await updateInDB(C_MECHANICS, mechanicId, {
-isAvailable: true,
-queueTime: finishTime.getTime() // Define o novo tempo de rodízio
+// Transação para finalizar o serviço
+const batch = firestore.batch();
+const activeRef = firestore.collection(C_ACTIVE).doc(activeFbId);
+const completedRef = firestore.collection(C_COMPLETED).doc();
+const mechanicRef = firestore.collection(C_MECHANICS).doc(mechanicId);
+
+// *** NOVO: Lógica condicional para finalizar ***
+const mechanic = window.ALL_MECHANICS.find(m => m.fbId === mechanicId);
+const isOilChange = activeService.serviceName === 'Troca de Óleo';
+
+let mechanicUpdate = {
+isAvailable: true, // Padrão: Fica disponível
+queueTime: new Date().getTime(), // Padrão: Ganha um NOVO tempo de fila
+activeServiceId: firebase.firestore.FieldValue.delete(),
+isDoingOilChange: firebase.firestore.FieldValue.delete() // Limpa o flag
+};
+
+// *** CASO ESPECIAL: Balanceador finalizando Troca de Óleo ***
+if (mechanic && mechanic.role === 'BALANCER' && isOilChange) {
+mechanicUpdate.isAvailable = true;
+mechanicUpdate.queueTime = mechanic.queueTime; // *** USA O TEMPO DE FILA PRESERVADO ***
+}
+
+try {
+// 1. Remove da coleção ACTIVE
+batch.delete(activeRef);
+// 2. Adiciona à coleção COMPLETED
+batch.set(completedRef, completedData);
+// 3. Devolve o mecânico à disponibilidade (com lógica condicional)
+batch.update(mechanicRef, mechanicUpdate);
+
+await batch.commit();
+// ALTERAÇÃO A: Chama a função para verificar a exclusão do veículo
+checkAndDeleteVehicle(activeService.carPlate);
+showCustomAlert("Sucesso", `Serviço '${activeService.serviceName}' finalizado e registrado.`);
+} catch (error) {
+console.error("Erro ao finalizar serviço:", error);
+showCustomAlert("Erro", "Erro ao finalizar o serviço.");
+}
 });
 }
+function closeEditActiveModal() {
+editActiveModal.style.display = 'none';
+editActiveForm.reset();
+}
+function handleEditActiveService(activeFbId) {
+const activeService = window.ACTIVE_SERVICES.find(s => s.fbId === activeFbId);
+if (!activeService) return;
+editActiveFbId.value = activeFbId;
+editActiveOldMechanicId.value = activeService.mechanicId;
+editActiveServiceName.textContent = activeService.serviceName;
+editActiveCarPlate.textContent = activeService.carPlate;
+editActiveCarModel.textContent = activeService.carModel;
+editActiveMechanicName.textContent = activeService.mechanicName;
+editActiveServiceRole.textContent = getRoleDisplayName(activeService.serviceRole);
+// Popula o select com mecânicos DISPONÍVEIS e com a FUNÇÃO CORRETA
+editActiveMechanicSelect.innerHTML = '<option value="">-- Selecione o Novo Funcionário --</option>';
+const requiredRole = activeService.serviceRole;
 
-// *** NOVO: LÓGICA DE TRANSIÇÃO DE FILA DE PRIORIDADE ***
-const queueId = activeService.startQueueId;
-if (queueId) {
-const queueItem = ALL_QUEUE.find(item => item.fbId === queueId);
-if (queueItem) {
-// Pega o ID do serviço que acabou de ser finalizado
-const justFinishedServiceId = activeService.serviceId;
-// Remove o serviceId que acabou de ser finalizado
-const remainingServiceIds = queueItem.serviceIds.filter(id => id !== justFinishedServiceId);
+// *** Lógica de filtro para re-atribuição (MODIFICADA) ***
+const availableMechanicsForRole = window.ALL_MECHANICS.filter(m => {
+if (m.active === false || !m.isAvailable) return false; // Ignora inativos/ocupados
 
-if (remainingServiceIds.length === 0) {
-// Se foi o último serviço, deleta o item da fila
-await deleteFromDB(C_QUEUE_SERVICES, queueId);
-} else {
-// Se ainda há serviços, atualiza o item da fila
-// Recalcula os roles necessários
-const remainingRoles = ALL_SERVICES
-.filter(s => remainingServiceIds.includes(s.fbId))
-.map(s => s.role);
-const uniqueRemainingRoles = [...new Set(remainingRoles)];
+const isApto = m.role === requiredRole;
+const isGeneralService = requiredRole === ROLE_GENERAL;
+const isEligibleForGeneral = ['MECHANIC', 'ALIGNER', 'BALANCER'].includes(m.role);
 
-// Encontra a PRÓXIMA etapa de prioridade
-const nextStep = SERVICE_ORDER.find(role => uniqueRemainingRoles.includes(role)) || (uniqueRemainingRoles.length > 0 ? uniqueRemainingRoles[0] : null);
+return isApto || (isGeneralService && isEligibleForGeneral);
+}).sort((a, b) => a.name.localeCompare(b.name));
 
-await updateInDB(C_QUEUE_SERVICES, queueId, {
-serviceIds: remainingServiceIds,
-requiredRoles: uniqueRemainingRoles,
-currentPriorityStep: nextStep // Define a próxima prioridade!
+availableMechanicsForRole.forEach(m => {
+// Exclui o próprio mecânico atual da lista
+if (m.fbId !== activeService.mechanicId) {
+	const option = document.createElement('option');
+	option.value = m.fbId;
+	option.textContent = `${m.name} (${getRoleDisplayName(m.role)})`;
+	editActiveMechanicSelect.appendChild(option);
+}
 });
+editActiveModal.style.display = 'block';
 }
-}
-}
-// *** FIM DA LÓGICA DE TRANSIÇÃO ***
-}
-function renderActiveServices(activeServices) {
-inProgressList.innerHTML = '';
-clearInterval(window.timerInterval); // Para timers anteriores
-activeTimers = {}; // Limpa o objeto de timers
-if (activeServices.length === 0) {
-inProgressList.innerHTML = '<p style="text-align: center; color: #777; padding: 20px;">Nenhum serviço em andamento.</p>';
+async function handleUpdateActiveService(event) {
+event.preventDefault();
+const activeFbId = editActiveFbId.value;
+const oldMechanicId = editActiveOldMechanicId.value;
+const newMechanicId = editActiveMechanicSelect.value;
+if (!newMechanicId) {
+showCustomAlert("Erro", "Selecione o novo funcionário.");
 return;
 }
-activeServices.forEach(service => {
+const activeService = window.ACTIVE_SERVICES.find(s => s.fbId === activeFbId);
+const newMechanic = window.ALL_MECHANICS.find(m => m.fbId === newMechanicId);
+if (!activeService || !newMechanic) {
+showCustomAlert("Erro", "Serviço ou novo funcionário não encontrado.");
+return;
+}
+showCustomConfirm("Re-atribuir Serviço", `Tem certeza que deseja re-atribuir o serviço de ${activeService.mechanicName} para ${newMechanic.name}?`, async () => {
+// Transação para re-atribuir o serviço
+const batch = firestore.batch();
+const activeRef = firestore.collection(C_ACTIVE).doc(activeFbId);
+const oldMechanicRef = firestore.collection(C_MECHANICS).doc(oldMechanicId);
+const newMechanicRef = firestore.collection(C_MECHANICS).doc(newMechanicId);
+
+// *** NOVO: Verifica o caso especial do Balanceador ***
+const oldMechanic = window.ALL_MECHANICS.find(m => m.fbId === oldMechanicId);
+const isOilChange = activeService.serviceName === 'Troca de Óleo';
+
+// Lógica para o MECÂNICO ANTIGO
+let oldMechanicUpdate = {
+	isAvailable: true,
+	queueTime: new Date().getTime(), // Padrão: Novo tempo de fila
+	activeServiceId: firebase.firestore.FieldValue.delete(),
+	isDoingOilChange: firebase.firestore.FieldValue.delete()
+};
+// Se o ANTIGO era um balanceador em troca de óleo, ele volta com o tempo PRESERVADO
+if (oldMechanic && oldMechanic.role === 'BALANCER' && isOilChange) {
+	oldMechanicUpdate.queueTime = oldMechanic.queueTime; // Usa o tempo preservado
+}
+
+// Lógica para o NOVO MECÂNICO
+let newMechanicUpdate = {
+	isAvailable: false,
+	queueTime: 0, // Padrão: Zera o tempo
+	activeServiceId: activeFbId,
+	isDoingOilChange: firebase.firestore.FieldValue.delete()
+};
+// Se o NOVO é um balanceador em troca de óleo, ele entra preservando seu tempo
+if (newMechanic.role === 'BALANCER' && isOilChange) {
+	newMechanicUpdate.queueTime = newMechanic.queueTime; // Preserva o tempo
+	newMechanicUpdate.isDoingOilChange = true;
+}
+
+try {
+	// 1. Atualiza o serviço ativo com o novo mecânico e hora de re-início
+	batch.update(activeRef, {
+	mechanicId: newMechanicId,
+	mechanicName: newMechanic.name,
+	startTime: new Date().getTime(), // Zera o tempo de produção para o novo mecânico
+	});
+	// 2. Devolve o mecânico antigo à disponibilidade
+	batch.update(oldMechanicRef, oldMechanicUpdate);
+	// 3. Coloca o novo mecânico em produção
+	batch.update(newMechanicRef, newMechanicUpdate);
+
+	await batch.commit();
+	showCustomAlert("Sucesso", "Serviço re-atribuído e cronômetro reiniciado para o novo funcionário.");
+	closeEditActiveModal();
+} catch (error) {
+	console.error("Erro ao re-atribuir serviço:", error);
+	showCustomAlert("Erro", "Erro ao re-atribuir o serviço.");
+}
+});
+}
+// ===============================================
+// === LÓGICA DE RENDERIZAÇÃO DE FILAS ===
+// ===============================================
+function createPublicQueueItemHtml(item) {
+const carInfo = `${item.carPlate} (${item.carModel})`;
+const isReady = item.isReadyToStart;
+let classes = ['public-queue-item'];
+let statusText = '';
+if (isReady) {
+classes.push('ready-item');
+statusText = item.isUnlocked ? 'PRONTO (Desbloqueado)' : 'PRONTO PARA INICIAR';
+} else {
+// Usa o status calculado no renderQueue
+classes.push('locked-item');
+statusText = `${item.requiredNextRole}`;
+}
+return `
+<div class="${classes.join(' ')}">
+<p style="font-weight: bold; font-size: 1.2em; margin-bottom: 5px;">${item.serviceName}</p>
+<p style="font-size: 1em; color: #333; margin-bottom: 5px;">Placa: ${carInfo}</p>
+<p class="salesperson-info-pub" style="font-weight: bold; color: ${item.isReadyToStart ? '#28a745' : '#dc3545'};">
+Status: ${statusText}
+</p>
+</div>
+`;
+}
+function createQueueItemHtml(item) {
+const isReady = item.isReadyToStart;
+const isActive = window.ACTIVE_SERVICES.some(active => active.startQueueId === item.fbId);
+let classes = ['queue-item'];
+if (isReady) {
+classes.push('ready-item');
+} else if (isActive) {
+classes.push('locked-item');
+} else {
+classes.push('locked-item');
+}
+const editBtn = `<button class="btn-secondary" onclick="handleEditQueueItem('${item.fbId}')">Editar</button>`;
+const deleteBtn = `<button class="btn-stop" onclick="handleDeleteQueueItem('${item.fbId}')">Excluir</button>`;
+const startBtn = isReady ?
+`<button class="btn-play" onclick="handleStartServiceFlow('${item.fbId}')">Iniciar</button>` :
+`<button class="btn-secondary" disabled>Aguardando</button>`;
+// Botão de Desbloqueio/Bloqueio manual (visível apenas para admins, se implementado)
+const unlockBtn = (!isReady && !isActive) ?
+`<button class="btn-edit" onclick="handleUnlockQueueItem('${item.fbId}')" style="background-color: #ffc107; color: #333; font-weight: bold;">Desbloquear</button>` : '';
+return `
+<div class="${classes.join(' ')}">
+<p style="font-weight: bold;">${item.serviceName} (${getRoleDisplayName(item.serviceRole)})</p>
+<p>Placa: ${item.carPlate} / ${item.carModel}</p>
+<p>Vendedor: ${item.salespersonName}</p>
+<p style="font-weight: bold; color: ${isReady ? '#28a745' : '#dc3545'};">Status: ${item.requiredNextRole}</p>
+<div class="queue-item-actions">
+${startBtn}
+${editBtn}
+${deleteBtn}
+${unlockBtn}
+</div>
+</div>
+`;
+}
+function renderQueue() {
+// Limpa todas as colunas
+for (const key in targetElementsInternal) {
+if(targetElementsInternal[key]) targetElementsInternal[key].innerHTML = '';
+}
+for (const key in targetElementsPublic) {
+if(targetElementsPublic[key]) targetElementsPublic[key].innerHTML = '';
+}
+// NOVO PASSO 1.1: Identifica todas as placas com serviços ATIVOS.
+const activePlates = new Set(window.ACTIVE_SERVICES.map(item => item.carPlate));
+// 1. Determina qual carro está "ready to start" para cada placa, seguindo a prioridade.
+const platesReadyMap = new Map();
+const uniquePlates = [...new Set(window.ALL_QUEUE.map(item => item.carPlate))];
+uniquePlates.forEach(plate => {
+// Se o carro tem um serviço ativo, ele está BLOQUEADO para iniciar o próximo.
+// Pulamos a busca automática pelo próximo da ordem para esta placa
+// (a menos que tenha desbloqueio manual, que será tratado abaixo).
+if (activePlates.has(plate)) { return; }
+const queueItems = window.ALL_QUEUE
+.filter(item => item.carPlate === plate)
+// Ordena os itens pela prioridade do papel (Mecânica 0, Balanço 1, Alinhamento 2), depois pelo tempo de fila
+.sort((a, b) => {
+// *** Serviços GERAIS são tratados como Mecânica (Prioridade 0) ***
+const priorityA = a.serviceRole === ROLE_GENERAL ? 0 : (ROLE_PRIORITY[a.serviceRole] !== undefined ? ROLE_PRIORITY[a.serviceRole] : 99);
+const priorityB = b.serviceRole === ROLE_GENERAL ? 0 : (ROLE_PRIORITY[b.serviceRole] !== undefined ? ROLE_PRIORITY[b.serviceRole] : 99);
+
+if (priorityA !== priorityB) {
+return priorityA - priorityB;
+}
+return a.queuedAt - b.queuedAt;
+});
+if (queueItems.length > 0) {
+// O item com maior prioridade e mais antigo na fila (queueItems[0]) é o que está "pronto"
+platesReadyMap.set(plate, queueItems[0]);
+}
+});
+// 2. Percorre a fila novamente para marcar o status e renderizar
+// *** MODIFICADO: Inclui o ROLE_GENERAL na lista de Mecânica ***
+const allItemsByRole = { 'MECHANIC': [], 'ALIGNER': [], 'BALANCER': [] };
+window.ALL_QUEUE.forEach(item => {
+const readyInfo = platesReadyMap.get(item.carPlate);
+const isPlateActive = activePlates.has(item.carPlate);
+// O item está PRONTO se:
+// 1. É o item com MAIOR PRIORIDADE na fila para aquela placa (e a placa não tem um ativo)
+const isMandatoryNext = readyInfo && readyInfo.fbId === item.fbId;
+// OU
+// 2. Foi desbloqueado manualmente
+item.isReadyToStart = (isMandatoryNext && !isPlateActive) || item.isUnlocked;
+// 2. Verifica se está ATIVO (status de bloqueio mais forte)
+const isActive = window.ACTIVE_SERVICES.some(active => active.startQueueId === item.fbId);
+// 3. Define o status de exibição (requiredNextRole)
+if (isActive) {
+item.isReadyToStart = false; // Item ativo NUNCA é verde
+const activeService = window.ACTIVE_SERVICES.find(active => active.startQueueId === item.fbId);
+item.requiredNextRole = `EM ANDAMENTO: ${activeService ? activeService.mechanicName : 'N/A'}`;
+} else if (item.isReadyToStart && item.isUnlocked) {
+item.requiredNextRole = 'PRONTO (Desbloqueado)';
+} else if (item.isReadyToStart) {
+item.requiredNextRole = 'PRONTO PARA INICIAR';
+} else if (isPlateActive) {
+// Status de bloqueio: Se não está pronto, mas há um ativo na placa
+item.requiredNextRole = `AGUARDA: Serviço Ativo`;
+} else {
+// Item bloqueado pela ordem de prioridade (espera outro serviço da mesma placa, mas que ainda está na fila)
+const mandatoryRole = readyInfo ? getRoleDisplayName(readyInfo.serviceRole) : 'N/A';
+item.requiredNextRole = `AGUARDA: ${mandatoryRole}`;
+}
+
+// *** MODIFICADO: Serviços GERAIS vão para a fila de MECÂNICA ***
+if (item.serviceRole === ROLE_GENERAL) {
+	allItemsByRole['MECHANIC'].push(item);
+} else if (allItemsByRole[item.serviceRole]) {
+	allItemsByRole[item.serviceRole].push(item);
+}
+});
+// 3. Ordena os itens dentro de cada função (Prontos primeiro, depois por ordem de chegada).
+for (const role in allItemsByRole) {
+allItemsByRole[role].sort((a, b) => {
+if (a.isReadyToStart && !b.isReadyToStart) return -1;
+if (!a.isReadyToStart && b.isReadyToStart) return 1;
+return a.queuedAt - b.queuedAt;
+});
+// 4. Renderiza nas views interna e pública
+allItemsByRole[role].forEach(item => {
+	// *** MODIFICADO: Serviços GERAIS vão para a fila de MECÂNICA ***
+	let targetRole = item.serviceRole === ROLE_GENERAL ? 'MECHANIC' : item.serviceRole;
+
+if (targetElementsInternal[targetRole]) {
+	targetElementsInternal[targetRole].innerHTML += createQueueItemHtml(item);
+}
+// Só exibe itens que não estão ativos na fila pública
+if (!window.ACTIVE_SERVICES.some(active => active.startQueueId === item.fbId)) {
+	if (targetElementsPublic[targetRole]) {
+	targetElementsPublic[targetRole].innerHTML += createPublicQueueItemHtml(item);
+	}
+}
+});
+// Mensagem de Vazio
+if (allItemsByRole[role].length === 0) {
+if (targetElementsInternal[role]) {
+targetElementsInternal[role].innerHTML = '<p style="color: #777; text-align: center; font-style: italic;">Fila vazia.</p>';
+}
+}
+if (targetElementsPublic[role] && targetElementsPublic[role].innerHTML === '') {
+targetElementsPublic[role].innerHTML = '<p style="color: #777; text-align: center; font-style: italic;">Fila vazia.</p>';
+}
+}
+// Atualiza o select de início de serviço (somente itens PRONTOS)
+renderQueueSelectForStart();
+}
+// Preenche o select de "Serviço PRONTO para Iniciar"
+function renderQueueSelectForStart() {
+queueServiceToStartSelect.innerHTML = '<option value="">-- Selecione o Serviço --</option>';
+// Filtra apenas itens prontos e os ordena pelo tempo na fila
+const readyItems = window.ALL_QUEUE
+.filter(item => item.isReadyToStart)
+.sort((a, b) => a.queuedAt - b.queuedAt);
+readyItems.forEach(item => {
+const option = document.createElement('option');
+option.value = item.fbId;
+// *** Exibe o NOME REAL do serviço no select ***
+let label = `${item.carPlate} (${item.serviceName})`;
+if (item.isUnlocked) label += ' (Desbl.)';
+option.textContent = label;
+option.dataset.carPlate = item.carPlate;
+option.dataset.carModel = item.carModel;
+option.dataset.role = item.serviceRole;
+option.dataset.serviceName = item.serviceName;
+option.dataset.salespersonName = item.salespersonName;
+option.dataset.salespersonId = item.salespersonId;
+option.dataset.serviceId = item.serviceId;
+queueServiceToStartSelect.appendChild(option);
+});
+// Valida o formulário de início de serviço para desativar o botão se necessário
+filterMechanicSelectByQueueRole();
+}
+function renderActiveServices() {
+if (!inProgressList) return;
+inProgressList.innerHTML = '';
+window.ACTIVE_SERVICES.forEach(s => {
 const row = document.createElement('div');
 row.className = 'service-row';
-row.dataset.fbid = service.fbId;
-const mechanicName = ALL_MECHANICS.find(m => m.fbId === service.mechanicId)?.name || 'Mecânico Desconhecido';
+// MUDANÇA B: Remoção do tempo de exibição e lógica de cronômetro
+// O tempo de início é mantido para re-atribuição e finalização, mas não é exibido.
 row.innerHTML = `
-<strong>${mechanicName}</strong>
-<span class="service-desc">${service.serviceName} (${service.carPlate})</span>
-<span>Início: ${new Date(service.startTime).toLocaleTimeString('pt-BR')}</span>
-<span class="time-display" id="timer-${service.fbId}">00:00:00</span>
-<button class="btn-stop" data-fbid="${service.fbId}" data-mechanicid="${service.mechanicId}">◼ Finalizar</button>
+<div class="mechanic-info-container">${s.mechanicName}</div>
+<div class="service-info-container">
+<p style="font-weight: bold; margin-bottom: 5px;">${s.serviceName} (${getRoleDisplayName(s.serviceRole)})</p>
+<p style="font-size: 0.9em; color: #555;">Placa: ${s.carPlate} / ${s.carModel}</p>
+<p style="font-size: 0.9em; color: #555;">Vendedor: ${s.salespersonName}</p>
+</div>
+<div class="service-row-buttons">
+<button class="btn-stop" onclick="handleStopService('${s.fbId}', '${s.mechanicId}')">Finalizar</button>
+<button class="btn-edit" onclick="handleEditActiveService('${s.fbId}')">Re-atribuir</button>
+</div>
 `;
 inProgressList.appendChild(row);
-// Inicializa o timer
-let startTime = new Date(service.startTime).getTime();
-activeTimers[service.fbId] = setInterval(() => {
-const now = new Date().getTime();
-const elapsed = Math.round((now - startTime) / 1000);
-const timerElement = document.getElementById(`timer-${service.fbId}`);
-if (timerElement) {
-timerElement.textContent = formatTime(elapsed);
-}
-}, 1000);
-});
-// Adiciona o listener para o botão Finalizar
-inProgressList.querySelectorAll('.btn-stop').forEach(btn => {
-btn.addEventListener('click', (e) => {
-const fbId = e.target.dataset.fbid;
-const mechanicId = e.target.dataset.mechanicid;
-handleStopService(fbId, mechanicId);
-});
 });
 }
-// Função auxiliar para renderizar grupos de mecânicos disponíveis
-function renderMechanicGroup(element, group) {
+function updateAvailableMechanics() {
+// 1. Filtra os mecânicos ativos e disponíveis
+const availableMechanics = window.ALL_MECHANICS.filter(m => m.isAvailable && m.active !== false);
+// 2. Separa por função
+const availableMechanicList = availableMechanics.filter(m => m.role === 'MECHANIC');
+const availableAlignerList = availableMechanics.filter(m => m.role === 'ALIGNER');
+const availableBalancerList = availableMechanics.filter(m => m.role === 'BALANCER');
+// Funções auxiliares para renderização de tags
+function renderMechanicTags(mechanics, element) {
+if (!element) return;
 element.innerHTML = '';
-group.forEach((m, index) => {
+mechanics.sort((a, b) => a.queueTime - b.queueTime); // Ordena pelo tempo de fila (o menor é o mais antigo)
+mechanics.forEach((m, index) => {
 const tag = document.createElement('div');
 tag.className = 'mechanic-tag';
-const roleText = getRoleDisplayName(m.role || 'N/A');
+const timeDiff = new Date().getTime() - m.queueTime;
+const timeText = formatTime(Math.round(timeDiff / 1000));
 tag.innerHTML = `
-<div>
-<span class="position">${index + 1}º</span>
-${m.name}
-</div>
-<small>${roleText}</small>
+<div><span style="font-weight: bold;">${m.name}</span></div>
+<span style="font-size: 0.9em; color: #555;">Aguardando: ${timeText}</span>
 `;
 element.appendChild(tag);
 });
 }
-function updateAvailableMechanics(activeServices) {
-const busyMechanicIds = new Set(activeServices.map(s => s.mechanicId));
-let availableMechanics = ALL_MECHANICS.filter(m => m.isAvailable === true && !busyMechanicIds.has(m.fbId));
-const mechanicsGroup = availableMechanics.filter(m => m.role === 'MECHANIC');
-const alignersGroup = availableMechanics.filter(m => m.role === 'ALIGNER');
-const balancersGroup = availableMechanics.filter(m => m.role === 'BALANCER');
-const rodizioSort = (a, b) => {
-return (a.queueTime || 0) - (b.queueTime || 0);
-};
-mechanicsGroup.sort(rodizioSort);
-alignersGroup.sort(rodizioSort);
-balancersGroup.sort(rodizioSort);
-// Atualiza o <select>
-mechanicSelect.innerHTML = '<option value="">-- Selecione um Funcionário --</option>';
-[...mechanicsGroup, ...alignersGroup, ...balancersGroup].forEach(m => {
-const roleName = getRoleDisplayName(m.role);
-mechanicSelect.innerHTML += `<option value="${m.fbId}" data-name="${m.name}">${m.name} (${roleName})</option>`;
-});
-// Atualiza as listas visuais
-renderMechanicGroup(availableMechanicsList, mechanicsGroup);
-renderMechanicGroup(availableAlignersList, alignersGroup);
-renderMechanicGroup(availableBalancersList, balancersGroup);
-validateForm();
+function renderPublicMechanicTags(mechanics, element) {
+if (!element) return;
+element.innerHTML = '';
+mechanics.sort((a, b) => a.queueTime - b.queueTime);
+mechanics.forEach((m, index) => {
+const tag = document.createElement('div');
+tag.className = 'public-mechanic-tag';
+if (index === 0) { // O primeiro (mais tempo em fila/disponível) é destacado
+tag.style.border = '2px solid #28a745';
+tag.style.backgroundColor = '#d4edda';
 }
-// LÓGICA DE ADMINISTRAÇÃO E PONTO (MANTIDAS)
-async function handleAddMechanic(event) {
-event.preventDefault();
-const name = inputMechanicName.value.trim();
-const role = selectMechanicRole.value; // Posição
-if (!name) return;
-if (ALL_MECHANICS.some(m => m.name.toLowerCase() === name.toLowerCase())) {
-alert("Este funcionário já está cadastrado.");
-return;
-}
-const mechanicData = {
-name: name,
-role: role, // Salva o cargo
-isAvailable: false,
-lastActiveTime: new Date().toISOString(),
-queueTime: 0 // Tempo de espera para rodízio
-};
-await addToDB(C_MECHANICS, mechanicData);
-inputMechanicName.value = '';
-}
-function renderAdminMechanics() {
-const ul = adminMechanicsList.querySelector('ul');
-ul.innerHTML = '';
-ALL_MECHANICS.forEach(m => {
-const li = document.createElement('li');
-const roleName = getRoleDisplayName(m.role || 'N/A');
-li.innerHTML = `
-<span>${m.name} <small>(${roleName})</small></span>
-<button class="btn-delete" data-fbid="${m.fbId}">Excluir</button>
+tag.innerHTML = `
+<div><span class="position">${index + 1}º</span> ${m.name}</div>
+<span class="role-badge">${getRoleDisplayName(m.role)}</span>
 `;
-ul.appendChild(li);
-});
-ul.querySelectorAll('.btn-delete').forEach(btn => {
-btn.addEventListener('click', (e) => handleDeleteMechanic(e.target.dataset.fbid));
+element.appendChild(tag);
 });
 }
-async function handleDeleteMechanic(fbId) {
-if (confirm("ATENÇÃO: Excluir funcionário pode impactar relatórios. Tem certeza?")) {
-await deleteFromDB(C_MECHANICS, fbId);
+// Renderiza nas views (Interna de Produção)
+renderMechanicTags(availableMechanicList, availableMechanicElements['MECHANIC']);
+renderMechanicTags(availableAlignerList, availableMechanicElements['ALIGNER']);
+renderMechanicTags(availableBalancerList, availableMechanicElements['BALANCER']);
+// Renderiza nas views (Telão Público)
+renderPublicMechanicTags(availableMechanicList, publicMechanicElements['MECHANIC']);
+renderPublicMechanicTags(availableAlignerList, publicMechanicElements['ALIGNER']);
+renderPublicMechanicTags(availableBalancerList, publicMechanicElements['BALANCER']);
+
+// *** MODIFICADO: Só atualiza o filtro de mecânico se a view de Produção estiver ativa ***
+if (viewProduction && viewProduction.classList.contains('active')) {
+	filterMechanicSelectByQueueRole();
 }
 }
-// LÓGICA DE SERVIÇOS
-async function handleAddService(event) {
-event.preventDefault();
-const name = inputServiceName.value.trim();
-const role = selectServiceRole.value; // NOVO
-if (!name || !role) return;
-if (ALL_SERVICES.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-alert("Este serviço já existe.");
-return;
+// MUDANÇA B: Função updateActiveServiceTimes e o setInterval foram REMOVIDOS.
+// ===============================================
+// === LÓGICA DE RELATÓRIO (REPORT) ===
+// ===============================================
+function renderReportView() {
+reportDate.textContent = new Date().toLocaleDateString('pt-BR');
+reportList.innerHTML = '';
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const todayTimestamp = today.getTime();
+// Filtra serviços concluídos hoje
+const completedToday = window.ALL_COMPLETED.filter(s => s.completedAt >= todayTimestamp);
+// Agrupa por Mecânico
+const reportGroups = completedToday.reduce((acc, s) => {
+if (!acc[s.mechanicId]) {
+acc[s.mechanicId] = { name: s.mechanicName, totalServices: 0, services: [] };
 }
-await addToDB(C_SERVICES, { name: name, role: role }); // SALVA O ROLE
-inputServiceName.value = '';
-selectServiceRole.value = 'MECHANIC';
-}
-function renderAdminServices() {
-const ul = adminServicesList.querySelector('ul');
-ul.innerHTML = '';
-ALL_SERVICES.forEach(s => {
-const li = document.createElement('li');
-const roleName = getRoleDisplayName(s.role || 'N/A');
-li.innerHTML = `
-<span>${s.name} <small>(${roleName})</small></span>
-<button class="btn-delete" data-fbid="${s.fbId}">Excluir</button>
+acc[s.mechanicId].totalServices++;
+acc[s.mechanicId].services.push(s);
+return acc;
+}, {});
+// Ordena os grupos (Mecânicos)
+Object.values(reportGroups).sort((a, b) => a.name.localeCompare(b.name)).forEach(group => {
+const groupElement = document.createElement('div');
+groupElement.style = "margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);";
+groupElement.innerHTML = `
+<h3 style="border-bottom: 2px solid #ccc; padding-bottom: 5px; margin-top: 0;">
+${group.name}
+<span style="font-size: 0.8em; font-weight: normal;">(${group.totalServices} serviços)</span>
+</h3>
 `;
-ul.appendChild(li);
+const serviceListElement = document.createElement('div');
+// Adiciona overflow para rolagem em tabelas de relatório no celular
+serviceListElement.style.overflowX = 'auto'; 
+
+// Cria uma "tabela" com divs
+let tableHtml = `
+<div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; min-width: 500px; font-weight: bold; border-bottom: 1px solid #333; padding: 5px 0;">
+	<span>Serviço (Veículo)</span>
+	<span>Início</span>
+	<span>Fim</span>
+	<span>Duração</span>
+</div>
+`;
+
+group.services.sort((a, b) => a.completedAt - b.completedAt).forEach(s => {
+tableHtml += `
+<div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; min-width: 500px; border-bottom: 1px dashed #eee; padding: 8px 0;">
+	<span>${s.serviceName} (${s.carPlate} / ${s.carModel || 'N/A'})</span>
+	<span>${new Date(s.startTime).toLocaleTimeString('pt-BR')}</span>
+	<span>${new Date(s.endTime).toLocaleTimeString('pt-BR')}</span>
+	<span style="font-weight: bold;">${formatTime(s.durationSeconds)}</span>
+</div>
+`;
 });
-ul.querySelectorAll('.btn-delete').forEach(btn => {
-btn.addEventListener('click', (e) => handleDeleteService(e.target.dataset.fbid));
+serviceListElement.innerHTML = tableHtml;
+groupElement.appendChild(serviceListElement);
+reportList.appendChild(groupElement);
+});
+if (Object.keys(reportGroups).length === 0) {
+reportList.innerHTML = '<p style="text-align: center; color: #777; margin-top: 20px;">Nenhum serviço concluído hoje.</p>';
+}
+}
+async function handleClearReportHistory() {
+showCustomConfirm("AVISO", "Esta ação irá APAGAR PERMANENTEMENTE TODO o histórico. Deseja continuar?", async () => {
+try {
+const snapshot = await db.collection(C_COMPLETED).get();
+const batch = db.batch();
+snapshot.docs.forEach(doc => {
+batch.delete(doc.ref);
+});
+await batch.commit();
+showCustomAlert("Sucesso", "Histórico de serviços concluídos limpado!");
+} catch (error) {
+console.error("Erro ao limpar histórico:", error);
+showCustomAlert("Erro", "Erro ao limpar histórico.");
+}
 });
 }
-async function handleDeleteService(fbId) {
-if (confirm("Tem certeza que deseja excluir este serviço?")) {
-await deleteFromDB(C_SERVICES, fbId);
+// ===============================================
+// === LÓGICA DE REGISTRO DE PONTO ===
+// ===============================================
+async function handleClockAction(mechanicId, action, mechanicName) {
+const timestamp = new Date().getTime();
+const data = {
+mechanicId: mechanicId,
+mechanicName: mechanicName,
+action: action, // 'IN', 'OUT', 'BREAK_IN', 'BREAK_OUT'
+timestamp: timestamp
+};
+// Transação para bater o ponto
+const batch = firestore.batch();
+const timeclockRef = firestore.collection(C_TIMECLOCK).doc();
+const mechanicRef = firestore.collection(C_MECHANICS).doc(mechanicId);
+try {
+// 1. Adiciona o registro de ponto
+batch.set(timeclockRef, data);
+// 2. Atualiza o status do mecânico
+let newStatus = 'OUT';
+if (action === 'IN' || action === 'BREAK_OUT') newStatus = 'IN';
+if (action === 'BREAK_IN') newStatus = 'BREAK_IN';
+batch.update(mechanicRef, {
+status: newStatus,
+lastClockAction: timestamp,
+// Mecânico que bateu ponto IN ou BREAK_OUT é considerado disponível
+isAvailable: newStatus === 'IN',
+// Zera ou registra o tempo de fila
+queueTime: newStatus === 'IN' ? new Date().getTime() : 0,
+});
+await batch.commit();
+showCustomAlert("Sucesso", `Ponto registrado: ${action}.`);
+} catch (error) {
+console.error("Erro ao registrar ponto:", error);
+showCustomAlert("Erro", "Erro ao registrar o ponto.");
 }
 }
-function renderAdminLists() {
-renderAdminMechanics();
-renderAdminServices();
-}
-// LÓGICA DE PONTO (TIMECLOCK)
-async function handleStartBreak(mechanicId) {
-await updateInDB(C_MECHANICS, mechanicId, { isAvailable: false, queueTime: 0, lastActiveTime: new Date().toISOString() });
-}
-async function handleEndBreak(mechanicId) {
-await updateInDB(C_MECHANICS, mechanicId, { isAvailable: true, queueTime: new Date().getTime() });
-}
-function renderTimeclockCards() {
-const timeclockList = document.getElementById('timeclock-list');
+function renderTimeclockList() {
+if (!timeclockList) return;
 timeclockList.innerHTML = '';
-ALL_MECHANICS.forEach(m => {
-const status = getMechanicStatus(m);
-const isBusyInService = window.ACTIVE_SERVICES.some(s => s.mechanicId === m.fbId);
+window.ALL_MECHANICS.filter(m => m.active !== false).sort((a, b) => a.name.localeCompare(b.name)).forEach(mechanic => {
 const card = document.createElement('div');
 card.className = 'timeclock-card';
+let statusText = 'Fora do Ponto';
+let statusClass = 'status-off';
+let clockInButton = `<button class="btn-clock-in" onclick="handleClockAction('${mechanic.fbId}', 'IN', '${mechanic.name}')">Bater Ponto ENTRADA</button>`;
+let clockOutButton = `<button class="btn-clock-out" disabled>SAÍDA</button>`;
+let breakButton = `<button class="btn-secondary" disabled>PAUSA</button>`;
+if (mechanic.status) {
+switch (mechanic.status) {
+case 'IN':
+statusText = 'Em Serviço/Disponível';
+statusClass = 'status-on';
+clockInButton = `<button class="btn-clock-in" disabled>ENTRADA</button>`;
+clockOutButton = `<button class="btn-clock-out" onclick="handleClockAction('${mechanic.fbId}', 'OUT', '${mechanic.name}')">Bater Ponto SAÍDA</button>`;
+breakButton = `<button class="btn-secondary" onclick="handleClockAction('${mechanic.fbId}', 'BREAK_IN', '${mechanic.name}')">PAUSA</button>`;
+break;
+case 'OUT':
+statusText = 'Fora do Ponto';
+statusClass = 'status-off';
+// Já configurado para o estado inicial
+break;
+case 'BREAK_IN':
+statusText = 'Em Pausa';
+statusClass = 'status-break';
+clockInButton = `<button class="btn-clock-in" onclick="handleClockAction('${mechanic.fbId}', 'BREAK_OUT', '${mechanic.name}')">Voltar da PAUSA</button>`;
+clockOutButton = `<button class="btn-clock-out" disabled>SAÍDA</button>`;
+breakButton = `<button class="btn-secondary" disabled>PAUSA</button>`;
+break;
+}
+}
 card.innerHTML = `
-<h3>${m.name}</h3>
-<p><small>Cargo: ${getRoleDisplayName(m.role)}</small></p>
-<div class="timeclock-status ${status.class}">
-${status.text}
-</div>
+<h3>${mechanic.name} (${getRoleDisplayName(mechanic.role)})</h3>
+<div class="timeclock-status ${statusClass}">${statusText}</div>
 <div class="timeclock-buttons">
-<button
-class="btn-clock-in"
-onclick="handleEndBreak('${m.fbId}')"
-${m.isAvailable ? 'disabled' : ''}
->Entrar (Disponível)</button>
-<button
-class="btn-clock-out"
-onclick="handleStartBreak('${m.fbId}')"
-${!m.isAvailable || isBusyInService ? 'disabled' : ''}
->Sair / Pausa</button>
+${clockInButton}
+${clockOutButton}
+</div>
+<div style="margin-top: 10px;">
+${breakButton}
 </div>
 `;
 timeclockList.appendChild(card);
 });
 }
-// LÓGICA DE RELATÓRIO
-function renderDailyReport() {
-const reportList = document.getElementById('report-list');
-const reportDate = document.getElementById('report-date');
-// Simulação: Pegar todos os serviços concluídos, filtrando apenas os de hoje.
-// Em uma app real, você faria uma query filtrada no Firestore.
-db.collection(C_COMPLETED).get().then(snapshot => {
-const completedToday = snapshot.docs.map(doc => ({ fbId: doc.id, ...doc.data() })).filter(s => isToday(new Date(s.endTime).getTime()));
-reportDate.textContent = new Date().toLocaleDateString('pt-BR');
-reportList.innerHTML = completedToday.length > 0 ? '' : '<p style="text-align: center; color: #777; padding: 20px;">Nenhum serviço concluído hoje.</p>';
-const reportGroups = {};
-completedToday.forEach(service => {
-if (!reportGroups[service.mechanicId]) {
-reportGroups[service.mechanicId] = {
-mechanicName: service.mechanicName,
-services: [],
-totalDuration: 0,
-count: 0
-};
-}
-reportGroups[service.mechanicId].services.push(service);
-reportGroups[service.mechanicId].totalDuration += service.durationSeconds;
-reportGroups[service.mechanicId].count++;
+// ===============================================
+// === LÓGICA DE ADMIN (CONFIG) - ALTERAÇÃO F ===
+// ===============================================
+async function handleAddMechanic(event) {
+event.preventDefault();
+const name = inputMechanicName.value.trim();
+const role = selectMechanicRole.value;
+if (name) {
+try {
+await addToDB(C_MECHANICS, {
+name: name,
+role: role,
+isAvailable: true,
+queueTime: new Date().getTime(),
+active: true, // Novo campo de status de ativação (mantido para compatibilidade, mas ignorado na exclusão)
+status: 'OUT', // Ponto inicial
+lastClockAction: 0,
 });
-for (const mechId in reportGroups) {
-const group = reportGroups[mechId];
-const groupElement = document.createElement('div');
-groupElement.className = 'mechanic-report-group';
-groupElement.innerHTML = `
-<h3>${group.mechanicName}</h3>
-${group.services.map(s => `
-<div class="service-report-row">
-<span>${s.serviceName} (${s.carPlate})</span>
-<span>Início: ${new Date(s.startTime).toLocaleTimeString('pt-BR')}</span>
-<span>Fim: ${new Date(s.endTime).toLocaleTimeString('pt-BR')}</span>
-<span>Duração: ${formatTime(s.durationSeconds)}</span>
-</div>
-`).join('')}
-<div class="report-summary">
-<span>Serviços Concluídos: ${group.count}</span>
-<span>Tempo Total de Serviço: ${formatTime(group.totalDuration)}</span>
-<span>Média por Serviço: ${formatTime(Math.round(group.totalDuration / group.count))}</span>
+inputMechanicName.value = '';
+} catch (error) {
+console.error("Erro ao adicionar funcionário:", error);
+}
+}
+}
+// NOVO: Função para EXCLUIR Funcionário (Substitui handleToggleMechanicActive)
+async function handleDeleteMechanic(fbId) {
+showCustomConfirm("Excluir Funcionário", "Tem certeza que deseja EXCLUIR este funcionário? Essa ação é irreversível.", async () => {
+try {
+await deleteFromDB(C_MECHANICS, fbId);
+showCustomAlert("Sucesso", "Funcionário excluído com sucesso!");
+} catch (error) {
+console.error("Erro ao excluir funcionário:", error);
+showCustomAlert("Erro", "Erro ao excluir funcionário.");
+}
+});
+}
+function renderAdminMechanics() {
+if (!adminMechanicsList || !adminMechanicsList.querySelector('ul')) return;
+const ul = adminMechanicsList.querySelector('ul');
+ul.innerHTML = '';
+window.ALL_MECHANICS.sort((a, b) => a.name.localeCompare(b.name)).forEach(m => {
+const li = document.createElement('li');
+// MUDANÇA F: Remoção de lógica de isActive/Desativar
+li.innerHTML = `
+<span>${m.name} (${getRoleDisplayName(m.role)})</span>
+<div>
+<button class="btn-delete" onclick="handleDeleteMechanic('${m.fbId}')">Excluir</button>
 </div>
 `;
-reportList.appendChild(groupElement);
-}
-}).catch(error => {
-console.error("Erro ao carregar relatório:", error);
-reportList.innerHTML = '<p style="color: red; padding: 20px;">Erro ao carregar o relatório.</p>';
+ul.appendChild(li);
 });
 }
-// FUNÇÕES DE CONECTIVIDADE E LOGIN (MANTIDAS)
-async function addToDB(collectionName, data) {
+async function handleAddSalesperson(event) {
+event.preventDefault();
+const name = inputSalespersonName.value.trim();
+if (name) {
 try {
-const collectionRef = db.collection(collectionName);
-await collectionRef.add(data);
+await addToDB(C_SALESPEOPLE, { name: name, active: true });
+inputSalespersonName.value = '';
 } catch (error) {
-console.error(`Erro ao adicionar em ${collectionName}:`, error);
-alert("Erro ao salvar dados na nuvem.");
-throw error; // Propaga o erro para o chamador
+console.error("Erro ao adicionar vendedor:", error);
 }
 }
-async function updateInDB(collectionName, docId, data) {
+}
+// NOVO: Função para EXCLUIR Vendedor (Substitui handleToggleSalespersonActive)
+async function handleDeleteSalesperson(fbId) {
+showCustomConfirm("Excluir Vendedor", "Tem certeza que deseja EXCLUIR este vendedor? Essa ação é irreversível.", async () => {
 try {
-const docRef = db.collection(collectionName).doc(docId);
-await docRef.update(data);
+await deleteFromDB(C_SALESPEOPLE, fbId);
+showCustomAlert("Sucesso", "Vendedor excluído com sucesso!");
 } catch (error) {
-console.error(`Erro ao atualizar em ${collectionName} (${docId}):`, error);
-alert("Erro ao atualizar dados na nuvem.");
+console.error("Erro ao excluir vendedor:", error);
+showCustomAlert("Erro", "Erro ao excluir vendedor.");
 }
+});
 }
-async function deleteFromDB(collectionName, docId) {
+function renderAdminSalespeople() {
+if (!adminSalespeopleList || !adminSalespeopleList.querySelector('ul')) return;
+const ul = adminSalespeopleList.querySelector('ul');
+ul.innerHTML = '';
+window.ALL_SALESPEOPLE.sort((a, b) => a.name.localeCompare(b.name)).forEach(s => {
+const li = document.createElement('li');
+// MUDANÇA F: Remoção de lógica de isActive/Desativar
+li.innerHTML = `
+<span>${s.name}</span>
+<div>
+<button class="btn-delete" onclick="handleDeleteSalesperson('${s.fbId}')">Excluir</button>
+</div>
+`;
+ul.appendChild(li);
+});
+}
+async function handleAddService(event) {
+event.preventDefault();
+const name = inputServiceName.value.trim();
+const role = selectServiceRole.value;
+if (name) {
 try {
-const docRef = db.collection(collectionName).doc(docId);
-await docRef.delete();
+await addToDB(C_SERVICES, { name: name, role: role, active: true });
+inputServiceName.value = '';
 } catch (error) {
-console.error(`Erro ao deletar em ${collectionName} (${docId}):`, error);
-alert("Erro ao deletar dados na nuvem.");
+console.error("Erro ao adicionar serviço:", error);
 }
 }
-function showAppContent() {
-loginScreen.style.display = 'none';
-appContent.style.display = 'block';
-showView('queue'); // Muda o default para a nova tela de fila
 }
-function showLoginScreen() {
-loginScreen.style.display = 'block';
-appContent.style.display = 'none';
+// NOVO: Função para EXCLUIR Serviço (Substitui handleToggleServiceActive)
+async function handleDeleteService(fbId) {
+showCustomConfirm("Excluir Serviço", "Tem certeza que deseja EXCLUIR este tipo de serviço? Essa ação é irreversível.", async () => {
+try {
+await deleteFromDB(C_SERVICES, fbId);
+showCustomAlert("Sucesso", "Serviço excluído com sucesso!");
+} catch (error) {
+console.error("Erro ao excluir serviço:", error);
+showCustomAlert("Erro", "Erro ao excluir serviço.");
 }
+});
+}
+function renderAdminServices() {
+if (!adminServicesList || !adminServicesList.querySelector('ul')) return;
+const ul = adminServicesList.querySelector('ul');
+ul.innerHTML = '';
+window.ALL_SERVICES.sort((a, b) => a.name.localeCompare(b.name)).forEach(s => {
+const li = document.createElement('li');
+// MUDANÇA F: Remoção de lógica de isActive/Desativar
+li.innerHTML = `
+<span>${s.name} (${getRoleDisplayName(s.role)})</span>
+<div>
+<button class="btn-delete" onclick="handleDeleteService('${s.fbId}')">Excluir</button>
+</div>
+`;
+ul.appendChild(li);
+});
+}
+// ===============================================
+// === LÓGICA DE AUTENTICAÇÃO ===
+// ===============================================
 async function handleLogin(event) {
 event.preventDefault();
-loginError.style.display = 'none';
-const email = loginEmail.value;
-const password = loginPassword.value;
+const email = document.getElementById('login-email').value;
+const password = document.getElementById('login-password').value;
+if (!auth) {
+showCustomAlert("Erro", "Sistema de autenticação não carregado. Tente recarregar a página.");
+return;
+}
 try {
 await auth.signInWithEmailAndPassword(email, password);
-loginEmail.value = '';
-loginPassword.value = '';
+// O listener 'onAuthStateChanged' dentro de initializeApp cuidará da mudança de tela
 } catch (error) {
-console.error("Erro no login:", error);
-let errorMessage = "Erro ao fazer login. Verifique o e-mail/senha.";
-if (error.code === 'auth/user-not-found') {
-errorMessage = "Usuário não encontrado.";
-} else if (error.code === 'auth/wrong-password') {
-errorMessage = "Senha incorreta.";
-}
-loginError.textContent = errorMessage;
-loginError.style.display = 'block';
+showCustomAlert("Erro de Login", "Credenciais inválidas. Verifique email e senha.");
+console.error("Erro de Login:", error);
 }
 }
-function handleLogout() {
-if (confirm("Deseja realmente sair da aplicação?")) {
-auth.signOut();
+async function handleLogout() {
+if (!auth) return;
+try {
+await auth.signOut();
+// O listener 'onAuthStateChanged' cuidará da mudança de tela
+} catch (error) {
+console.error("Erro ao fazer logout:", error);
 }
 }
-function initializeApp() {
-auth.onAuthStateChanged(user => {
-if (user) {
-CURRENT_USER = user.email;
-showAppContent();
-setupFirebaseListeners();
-} else {
-CURRENT_USER = null;
-showLoginScreen();
+// ===============================================
+// === LISTENERS DO FIREBASE ===
+// ===============================================
+function setupFirebaseListeners() {
+// Mecânicos
+db.collection(C_MECHANICS).orderBy('name').onSnapshot(snapshot => {
+window.ALL_MECHANICS.length = 0;
+snapshot.forEach(doc => window.ALL_MECHANICS.push({ fbId: doc.id, ...doc.data() }));
+if (viewConfig && viewConfig.classList.contains('active')) renderAdminMechanics();
+// CORREÇÃO: Usa a variável definida na seção de referências do DOM (que foi descomentada).
+if (viewTimeclock && viewTimeclock.classList.contains('active')) renderTimeclockList();
+updateAvailableMechanics(); // Atualiza mecânicos disponíveis
+});
+// Vendedores
+db.collection(C_SALESPEOPLE).onSnapshot(snapshot => {
+window.ALL_SALESPEOPLE.length = 0;
+snapshot.forEach(doc => window.ALL_SALESPEOPLE.push({ fbId: doc.id, ...doc.data() }));
+if (viewConfig && viewConfig.classList.contains('active')) renderAdminSalespeople();
+if (viewQueue && viewQueue.classList.contains('active')) populateAssignmentSelects();
+});
+// Serviços Cadastrados
+db.collection(C_SERVICES).onSnapshot(snapshot => {
+window.ALL_SERVICES.length = 0;
+snapshot.forEach(doc => window.ALL_SERVICES.push({ fbId: doc.id, ...doc.data() }));
+if (viewConfig && viewConfig.classList.contains('active')) renderAdminServices();
+if (viewQueue && viewQueue.classList.contains('active')) populateAssignmentSelects();
+});
+// Veículos Registrados
+db.collection(C_REGISTERED_VEHICLES).onSnapshot(snapshot => {
+window.ALL_REGISTERED_VEHICLES.length = 0;
+snapshot.forEach(doc => window.ALL_REGISTERED_VEHICLES.push({ fbId: doc.id, ...doc.data() }));
+if (viewQueue && viewQueue.classList.contains('active')) populateAssignmentSelects();
+// Nenhuma renderização de tela de veículo, apenas atualização de selects.
+});
+// Fila
+db.collection(C_QUEUE_SERVICES).orderBy('queuedAt').onSnapshot(snapshot => {
+window.ALL_QUEUE.length = 0;
+snapshot.forEach(doc => window.ALL_QUEUE.push({ fbId: doc.id, ...doc.data() }));
+renderQueue();
+});
+// Serviços Ativos
+db.collection(C_ACTIVE).orderBy('startTime').onSnapshot(snapshot => {
+window.ACTIVE_SERVICES.length = 0;
+snapshot.forEach(doc => window.ACTIVE_SERVICES.push({ fbId: doc.id, ...doc.data() }));
+renderActiveServices();
+renderQueue(); // Recalcula a fila após atualização de serviços ativos
+updateAvailableMechanics();
+});
+// Serviços Concluídos
+db.collection(C_COMPLETED).orderBy('completedAt', 'desc').onSnapshot(snapshot => {
+window.ALL_COMPLETED.length = 0;
+snapshot.forEach(doc => window.ALL_COMPLETED.push({ fbId: doc.id, ...doc.data() }));
+if (document.getElementById('view-report').classList.contains('active')) {
+renderReportView();
 }
+});
+// Registros de Ponto (Timeclock) - Limitado aos últimos 100 para desempenho
+db.collection(C_TIMECLOCK).orderBy('timestamp', 'desc').limit(100).onSnapshot(snapshot => {
+window.ALL_TIMECLOCK.length = 0;
+snapshot.forEach(doc => window.ALL_TIMECLOCK.push({ fbId: doc.id, ...doc.data() }));
+// A lista de ponto usa o cache de mecânicos para renderizar, então só precisa de seu próprio listener para o cache.
 });
 }
 // ===============================================
-// === INICIALIZAÇÃO DA APLICAÇÃO 1 ===
+// === INICIALIZAÇÃO E LISTENERS DO DOM ===
 // ===============================================
 document.addEventListener('DOMContentLoaded', () => {
-// Setup Listeners de Navegação
-document.getElementById('nav-queue').addEventListener('click', () => showView('queue'));
-document.getElementById('nav-production').addEventListener('click', () => showView('production'));
-document.getElementById('nav-report').addEventListener('click', () => showView('report'));
-document.getElementById('nav-timeclock').addEventListener('click', () => showView('timeclock'));
-document.getElementById('nav-config').addEventListener('click', () => showView('config'));
-// Setup Listeners de Formulário
-document.getElementById('new-service-form').addEventListener('submit', handleStartService);
-queueForm.addEventListener('submit', handleAddToQueue); // Listener do formulário de fila
-mechanicSelect.addEventListener('change', validateForm);
-queueServiceToStartSelect.addEventListener('change', validateForm);
-formMechanics.addEventListener('submit', handleAddMechanic);
-formServices.addEventListener('submit', handleAddService);
-loginForm.addEventListener('submit', handleLogin);
+// Listeners da VIEW QUEUE
+if (vehicleRegistrationForm) vehicleRegistrationForm.addEventListener('submit', handleRegisterVehicle);
+if (serviceAssignmentForm) serviceAssignmentForm.addEventListener('submit', handleAssignment);
+// Listeners da VIEW PRODUCTION
+if (startServiceForm) startServiceForm.addEventListener('submit', handleStartService);
+// Listeners da VIEW REPORT
+if (btnClearReport) btnClearReport.addEventListener('click', handleClearReportHistory);
+// Listeners da VIEW CONFIG (Admin)
+if (formMechanics) formMechanics.addEventListener('submit', handleAddMechanic);
+if (formSalespeople) formSalespeople.addEventListener('submit', handleAddSalesperson);
+if (formServices) formServices.addEventListener('submit', handleAddService);
+// Listeners de Modal
+if (editQueueForm) editQueueForm.addEventListener('submit', handleUpdateQueueItem);
+if (editActiveForm) editActiveForm.addEventListener('submit', handleUpdateActiveService);
+// Listener de Login
+const loginForm = document.getElementById('login-form');
+if (loginForm) loginForm.addEventListener('submit', handleLogin);
+// Inicialização do Firebase (Chamar aqui após o DOM carregar)
 initializeApp();
 });
+// Funções globais necessárias para os botões 'onclick'
+window.handleLogout = handleLogout;
+window.handleEditQueueItem = handleEditQueueItem;
+window.handleDeleteQueueItem = handleDeleteQueueItem;
+window.handleStartServiceFlow = handleStartServiceFlow;
+window.handleStopService = handleStopService;
+window.handleEditActiveService = handleEditActiveService;
+window.handleClockAction = handleClockAction;
+// MUDANÇA F: Novas funções de exclusão
+window.handleDeleteMechanic = handleDeleteMechanic;
+window.handleDeleteSalesperson = handleDeleteSalesperson;
+window.handleDeleteService = handleDeleteService;
+// Funções de utilidade dos modais
+window.closeEditQueueModal = closeEditQueueModal;
+window.closeEditActiveModal = closeEditActiveModal;
+window.handleUnlockQueueItem = handleUnlockQueueItem;
+// CORREÇÃO: Disponibiliza a função de navegação globalmente para os 'onclick'
+window.showView = showView;
 </script>
 </body>
-</html
+</html>
