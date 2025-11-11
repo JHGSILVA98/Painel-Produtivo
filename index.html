@@ -905,14 +905,17 @@ border-radius: 8px;
 // === CONFIGURAÇÃO DO FIREBASE ===
 // ===============================================
 
+// ===============================================
+// === CONFIGURAÇÃO DO FIREBASE ===
+// ===============================================
+
 const firebaseConfig = {
-  apiKey: "AIzaSyB6XbdcQyKiZYtVXXwAxRI8cv90GhT-bD8",
-    authDomain: "painelprodutividade-dd513.firebaseapp.com",
-    projectId: "painelprodutividade-dd513",
-    storageBucket: "painelprodutividade-dd513.firebasestorage.app",
-    messagingSenderId: "535369536853",
-    appId: "1:535369536853:web:4d0755d7470b026fa64bdc",
-    measurementId: "G-NRZ55SHKN7"
+  apiKey: "AIzaSyD25irRMAoLhTdIgd4KtFN1jcUGvF4HYbQ",
+  authDomain: "acompanhamento-a2c2f.firebaseapp.com",
+  projectId: "acompanhamento-a2c2f",
+  storageBucket: "acompanhamento-a2c2f.firebasestorage.app",
+  messagingSenderId: "71903622561",
+  appId: "1:71903622561:web:5fba8ea92e082e0f4f07e0"
 };
 
 let app, auth, db, firestore;
@@ -977,6 +980,9 @@ const ROLE_PRIORITY = SERVICE_ORDER.reduce((acc, role, index) => {
   acc[role] = index;
   return acc;
 }, {});
+
+// GENERAL tem prioridade baixa (pode ser feito por qualquer um, mas não bloqueia a fila)
+ROLE_PRIORITY['GENERAL'] = 999;
 
 // ===============================================
 // === MODAL CUSTOMIZADO (SUBSTITUI ALERT/CONFIRM) ===
@@ -1075,7 +1081,7 @@ function getRoleDisplayName(role) {
     case 'MECHANIC': return 'Mecânica Geral';
     case 'ALIGNER': return 'Alinhamento';
     case 'BALANCER': return 'Balanceamento';
-    case 'GENERAL': return 'Serviços Diversos'; // Use o código real se for diferente de 'DIVERSE'
+    case 'GENERAL': return 'Serviços Diversos';
     default: return 'Desconhecido';
   }
 }
@@ -1102,7 +1108,8 @@ const assignServiceSelect = document.getElementById('assign-service-select');
 const targetElementsInternal = {
   'MECHANIC': document.getElementById('queue-list-mechanic'),
   'ALIGNER': document.getElementById('queue-list-aligner'),
-  'BALANCER': document.getElementById('queue-list-balancer')
+  'BALANCER': document.getElementById('queue-list-balancer'),
+  'GENERAL': document.getElementById('queue-list-mechanic') // GENERAL vai para a fila de Mecânica
 };
 
 const viewProduction = document.getElementById('view-production');
@@ -1125,7 +1132,8 @@ const viewPublic = document.getElementById('view-public');
 const targetElementsPublic = {
   'MECHANIC': document.getElementById('public-queue-list-mechanic'),
   'ALIGNER': document.getElementById('public-queue-list-aligner'),
-  'BALANCER': document.getElementById('public-queue-list-balancer')
+  'BALANCER': document.getElementById('public-queue-list-balancer'),
+  'GENERAL': document.getElementById('public-queue-list-mechanic') // GENERAL vai para a fila de Mecânica
 };
 
 const publicMechanicElements = {
@@ -1234,14 +1242,23 @@ function filterMechanicSelectByQueueRole() {
   if (queueItem) {
     queueSelected = true;
     const requiredRole = queueItem.serviceRole;
-    const availableMechanicsForRole = window.ALL_MECHANICS.filter(m =>
-      m.role === requiredRole && m.isAvailable && m.active !== false
-    ).sort((a, b) => a.queueTime - b.queueTime);
+    
+    // Se for GENERAL, qualquer funcionário disponível pode fazer
+    let availableMechanicsForRole;
+    if (requiredRole === 'GENERAL') {
+      availableMechanicsForRole = window.ALL_MECHANICS.filter(m =>
+        m.isAvailable && m.active !== false
+      ).sort((a, b) => a.queueTime - b.queueTime);
+    } else {
+      availableMechanicsForRole = window.ALL_MECHANICS.filter(m =>
+        m.role === requiredRole && m.isAvailable && m.active !== false
+      ).sort((a, b) => a.queueTime - b.queueTime);
+    }
 
     availableMechanicsForRole.forEach(m => {
       const option = document.createElement('option');
       option.value = m.fbId;
-      option.textContent = `${m.name} (Disponível desde: ${new Date(m.queueTime).toLocaleTimeString('pt-BR')})`;
+      option.textContent = `${m.name} (${getRoleDisplayName(m.role)}) - Disponível desde: ${new Date(m.queueTime).toLocaleTimeString('pt-BR')}`;
       mechanicSelect.appendChild(option);
     });
 
@@ -1631,15 +1648,24 @@ function handleEditActiveService(activeFbId) {
   editActiveServiceRole.textContent = getRoleDisplayName(activeService.serviceRole);
 
   editActiveMechanicSelect.innerHTML = '<option value="">-- Selecione o Novo Funcionário --</option>';
-  const availableMechanicsForRole = window.ALL_MECHANICS.filter(m =>
-    m.role === activeService.serviceRole && m.active !== false && m.isAvailable
-  ).sort((a, b) => a.name.localeCompare(b.name));
+  
+  // Se for GENERAL, qualquer funcionário disponível pode fazer
+  let availableMechanicsForRole;
+  if (activeService.serviceRole === 'GENERAL') {
+    availableMechanicsForRole = window.ALL_MECHANICS.filter(m =>
+      m.active !== false && m.isAvailable
+    ).sort((a, b) => a.name.localeCompare(b.name));
+  } else {
+    availableMechanicsForRole = window.ALL_MECHANICS.filter(m =>
+      m.role === activeService.serviceRole && m.active !== false && m.isAvailable
+    ).sort((a, b) => a.name.localeCompare(b.name));
+  }
 
   availableMechanicsForRole.forEach(m => {
     if (m.fbId !== activeService.mechanicId) {
       const option = document.createElement('option');
       option.value = m.fbId;
-      option.textContent = m.name;
+      option.textContent = `${m.name} (${getRoleDisplayName(m.role)})`;
       editActiveMechanicSelect.appendChild(option);
     }
   });
@@ -1827,8 +1853,10 @@ function renderQueue() {
       item.requiredNextRole = `AGUARDA: ${mandatoryRole}`;
     }
 
-    if (allItemsByRole[item.serviceRole]) {
-      allItemsByRole[item.serviceRole].push(item);
+    // GENERAL vai para a fila de Mecânica
+    const targetRole = item.serviceRole === 'GENERAL' ? 'MECHANIC' : item.serviceRole;
+    if (allItemsByRole[targetRole]) {
+      allItemsByRole[targetRole].push(item);
     }
   });
 
