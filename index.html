@@ -1077,7 +1077,7 @@ case 'MECHANIC': return 'Mecânica Geral';
 case 'ALIGNER': return 'Alinhamento';
 case 'BALANCER': return 'Balanceamento';
 // *** NOVO: Reconhece o Papel Geral ***
-case ROLE_GENERAL: return 'Troca de Óleo';
+case ROLE_GENERAL: return 'Serviços Diversos';
 default: return 'Desconhecido';
 }
 }
@@ -1508,7 +1508,7 @@ return;
 // *** NOVO: Verifica se é Troca de Óleo e o Papel do Mecânico ***
 const serviceName = queueItem.serviceName;
 const serviceRole = queueItem.serviceRole;
-const isOilChange = serviceName === 'Troca de Óleo';
+const isOilChange = serviceName === 'Serviços Diversos';
 const mechanicRole = mechanic.role;
 
 const activeData = {
@@ -1604,7 +1604,7 @@ const mechanicRef = firestore.collection(C_MECHANICS).doc(mechanicId);
 
 // *** NOVO: Lógica condicional para finalizar ***
 const mechanic = window.ALL_MECHANICS.find(m => m.fbId === mechanicId);
-const isOilChange = activeService.serviceName === 'Troca de Óleo';
+const isOilChange = activeService.serviceName === 'Serviços Diversos';
 
 let mechanicUpdate = {
 isAvailable: true, // Padrão: Fica disponível
@@ -1701,7 +1701,7 @@ const newMechanicRef = firestore.collection(C_MECHANICS).doc(newMechanicId);
 
 // *** NOVO: Verifica o caso especial do Balanceador ***
 const oldMechanic = window.ALL_MECHANICS.find(m => m.fbId === oldMechanicId);
-const isOilChange = activeService.serviceName === 'Troca de Óleo';
+const isOilChange = activeService.serviceName === 'Serviços Diversos';
 
 // Lógica para o MECÂNICO ANTIGO
 let oldMechanicUpdate = {
