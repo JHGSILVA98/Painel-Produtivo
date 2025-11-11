@@ -1492,76 +1492,65 @@ filterMechanicSelectByQueueRole();
 // ===============================================
 // *** NOVO: Função handleStartService (MODIFICADA) ***
 async function handleStartService(event) {
-event.preventDefault();
-const queueId = queueServiceToStartSelect.value;
-const mechanicId = mechanicSelect.value;
-if (!queueId || !mechanicId) {
-showCustomAlert("Erro", "Selecione o serviço da fila e o funcionário.");
-return;
-}
-const queueItem = window.ALL_QUEUE.find(item => item.fbId === queueId);
-const mechanic = window.ALL_MECHANICS.find(m => m.fbId === mechanicId);
-if (!queueItem || !mechanic) {
-showCustomAlert("Erro", "Item da fila ou funcionário não encontrado.");
-return;
-}
-// *** NOVO: Verifica se é Troca de Óleo e o Papel do Mecânico ***
-const serviceName = queueItem.serviceName;
-const serviceRole = queueItem.serviceRole;
-const isOilChange = serviceName === 'Serviços Diversos';
-const mechanicRole = mechanic.role;
+  event.preventDefault();
+  const queueId = queueServiceToStartSelect.value;
+  const mechanicId = mechanicSelect.value;
 
-const activeData = {
-carPlate: queueItem.carPlate,
-carModel: queueItem.carModel,
-salespersonId: queueItem.salespersonId,
-salespersonName: queueItem.salespersonName,
-serviceId: queueItem.serviceId,
-serviceName: serviceName,
-serviceRole: serviceRole,
-mechanicId: mechanicId,
-mechanicName: mechanic.name,
-startTime: new Date().getTime(),
-startQueueId: queueId, // Linka o serviço ativo ao item original da fila
-active: true,
-};
-// Usar transação para garantir atomicidade
-const batch = firestore.batch();
-const activeRef = firestore.collection(C_ACTIVE).doc();
-const mechanicRef = firestore.collection(C_MECHANICS).doc(mechanicId);
-const queueRef = firestore.collection(C_QUEUE_SERVICES).doc(queueId);
+  if (!queueId || !mechanicId) {
+    showCustomAlert("Erro", "Selecione o serviço da fila e o funcionário.");
+    return;
+  }
 
-// *** LÓGICA CONDICIONAL PARA O MECÂNICO ***
-let mechanicUpdate = {
-isAvailable: false, // Padrão: Sai da disponibilidade
-queueTime: 0, // Padrão: Zera o tempo de fila
-activeServiceId: activeRef.id, // ID do serviço que ele está fazendo
-isDoingOilChange: firebase.firestore.FieldValue.delete() // Limpa flag antigo
-};
+  const queueItem = window.ALL_QUEUE.find(item => item.fbId === queueId);
+  const mechanic = window.ALL_MECHANICS.find(m => m.fbId === mechanicId);
 
-// *** CASO ESPECIAL: Balanceador fazendo Troca de Óleo ***
-if (isOilChange && mechanicRole === 'BALANCER') {
-mechanicUpdate.isAvailable = false; // Ele fica ocupado (não disponível para outros)
-mechanicUpdate.queueTime = mechanic.queueTime; // *** PRESERVA O TEMPO DE FILA ORIGINAL ***
-mechanicUpdate.isDoingOilChange = true; // Flag especial
-}
+  if (!queueItem || !mechanic) {
+    showCustomAlert("Erro", "Item da fila ou funcionário não encontrado.");
+    return;
+  }
 
-try {
-// 1. Adiciona o serviço à coleção ACTIVE
-batch.set(activeRef, activeData);
-// 2. Altera status do mecânico (com a lógica condicional)
-batch.update(mechanicRef, mechanicUpdate);
-// 3. Remove o serviço da Fila (QUEUE_SERVICES)
-batch.delete(queueRef);
-await batch.commit();
-showCustomAlert("Sucesso", `Serviço '${serviceName}' iniciado por ${mechanic.name}.`);
-// Limpar o formulário e re-renderizar
-startServiceForm.reset();
-filterMechanicSelectByQueueRole();
-} catch (error) {
-console.error("Erro ao iniciar serviço (Transação):", error);
-showCustomAlert("Erro", "Erro ao iniciar o serviço.");
-}
+  const serviceName = queueItem.serviceName;
+  const serviceRole = queueItem.serviceRole;
+
+  // **NOVO: Salvar queueTime original se for Troca de Óleo**
+  const preserveQueueTime = serviceName.toLowerCase().includes('troca de óleo');
+  const originalQueueTime = mechanic.queueTime;
+
+  const activeData = {
+    carPlate: queueItem.carPlate,
+    carModel: queueItem.carModel,
+    salespersonId: queueItem.salespersonId,
+    salespersonName: queueItem.salespersonName,
+    serviceId: queueItem.serviceId,
+    serviceName: serviceName,
+    serviceRole: serviceRole,
+    mechanicId: mechanicId,
+    mechanicName: mechanic.name,
+    startTime: new Date().getTime(),
+    startQueueId: queueId,
+    active: true,
+    // **NOVO: Salvar o queueTime original**
+    originalQueueTime: preserveQueueTime ? originalQueueTime : null
+  };
+
+  const batch = firestore.batch();
+  const activeRef = firestore.collection(C_ACTIVE).doc();
+  const mechanicRef = firestore.collection(C_MECHANICS).doc(mechanicId);
+  const queueRef = firestore.collection(C_QUEUE_SERVICES).doc(queueId);
+
+  try {
+    batch.set(activeRef, activeData);
+    batch.update(mechanicRef, { isAvailable: false, queueTime: 0 });
+    batch.delete(queueRef);
+
+    await batch.commit();
+    showCustomAlert("Sucesso", `Serviço '${serviceName}' iniciado por ${mechanic.name}.`);
+    startServiceForm.reset();
+    filterMechanicSelectByQueueRole();
+  } catch (error) {
+    console.error("Erro ao iniciar serviço (Transação):", error);
+    showCustomAlert("Erro", "Erro ao iniciar o serviço.");
+  }
 }
 // NOVO: Função para verificar e excluir veículo (Alteração A)
 async function checkAndDeleteVehicle(plate) {
@@ -1583,59 +1572,53 @@ console.error("Erro ao excluir veículo:", error);
 }
 // *** NOVO: Função handleStopService (MODIFICADA) ***
 function handleStopService(activeFbId, mechanicId) {
-// *** CORREÇÃO 2: Alterado 'ALL_ACTIVE_SERVICES' para 'window.ACTIVE_SERVICES' ***
-const activeService = window.ACTIVE_SERVICES.find(s => s.fbId === activeFbId);
-if (!activeService) return;
-showCustomConfirm("Finalizar Serviço", `Tem certeza que deseja finalizar o serviço '${activeService.serviceName}'?`, async () => {
-const endTime = new Date().getTime();
-const durationSeconds = Math.round((endTime - activeService.startTime) / 1000);
-const completedData = {
-...activeService,
-endTime: endTime,
-durationSeconds: durationSeconds,
-active: false,
-completedAt: endTime
-};
-// Transação para finalizar o serviço
-const batch = firestore.batch();
-const activeRef = firestore.collection(C_ACTIVE).doc(activeFbId);
-const completedRef = firestore.collection(C_COMPLETED).doc();
-const mechanicRef = firestore.collection(C_MECHANICS).doc(mechanicId);
+  const activeService = window.ACTIVE_SERVICES.find(s => s.fbId === activeFbId);
+  if (!activeService) return;
 
-// *** NOVO: Lógica condicional para finalizar ***
-const mechanic = window.ALL_MECHANICS.find(m => m.fbId === mechanicId);
-const isOilChange = activeService.serviceName === 'Serviços Diversos';
+  showCustomConfirm("Finalizar Serviço", `Tem certeza que deseja finalizar o serviço '${activeService.serviceName}'?`, async () => {
+    const endTime = new Date().getTime();
+    const durationSeconds = Math.round((endTime - activeService.startTime) / 1000);
 
-let mechanicUpdate = {
-isAvailable: true, // Padrão: Fica disponível
-queueTime: new Date().getTime(), // Padrão: Ganha um NOVO tempo de fila
-activeServiceId: firebase.firestore.FieldValue.delete(),
-isDoingOilChange: firebase.firestore.FieldValue.delete() // Limpa o flag
-};
+    const completedData = {
+      ...activeService,
+      endTime: endTime,
+      durationSeconds: durationSeconds,
+      active: false,
+      completedAt: endTime
+    };
 
-// *** CASO ESPECIAL: Balanceador finalizando Troca de Óleo ***
-if (mechanic && mechanic.role === 'BALANCER' && isOilChange) {
-mechanicUpdate.isAvailable = true;
-mechanicUpdate.queueTime = mechanic.queueTime; // *** USA O TEMPO DE FILA PRESERVADO ***
-}
+    // **NOVO: Determinar o queueTime correto**
+    const shouldPreserveQueue = activeService.originalQueueTime !== null && activeService.originalQueueTime !== undefined;
+    const newQueueTime = shouldPreserveQueue ? activeService.originalQueueTime : new Date().getTime();
 
-try {
-// 1. Remove da coleção ACTIVE
-batch.delete(activeRef);
-// 2. Adiciona à coleção COMPLETED
-batch.set(completedRef, completedData);
-// 3. Devolve o mecânico à disponibilidade (com lógica condicional)
-batch.update(mechanicRef, mechanicUpdate);
+    const batch = firestore.batch();
+    const activeRef = firestore.collection(C_ACTIVE).doc(activeFbId);
+    const completedRef = firestore.collection(C_COMPLETED).doc();
+    const mechanicRef = firestore.collection(C_MECHANICS).doc(mechanicId);
 
-await batch.commit();
-// ALTERAÇÃO A: Chama a função para verificar a exclusão do veículo
-checkAndDeleteVehicle(activeService.carPlate);
-showCustomAlert("Sucesso", `Serviço '${activeService.serviceName}' finalizado e registrado.`);
-} catch (error) {
-console.error("Erro ao finalizar serviço:", error);
-showCustomAlert("Erro", "Erro ao finalizar o serviço.");
-}
-});
+    try {
+      batch.delete(activeRef);
+      batch.set(completedRef, completedData);
+      
+      // **MODIFICADO: Usar o queueTime preservado**
+      batch.update(mechanicRef, { 
+        isAvailable: true, 
+        queueTime: newQueueTime 
+      });
+
+      await batch.commit();
+      checkAndDeleteVehicle(activeService.carPlate);
+      
+      if (shouldPreserveQueue) {
+        showCustomAlert("Sucesso", `Serviço '${activeService.serviceName}' finalizado. ${activeService.mechanicName} retornou à sua posição na fila.`);
+      } else {
+        showCustomAlert("Sucesso", `Serviço '${activeService.serviceName}' finalizado e registrado.`);
+      }
+    } catch (error) {
+      console.error("Erro ao finalizar serviço:", error);
+      showCustomAlert("Erro", "Erro ao finalizar o serviço.");
+    }
+  });
 }
 function closeEditActiveModal() {
 editActiveModal.style.display = 'none';
